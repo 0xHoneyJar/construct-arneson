@@ -1,4 +1,18 @@
 
+# Local IDE / editor state
+.obsidian/
+.vscode/
+
+# Runtime analytics (session logs, not shippable)
+grimoires/loa/analytics/
+
+# Run mode state (session-local, not shippable)
+.run/
+
+# Local Claude Code settings (permissions, not shippable)
+.claude/settings.local.json
+.claude/.mount-lock
+
 # LOA SUBMODULE SYMLINKS (added by mount-submodule.sh)
 # Symlinks to .loa/ submodule — recreated on mount
 .claude/scripts

@@ -1,0 +1,59 @@
+preamble:
+  mode: braunstein
+  archetype: newcomer
+  started_at: "2026-04-13T18:00:00Z"
+  game_state_path: examples/synthetic-fixture/game-state.yaml
+  game_state_checksum: 72d1527235d178bb4de92263bb5a7546701bc387540bc0f80f34d2175b2697f0
+  composition_mode: standalone
+  tradition: folk-horror-minimalist
+  tradition_fallback_mode: false
+  dice_mode: user
+  safety_agreement:
+    lines: []
+    veils:
+      - body-horror-extremes
+    x_card_active: true
+
+events:
+  - type: scene_frame
+    scene_id: scene-01
+    setting: "Dusk. The village well. Stone, lip-high. Three villagers standing in an unspoken pattern — not drawing water, not leaving."
+    immediate_stakes: "The Newcomer must fill a jar before full dark. Three villagers are watching the approach. The well is the subject of a disagreement the Newcomer does not yet know about."
+    game_state_refs:
+      - locations.the_well
+      - villagers.mara
+      - villagers.iven
+      - villagers.third_villager
+      - mechanics.water_touch
+
+  - type: archetype_decision
+    decision_id: dec-01
+    archetype_ref: newcomer
+    decision_text: "Approaches the well directly and reaches in to test the water temperature — an unremarkable action that triggers water_touch. Does not notice the villagers' pattern until after the perception fires."
+    classification:
+      - fictional_friction
+    game_state_refs:
+      - mechanics.water_touch
+      - stats.sight:3
+      - stats.standing:1
+      - pc_slots.newcomer-slot.does_not_know
+    scene_frame_ref: scene-01
+
+  - type: signal_flag
+    flag_id: flag-01
+    signal_type: surprise
+    source: arneson
+    text: "Newcomer's high Sight (3) renders water_touch perception with specificity — the warmth is described in multiple registers before interpretation catches up. Low Standing (1) means the involuntary vocalization ('The water is warm') will cost socially: Newcomer just named something the village is choosing not to name."
+    scene_frame_ref: scene-01
+
+  - type: signal_flag
+    flag_id: flag-02
+    signal_type: friction
+    source: arneson
+    text: "Fictional friction: the Newcomer's act of naming ('the water is warm') is mechanically trivial (no roll triggered) but socially loaded in ways the Newcomer cannot yet read. The stat_relationship (Standing/Sight trade-off) is surfacing experientially — high Sight sees, low Standing means the seeing is unwelcome."
+    scene_frame_ref: scene-01
+
+  - type: gm_prompt
+    prompt_id: prompt-01
+    text: "Staged: Mara stepping toward PC (not toward the well), Iven's mouth open but not speaking, third villager motionless. Requesting GM direction for next beat — who speaks or acts first?"
+    scene_frame_ref: scene-01
