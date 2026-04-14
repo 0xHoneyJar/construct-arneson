@@ -15,13 +15,12 @@ IMPLEMENTED_SKILLS=(
   voice         # Sprint 4
   scene         # Sprint 4
   improvise     # Sprint 5
-)
-
-# Skills declared in construct.yaml but not yet implemented (no failure — just note)
-DECLARED_NOT_IMPLEMENTED=(
   arneson       # Sprint 6
   fragment      # Sprint 6
 )
+
+# All skills now implemented.
+DECLARED_NOT_IMPLEMENTED=()
 
 for skill in "${IMPLEMENTED_SKILLS[@]}"; do
   skill_dir="skills/$skill"
