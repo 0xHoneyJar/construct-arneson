@@ -1,0 +1,136 @@
+# Threshold — synthetic reference game-state for construct-arneson fixtures.
+# Authored 2026-04-13.
+#
+# This file uses the two-axis intent schema owned jointly by Gygax (mechanical_intent)
+# and Arneson (experiential_intent). See schemas/experiential_intent.schema.yaml.
+
+game:
+  title: "Threshold"
+  tradition: folk-horror-minimalist
+  version: 1.0
+  one_line: "A village shares a well. The water has changed. Not poisoned — changed."
+
+stats:
+  Standing:
+    range: [1, 4]
+    description: "How much weight your word carries in the village."
+  Sight:
+    range: [1, 4]
+    description: "How much you see that others don't."
+
+stat_relationship: >
+  Standing and Sight trade against each other. A newcomer with high Sight is dismissed.
+  An elder with low Sight is trusted but sees only what is expected.
+  The game is about what happens when someone with high Sight and low Standing
+  speaks up about what they see.
+
+mechanics:
+
+  threshold_roll:
+    type: skill_check
+    description: "Used when you try to be believed, or try to see clearly."
+    procedure:
+      - "Declare what you are trying to do, and whether this is a Standing or Sight action."
+      - "Roll 1d6. Add the relevant stat."
+      - "Compare to the threshold: 4."
+      - "Meet or exceed → the village permits it / the thing is seen clearly."
+      - "Below → the attempt ripples. The failure is louder than a success would have been."
+    mechanical_intent:
+      severity: moderate
+      resource_cost: none
+      failure_mode: complication_not_lethality
+    experiential_intent:
+      tone: uncanny
+      pacing: languid
+      stakes: communal
+      register: intimate
+      notes: >
+        Every roll is also a small social performance watched by the village.
+        Low-Standing characters feel the weight of being watched even when rolling Sight.
+
+  water_touch:
+    type: passive_event
+    description: >
+      Touching the well water fires a passive Sight event. No roll.
+      The perception itself is involuntary. Whether the character speaks what they
+      perceived aloud is a separate choice.
+    mechanical_intent:
+      severity: minor
+      resource_cost: none
+      failure_mode: n/a  # no roll — always fires
+    experiential_intent:
+      tone: uncanny
+      pacing: languid
+      stakes: personal
+      register: intimate
+      notes: >
+        The water is not frightening. It is familiar in a way the villager does not
+        expect. The wrongness is the familiarity.
+
+locations:
+  the_well:
+    description: "Stone, lip-high. Shared by the village. At dusk, three villagers stand near it without drawing water."
+    game_elements:
+      - mechanics.water_touch
+      - villagers.mara
+      - villagers.iven
+      - villagers.third_villager
+
+  the_village:
+    description: "A small village. Perhaps twenty homes. Agricultural. The well is central."
+
+villagers:
+  mara:
+    display_name: "Mara"
+    role: "villager, elder"
+    standing: 3
+    sight: 1
+    notes: "Careful. Watches before speaking. Has not drawn water in three days."
+  iven:
+    display_name: "Iven"
+    role: "villager"
+    standing: 2
+    sight: 2
+    notes: "Once outspoken; now mostly silent. Something has shifted in him recently."
+  third_villager:
+    display_name: "the one whose name the Newcomer still mixes up with his brother's"
+    role: "villager"
+    standing: 2
+    sight: 1
+    notes: "Has twin brother. Newcomers commonly confuse them. This one is the quieter."
+
+pc_slots:
+  # Pre-defined PC slots for session loading. Each slot can be assigned to a real PC
+  # or played by an archetype.
+  - slot_id: newcomer-slot
+    suggested_archetype: newcomer
+    stats:
+      Standing: 1
+      Sight: 3
+    background: "Has been in the village six weeks. Knows names but not histories."
+    known_facts:
+      - { fact: "There is a well. It is central. Water comes from it.", confidence: certain }
+      - { fact: "The village has had a shared water source for many generations.", confidence: believed }
+    does_not_know:
+      - "That three villagers have stopped drawing water from the well."
+      - "That there is an unspoken argument about the well."
+      - "That pointing at something is, in this village, a commitment."
+
+scene_hooks:
+  dusk_at_the_well:
+    description: "PC comes to draw water at dusk. Three villagers are standing near the well, not drawing. Their pattern is not yet legible to the PC."
+    triggers_on_entry:
+      - none  # scene is atmospheric until PC acts
+    high_probability_triggers:
+      # If PC performs these actions, these mechanics likely fire:
+      - action: "test water temperature / reach in to check"
+        triggers: [mechanics.water_touch]
+      - action: "speak to any villager"
+        may_trigger: [mechanics.threshold_roll]  # Standing-based
+      - action: "draw water and leave"
+        triggers: [mechanics.water_touch]
+
+default_safety_agreement:
+  lines: []
+  veils: [body-horror-extremes]
+  x_card_active: true

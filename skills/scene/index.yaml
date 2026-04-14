@@ -1,0 +1,26 @@
+# /scene — Scene generator
+# Generate a scene from a seed, oracle result, or prompt.
+# PRD: FR-3
+
+name: scene
+display_name: Scene
+description: >
+  Generate a scene from a seed, oracle-table output, or user prompt.
+  Produces opening situation, sensory detail, immediate stakes.
+  One-shot by default; grounded in game-state.
+type: one-shot
+domain: design
+construct: arneson
+
+flags:
+  - name: seed
+    type: string
+    required: true
+    description: "Scene seed — free text, oracle result, or reference to a scene-seed file"
+  - name: game-state
+    type: string
+    required: true
+    description: "Path to game-state YAML"
+
+output:
+  scene: "grimoires/arneson/scenes/{date}-{scope}.md"

@@ -1,0 +1,212 @@
+# schemas/session-events.schema.yaml
+# The admissibility-infrastructure schema.
+# Defines the structured sidecar ({session}.events.yaml) emitted during /braunstein and /improvise.
+# What makes PRD goal G-1 (admissibility) mechanically verifiable.
+# See SDD §3.2.6 and PRD FR-16.
+
+schema:
+  name: session-events
+  version: 1
+  description: >
+    Structured event log emitted during session-length skills.
+    Written append-only during the session (durable to crashes).
+    Consumed by /distill to produce Gygax-ingestible digests.
+
+session_preamble:
+  description: "Written once at session open. Immutable for the session."
+  fields:
+    mode:
+      type: enum
+      required: true
+      values: [braunstein, improvise]
+    archetype:
+      type: string
+      required_if: "mode == braunstein"
+      description: "archetype_ref of the archetype being voiced."
+    pc_ref:
+      type: string
+      required_if: "mode == improvise"
+      description: "pc_ref of the PC being played by the user."
+    started_at:
+      type: string
+      format: iso8601-datetime
+      required: true
+    game_state_path:
+      type: string
+      required: true
+      description: "Relative path to the game-state YAML used for this session."
+    game_state_checksum:
+      type: string
+      required: true
+      description: "SHA256 of game-state file contents. Enables replay / forensic validation."
+    composition_mode:
+      type: enum
+      required: true
+      values: [standalone, composed-with-gygax, partial-gygax]
+    tradition:
+      type: string
+      required: false
+      description: "Tradition identifier. If empty, sessional was run against structural improvisation fallback."
+    tradition_fallback_mode:
+      type: boolean
+      required: true
+      default: false
+    dice_mode:
+      type: enum
+      required: true
+      values: [user, arneson, hybrid]
+    safety_agreement:
+      type: object
+      required: true
+      fields:
+        lines:
+          type: array
+          items: {type: string}
+        veils:
+          type: array
+          items: {type: string}
+        x_card_active:
+          type: boolean
+          default: true
+
+event_types:
+  # Written in order as they occur during the session.
+
+  scene_frame:
+    description: "A scene opening. Establishes setting, immediate stakes, and anchoring game-state references."
+    fields:
+      scene_id: {type: string, required: true, description: "Unique within session. e.g., 'scene-01'."}
+      setting: {type: string, required: true}
+      immediate_stakes: {type: string, required: true}
+      game_state_refs:
+        type: array
+        items: {type: string}
+        required: true
+        min_length: 1
+        description: "References to game-state elements (locations.*, mechanics.*, villagers.*, etc.) this scene rests on. R-2 mitigation: hollow fiction prevented by requiring grounding."
+
+  dice_roll:
+    description: "A mechanical roll of any kind, user-rolled or Arneson-rolled."
+    fields:
+      roll_id: {type: string, required: true}
+      mechanic_id: {type: string, required: true, description: "Game-state mechanic reference."}
+      outcome: {type: string, required: true, description: "Result expressed in fiction-readable terms."}
+      raw_roll_value: {type: number, required: false, description: "Numeric value if available."}
+      mode: {type: enum, values: [user, arneson, hybrid], required: true}
+      mechanical_intent_observed: {type: string, required: false}
+      experiential_intent_observed: {type: string, required: false}
+
+  archetype_decision:
+    description: "A significant in-character decision the archetype made. Required for every /braunstein turn."
+    fields:
+      decision_id: {type: string, required: true}
+      archetype_ref: {type: string, required: true}
+      decision_text: {type: string, required: true, description: "Decision expressed as a declarative statement."}
+      classification:
+        type: array
+        items: {type: enum, values: [fictional_friction, mechanical_bottleneck]}
+        required: true
+        min_length: 1
+        description: "Why this decision, in Gygax-analyzable terms. Can be both."
+      game_state_refs:
+        type: array
+        items: {type: string}
+        required: true
+        min_length: 1
+        description: "R-2 mitigation: decision must ground in at least one game-state element."
+      scene_frame_ref: {type: string, required: true}
+
+  signal_flag:
+    description: "A noticed signal during play — confusion, friction, delight, etc."
+    fields:
+      flag_id: {type: string, required: true}
+      signal_type:
+        type: enum
+        values: [confusion, friction, bottleneck, delight, surprise, boredom]
+        required: true
+      source: {type: enum, values: [user, arneson], required: true}
+      text: {type: string, required: true}
+      scene_frame_ref: {type: string, required: true}
+
+  intent_conflict:
+    description: "Observed tension between mechanical_intent and experiential_intent."
+    fields:
+      conflict_id: {type: string, required: true}
+      mechanic_ref: {type: string, required: true}
+      mechanical_intent: {type: string, required: true}
+      experiential_intent: {type: string, required: true}
+      conflict_description: {type: string, required: true}
+      resolution:
+        type: enum
+        values:
+          - preserved_mechanical        # arneson respected mechanical intent; experiential bent
+          - user_arbitrated             # user decided which axis won
+          - flagged_for_review          # neither — logged for designer's attention
+        required: true
+
+  gm_prompt:
+    description: "Arneson, out of character, handing control back to user-as-GM."
+    fields:
+      prompt_id: {type: string, required: true}
+      text: {type: string, required: true, description: "e.g., 'I don't know how this mechanic resolves.'"}
+      scene_frame_ref: {type: string, required: true}
+
+  safety_trigger:
+    description: "A safety tool fired (user or auto). Also surfaces as dead_design_space in digests."
+    fields:
+      trigger_id: {type: string, required: true}
+      trigger_type:
+        type: enum
+        values: [x_card, line, veil, script_change_pause]
+        required: true
+      content_category: {type: string, required: true, description: "Category of triggered content."}
+      action:
+        type: enum
+        values: [immediate_halt, off_stage, tone_shift]
+        required: true
+      dead_design_space_flag: {type: boolean, default: true}
+      scene_frame_ref: {type: string, required: true}
+
+  rule_of_cool:
+    description: "A rule was bent for fiction (by user-as-GM in /braunstein, or by Arneson-as-GM in /improvise)."
+    fields:
+      override_id: {type: string, required: true}
+      rule_ref: {type: string, required: true, description: "Which rule was bent."}
+      what_was_ignored: {type: string, required: true}
+      why_it_was_ignored: {type: string, required: true}
+      mode: {type: enum, values: [braunstein_user_as_gm, improvise_arneson_as_gm], required: true}
+
+  clarifying_question:
+    description: "A question surfaced during play about how a rule or mechanic works."
+    fields:
+      question_id: {type: string, required: true}
+      asker: {type: enum, values: [user, archetype, pc], required: true}
+      question_text: {type: string, required: true}
+      rule_or_mechanic_ref: {type: string, required: true}
+
+session_end:
+  description: "Written once on session close (including crash recovery — may be synthesized by /distill if session crashed before this was written)."
+  fields:
+    ended_at: {type: string, format: iso8601-datetime, required: true}
+    end_reason:
+      type: enum
+      values: [completed, user_interrupt, crash, safety_halt]
+      required: true
+    summary_counts:
+      type: object
+      fields:
+        dice_rolls: {type: integer}
+        archetype_decisions: {type: integer}
+        signal_flags: {type: integer}
+        intent_conflicts: {type: integer}
+        safety_triggers: {type: integer}
+        rule_of_cool: {type: integer}
+        clarifying_questions: {type: integer}
+
+validation_rules:
+  - "Every archetype_decision event MUST have non-empty game_state_refs (R-2 mitigation)"
+  - "Every scene_frame event MUST have non-empty game_state_refs"
+  - "Every scene_frame_ref in any event MUST match a declared scene_frame event earlier in the sidecar"
+  - "mode in preamble MUST match the required id field (archetype for braunstein, pc_ref for improvise)"
+  - "session_end event, if present, MUST be the last event in the file"
+  - "Sidecar files with missing session_end are valid and consumed by /distill as 'partial' sessions"

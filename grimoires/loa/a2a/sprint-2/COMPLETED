@@ -1,0 +1,11 @@
+Sprint 2 (Vertical Slice — /braunstein / M1) COMPLETED
+
+Implemented: 2026-04-13
+Reviewed: 2026-04-13 — All good (with noted concerns)
+Audited: 2026-04-13 — APPROVED
+
+Deliverables: skills/braunstein/SKILL.md (435 lines, 8-state session lifecycle), skills/braunstein/index.yaml, validate-skills.sh CI step, yq version pin (Sprint 1 audit fix).
+
+FRs addressed: FR-1, FR-9, FR-10, FR-11, FR-14, FR-15, FR-16, FR-17 (8 of 17 total).
+
+Next: Sprint 3 (Admissibility — /distill)

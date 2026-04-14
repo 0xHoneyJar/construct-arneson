@@ -1,0 +1,58 @@
+# /braunstein — Flagship live playtest skill
+# Named for Dave Arneson's 1969 proto-RPG that led directly to D&D.
+#
+# User GMs. Arneson plays an archetype from the cabal as an actual character.
+# Dialogue, in-character reactions, dice rolls, real-time sidecar emission.
+#
+# PRD: FR-1 (flagship), FR-9 (intent), FR-10 (memory), FR-11 (dice),
+#       FR-14 (chaos bounding), FR-15 (safety), FR-16 (sidecar), FR-17 (fallback)
+
+name: braunstein
+display_name: Braunstein
+description: >
+  Live playtest session. User GMs; Arneson voices an archetype (from the cabal)
+  as an actual character. Produces a prose transcript + structured sidecar for
+  design analysis.
+type: session   # session-length interactive skill
+domain: design
+construct: arneson
+
+flags:
+  - name: archetype
+    alias: a
+    type: string
+    default: newcomer
+    description: "Which archetype to voice (e.g., newcomer, optimizer, chaos-agent)"
+  - name: game-state
+    type: string
+    required: true
+    description: "Path to game-state YAML file"
+  - name: dice
+    type: enum
+    values: [user, arneson, hybrid]
+    default: user
+    description: "Dice resolution mode"
+  - name: fork
+    type: string
+    required: false
+    description: "Fork identifier (for scry-forked game-states)"
+
+output:
+  transcript: "grimoires/arneson/sessions/{date}-braunstein-{archetype}.md"
+  sidecar: "grimoires/arneson/sessions/{date}-braunstein-{archetype}.events.yaml"
+  memory_update: "grimoires/arneson/voices/archetypes/{archetype}.state.yaml"
+
+safety:
+  agreement_required: true    # session opens with Lines & Veils / X-card
+  pause_command: "/pause"
+  x_card_command: "/x-card"
+  resume_command: "/resume"
+
+composition:
+  reads_from_gygax:
+    - grimoires/gygax/game-state/
+    - identity/persona.yaml
+    - identity/expertise.yaml
+    - skills/cabal/resources/archetypes.yaml
+    - skills/lore/resources/
+  fallback_when_absent: resources/archetypes-fallback/

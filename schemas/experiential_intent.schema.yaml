@@ -1,0 +1,120 @@
+# schemas/experiential_intent.schema.yaml
+# The Arneson-owned axis of the two-axis intent contract.
+# Gygax owns mechanical_intent (what the math should do).
+# Arneson owns experiential_intent (how it should feel).
+#
+# Referenced by game-state entries under: experiential_intent: {...}
+# See SDD §3.2.1 and PRD FR-9.
+
+schema:
+  name: experiential_intent
+  version: 1
+  owner: arneson
+  companion_axis: mechanical_intent  # owned by Gygax; see Gygax schema when installed
+  description: >
+    Controlled vocabulary for how a mechanic or scene should feel.
+    Designers author; Arneson reads. Voicing shifts in response to changes here
+    without requiring prompt-tuning.
+
+fields:
+  tone:
+    type: enum
+    required: true
+    values:
+      - desperate
+      - heroic
+      - tragic
+      - absurd
+      - mundane
+      - uncanny
+      - tender
+      - cruel
+      - comic
+    description: "The emotional colour of the moment."
+
+  pacing:
+    type: enum
+    required: false
+    default: steady
+    values:
+      - rushed       # sentences short, clauses clipped
+      - steady       # default, neutral tempo
+      - languid      # sentences unspooled, metaphors allowed to extend
+      - punctuated   # staccato — short bursts separated by silence
+    description: "How time feels in the prose."
+
+  stakes:
+    type: enum
+    required: false
+    values:
+      - personal      # this happens to THIS character
+      - communal      # this happens to the group / table / village
+      - cosmic        # this happens to the world
+      - professional  # this threatens a role or livelihood, not survival
+      - trivial       # the stakes are low and the scene knows it
+    description: "Whose world is being touched by this moment."
+
+  register:
+    type: enum
+    required: false
+    values:
+      - formal
+      - colloquial
+      - archaic
+      - technical
+      - mythic
+      - intimate
+    description: "The grammar and diction the moment invites."
+
+  notes:
+    type: string
+    required: false
+    description: >
+      Designer-authored free text. Arneson reads this as shaping context for voicing.
+      Use this for specifics the enums can't capture. Example:
+      "This is the first time the PC sees the sky at night in this setting."
+
+extensions:
+  # Traditions MAY extend the controlled vocabulary via their lore YAML.
+  # Arneson reads extensions when present; falls back to base vocabulary otherwise.
+  extension_field: experiential_intent_extensions
+  extension_location: "tradition lore YAML (skills/lore/resources/{tradition}.yaml when Gygax installed)"
+  extension_shape: >
+    experiential_intent_extensions:
+      tone_values: [...]     # additional tone enum values
+      register_values: [...]
+      # etc.
+
+usage_examples:
+  - context: "A mechanic that should feel uncanny"
+    example:
+      tone: uncanny
+      pacing: languid
+      stakes: personal
+      register: intimate
+      notes: "Familiar in a way the villager does not expect. The wrongness is the familiarity."
+
+  - context: "A high-pressure combat roll"
+    example:
+      tone: desperate
+      pacing: rushed
+      stakes: personal
+
+  - context: "A quiet scene between two characters"
+    example:
+      tone: tender
+      pacing: steady
+      stakes: personal
+      register: intimate
+
+degradation:
+  # Per FR-9: graceful degradation when fields missing.
+  field_missing_behavior:
+    tone: "If missing, Arneson proceeds with neutral voicing and logs a degradation event in the sidecar."
+    pacing: "If missing, defaults to 'steady'."
+    stakes: "If missing, not inferred — Arneson leaves this axis unshaped."
+    register: "If missing, inherits from tradition lore default or persona default."
+
+  only_single_axis_intent_present:
+    # Legacy Gygax state where only `intent` field exists (pre-axis-split)
+    behavior: "Treat as mechanical_intent; set experiential_intent to {} (empty) and log degradation."

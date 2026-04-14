@@ -1,0 +1,13 @@
+# /arneson — Status dashboard
+# Read-only. Reports construct state.
+# PRD: FR-6
+
+name: arneson
+display_name: Arneson
+description: >
+  Status dashboard. Lists active sessions, voiced NPCs, recent scenes,
+  archetype memory windows, safety findings count, composition state.
+  Read-only — writes nothing.
+type: meta
+domain: design
+construct: arneson

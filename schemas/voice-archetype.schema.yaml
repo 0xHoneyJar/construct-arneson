@@ -1,0 +1,90 @@
+# schemas/voice-archetype.schema.yaml
+# Extends voice-base. Archetype-INSTANCE state (memory, scars, preferences).
+# The archetype DEFINITION lives in Gygax's identity files, with Arneson-fallback when absent.
+# See SDD §3.2.3 and PRD FR-13, FR-14.
+
+schema:
+  name: voice-archetype
+  version: 1
+  extends: voice-base
+  description: >
+    Archetype-instance state. Inherits all voice-base fields.
+    The definition (who is a Newcomer? an Optimizer?) lives in Gygax's SSOT.
+    This schema covers instance state that accumulates as the archetype plays.
+
+additional_fields:
+  archetype_ref:
+    type: string
+    required: true
+    description: >
+      Stable id matching Gygax's archetype key (e.g., 'newcomer', 'optimizer', 'chaos-agent').
+      Arneson looks up the definition: Gygax identity files first, then fallback bundle at
+      resources/archetypes-fallback/{archetype_ref}.yaml.
+
+  experiential_intent_weights:
+    type: object
+    required: true
+    description: >
+      How this archetype responds to each experiential tone.
+      Map of tone enum value → weight in [0.0, 1.0].
+      Weight indicates resonance: 0.9 means high resonance; 0.2 means the archetype
+      is less affected by this tone than others would be.
+    fields:
+      desperate: {type: number, range: [0.0, 1.0]}
+      heroic:    {type: number, range: [0.0, 1.0]}
+      tragic:    {type: number, range: [0.0, 1.0]}
+      absurd:    {type: number, range: [0.0, 1.0]}
+      mundane:   {type: number, range: [0.0, 1.0]}
+      uncanny:   {type: number, range: [0.0, 1.0]}
+      tender:    {type: number, range: [0.0, 1.0]}
+      cruel:     {type: number, range: [0.0, 1.0]}
+      comic:     {type: number, range: [0.0, 1.0]}
+
+  memory_window_size:
+    type: integer
+    default: 3
+    range: [1, 10]
+    description: >
+      Sliding window (sessions) that feeds current behavior.
+      Default per PRD FR-10. Individual archetypes may override (Chaos Agent might be 1).
+
+  chaos_axis_config:
+    type: object
+    required: false  # required for chaos-agent; optional for others
+    description: "Per-axis chaos bounding (FR-14). Prevents context-window blow-up."
+    fields:
+      structural:
+        type: enum
+        values: [bounded, unbounded]
+        default: bounded
+        description: >
+          Structural axis: archetype's decision distribution across legal moves.
+          unbounded = may pick any move with any probability.
+      narrative:
+        type: enum
+        values: [bounded, unbounded]
+        default: bounded
+        description: >
+          Narrative axis: intelligibility of speech and perception.
+          bounded = speech remains in-fiction, no reality-breaks, no frame-shatter.
+      per_turn_sidecar_event_cap:
+        type: integer
+        default: 10
+        description: >
+          Hard cap on sidecar events emitted in a single turn.
+          Prevents Chaos Agent from producing event storms that blow out context.
+          Value empirically tuned in Sprint 2; default 10 is a conservative starting point.
+
+  fallback_source:
+    type: boolean
+    default: false
+    description: >
+      True if this instance state was authored against a fallback archetype definition
+      (Gygax not installed). Used by audit tooling to flag instances that should be
+      re-validated when Gygax becomes available.
+
+validation_rules:
+  - "archetype_ref must exist in either Gygax SSOT (when installed) or resources/archetypes-fallback/"
+  - "If archetype_ref is 'chaos-agent', chaos_axis_config must be populated"
+  - "experiential_intent_weights must contain at least 3 entries (archetype must have SOME tonal shape)"
+  - "per_turn_sidecar_event_cap must be > 0"

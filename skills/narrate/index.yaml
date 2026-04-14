@@ -1,0 +1,27 @@
+# /narrate — Fiction-mechanics-fiction primitive
+# The foundational atom underneath /braunstein and /improvise.
+# PRD: FR-4
+
+name: narrate
+display_name: Narrate
+description: >
+  When a mechanic fires, generate the "new fiction" that flows from it.
+  Implements the PbtA-derived fiction-mechanics-fiction loop at the tooling level.
+  One-shot by default; callable as a library primitive by other skills.
+type: one-shot
+domain: design
+construct: arneson
+
+flags:
+  - name: mechanic
+    type: string
+    required: true
+    description: "Mechanic outcome to narrate (e.g., 'threshold_roll: success')"
+  - name: game-state
+    type: string
+    required: true
+    description: "Path to game-state YAML"
+  - name: context
+    type: string
+    required: false
+    description: "Additional scene context for grounding"

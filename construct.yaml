@@ -1,0 +1,82 @@
+# construct-arneson v1
+# The narrative-generation and fiction-instrumenting half of a design-and-play workbench.
+# Pairs with construct-gygax v3 via grimoire-level composition.
+#
+# References: grimoires/loa/prd.md, grimoires/loa/sdd.md (esp. Appendix 11.A)
+# Principle: standalone-plus-composable. Works without Gygax; amplified by Gygax.
+
+schema_version: 3
+slug: arneson
+name: construct-arneson
+version: 1.0.0
+type: skill-pack
+domain: design
+
+identity:
+  prose: identity/ARNESON.md
+  persona: identity/persona.yaml
+  expertise: identity/expertise.yaml
+  refusals: identity/refusals.yaml
+
+quick_start:
+  command: /braunstein
+  description: "Start a live playtest session with an archetype from the cabal."
+
+skills:
+  - braunstein    # flagship: live playtest, archetype-as-character
+  - voice         # NPC workshop
+  - scene         # scene generator
+  - narrate       # fiction-mechanics-fiction primitive
+  - improvise     # inverse of braunstein — Arneson GMs, user plays PC
+  - arneson       # status dashboard (read-only)
+  - fragment      # setting material generator
+  - distill       # session compressor (composition glue)
+
+composition:
+  siblings:
+    - slug: gygax
+      required: false   # standalone-plus-composable
+      minimum_version: "3.0.0"
+      read_paths:
+        - grimoires/gygax/game-state/
+        - identity/persona.yaml             # archetype SSOT (when present)
+        - identity/expertise.yaml           # archetype SSOT (when present)
+        - skills/cabal/resources/archetypes.yaml
+        - skills/lore/resources/
+      detection_probe:
+        path: grimoires/gygax/game-state/
+        probe_type: directory_exists
+  fallbacks:
+    archetypes: resources/archetypes-fallback/
+
+schemas:
+  - schemas/experiential_intent.schema.yaml
+  - schemas/voice-base.schema.yaml
+  - schemas/voice-archetype.schema.yaml
+  - schemas/voice-npc.schema.yaml
+  - schemas/voice-pc.schema.yaml
+  - schemas/session-events.schema.yaml
+  - schemas/digest.schema.yaml
+
+output_paths:
+  grimoire_root: grimoires/arneson/
+  sessions: grimoires/arneson/sessions/
+  voices: grimoires/arneson/voices/
+  voices_archetypes: grimoires/arneson/voices/archetypes/
+  voices_npcs: grimoires/arneson/voices/npcs/
+  voices_pcs: grimoires/arneson/voices/pcs/
+  scenes: grimoires/arneson/scenes/
+  fragments: grimoires/arneson/fragments/
+  digests: grimoires/arneson/digests/
+  safety_log: grimoires/arneson/safety-findings.md
+  changelog: grimoires/arneson/changelog/
+
+examples:
+  reference_fixture: examples/synthetic-fixture/
+
+metadata:
+  created_at: 2026-04-13
+  inspired_by:
+    - "Dave Arneson, Blackmoor (1971) — campaign structure, improvisational GMing, dungeon crawl"
+    - "Braunstein (1969) — the proto-RPG that led directly to D&D"
+    - "Powered by the Apocalypse — fiction-mechanics-fiction loop"
