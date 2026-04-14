@@ -1,0 +1,36 @@
+# /improvise — GM-side design test (inverse of /braunstein)
+# Arneson GMs; user plays a PC. Tests the GM-facing side of a design.
+# PRD: FR-5
+
+name: improvise
+display_name: Improvise
+description: >
+  Arneson GMs, user plays a PC. The inverse of /braunstein — for testing the
+  GM-facing side of a design. Same sidecar + safety infrastructure.
+type: session
+domain: design
+construct: arneson
+
+flags:
+  - name: pc
+    type: string
+    required: false
+    description: "PC id (loads existing or creates new voice-pc state)"
+  - name: game-state
+    type: string
+    required: true
+    description: "Path to game-state YAML"
+  - name: dice
+    type: enum
+    values: [user, arneson, hybrid]
+    default: user
+
+output:
+  transcript: "grimoires/arneson/sessions/{date}-improvise-{pc}.md"
+  sidecar: "grimoires/arneson/sessions/{date}-improvise-{pc}.events.yaml"
+
+safety:
+  agreement_required: true
+  pause_command: "/pause"
+  x_card_command: "/x-card"
+  resume_command: "/resume"

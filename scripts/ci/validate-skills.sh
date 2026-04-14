@@ -14,11 +14,11 @@ IMPLEMENTED_SKILLS=(
   narrate       # Sprint 4
   voice         # Sprint 4
   scene         # Sprint 4
+  improvise     # Sprint 5
 )
 
 # Skills declared in construct.yaml but not yet implemented (no failure — just note)
 DECLARED_NOT_IMPLEMENTED=(
-  improvise     # Sprint 5
   arneson       # Sprint 6
   fragment      # Sprint 6
 )
