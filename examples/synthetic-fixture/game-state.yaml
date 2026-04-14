@@ -1,5 +1,5 @@
 # Threshold — synthetic reference game-state for construct-arneson fixtures.
-# Authored 2026-04-13. HEKATE-free. Public-shippable.
+# Authored 2026-04-13.
 #
 # This file uses the two-axis intent schema owned jointly by Gygax (mechanical_intent)
 # and Arneson (experiential_intent). See schemas/experiential_intent.schema.yaml.

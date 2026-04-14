@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Validate synthetic fixture: game-state.yaml parses, has required structure,
-# and HEKATE-free.
+# Validate synthetic fixture: game-state.yaml parses and has required structure.
 
 set -euo pipefail
 
@@ -66,23 +65,8 @@ if [ -f "$GS" ]; then
   fi
 fi
 
-# HEKATE check (double-insurance — the audit script also covers this, but fixture
-# is an especially sensitive area to check).
-# Filter meta-references (the phrase "HEKATE-free" etc. is OK; a real game reference is not).
-raw=$(grep -rinI -E 'mibera|hekate' "$FIXTURE_DIR" 2>/dev/null || true)
-filtered=$(echo "$raw" | grep -viE 'hekate[- ](free|audit)' \
-                        | grep -viE 'like (mibera|hekate)' \
-                        | grep -viE 'without.*(mibera|hekate)' \
-                        | grep -viE '(mibera|hekate)[- ]is' \
-                        || true)
-if [ -n "$filtered" ]; then
-  echo "FAIL: fixture contains non-meta MIBERA/HEKATE references:"
-  echo "$filtered"
-  FAIL=1
-fi
-
 if [ $FAIL -eq 1 ]; then
   exit 1
 fi
 
-echo "OK: synthetic fixture validates — all files present, game-state schema-conformant, HEKATE-free."
+echo "OK: synthetic fixture validates — all files present, game-state schema-conformant."

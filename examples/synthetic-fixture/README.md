@@ -5,8 +5,7 @@ A minimal synthetic TTRPG authored for construct-arneson. Exercises all 8 skills
 ## Why This Exists
 
 construct-arneson needs a reference game for acceptance tests, demos, and CI.
-Using a real published game raises IP issues. Using a private game (like MIBERA: HEKATE)
-breaks the "Gygax-community-from-day-one" shippability commitment (see NOTES.md decision log).
+Using a real published game raises IP issues, so Arneson ships its own.
 
 **Threshold** is a two-stat folk-horror microgame invented for this purpose.
 Novel enough to exercise tradition-fallback mechanics. Minimal enough to read in one

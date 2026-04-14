@@ -19,7 +19,7 @@ Versioning follows SemVer: MAJOR.MINOR.PATCH.
 - **Identity layer**: `ARNESON.md` (prose identity), `persona.yaml`, `expertise.yaml`, `refusals.yaml` (7 load-bearing refusals with vocabulary_to_avoid)
 - **7 schemas**: experiential_intent (Arneson-owned axis), voice-base + 3 extensions (archetype/npc/pc), session-events (admissibility infrastructure), digest
 - **Archetype fallback bundle**: 9 archetypes for standalone mode (newcomer, optimizer, chaos-agent, storyteller, rules-lawyer, explorer, min-maxer, casual, contrarian)
-- **Synthetic reference fixture**: Threshold (folk-horror microgame, HEKATE-free) with tradition lore + 4 scene seeds
+- **Synthetic reference fixture**: Threshold (folk-horror microgame) with tradition lore + 4 scene seeds
 - **Grimoire structure**: `grimoires/arneson/` with sessions, voices, scenes, fragments, digests, safety-findings, changelog
 - **CI workflow**: two-matrix build (arneson-alone + arneson-with-gygax), 6 validation scripts
 - **Sprint 0 prototype**: hand-authored `/braunstein` turn proving fiction quality before schema commitment

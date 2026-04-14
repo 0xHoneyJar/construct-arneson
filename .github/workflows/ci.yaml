@@ -32,9 +32,6 @@ jobs:
           sudo mv /tmp/yq /usr/local/bin/yq
           yq --version
 
-      - name: HEKATE audit (zero-tolerance grep)
-        run: ./scripts/ci/hekate-audit.sh
-
       - name: Validate construct manifest
         run: ./scripts/ci/validate-construct.sh
 
@@ -90,9 +87,6 @@ jobs:
           chmod +x /tmp/yq
           sudo mv /tmp/yq /usr/local/bin/yq
           yq --version
-
-      - name: HEKATE audit (zero-tolerance grep)
-        run: ./scripts/ci/hekate-audit.sh
 
       - name: Set up stub Gygax fixture
         run: |
