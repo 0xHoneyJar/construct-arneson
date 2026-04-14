@@ -13,6 +13,12 @@ grimoires/loa/analytics/
 .claude/settings.local.json
 .claude/.mount-lock
 
+# Local task tracking state
+.beads/
+
+# Framework version metadata
+.loa-version.json
+
 # LOA SUBMODULE SYMLINKS (added by mount-submodule.sh)
 # Symlinks to .loa/ submodule — recreated on mount
 .claude/scripts

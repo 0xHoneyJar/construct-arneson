@@ -1,0 +1,18 @@
+# Collapse framework internals in GitHub's file browser.
+# These are needed for the construct to work but aren't what visitors come to see.
+
+# Loa framework config and plumbing
+.claude/**          linguist-generated
+.loa                linguist-generated
+.loa.config.yaml    linguist-generated
+.gitmodules         linguist-generated
+CLAUDE.md           linguist-generated
+
+# Planning docs (PRD, SDD, sprints, reviews) — valuable but not the product
+grimoires/loa/**    linguist-generated
+
+# CI scripts
+scripts/**          linguist-generated
+
+# Beads task tracking
+.beads/**           linguist-generated
