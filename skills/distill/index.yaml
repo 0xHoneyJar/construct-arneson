@@ -1,0 +1,30 @@
+# /distill — Session compressor (composition glue)
+# Converts a /braunstein or /improvise session's prose + sidecar into a
+# Gygax-ingestible digest.
+#
+# PRD: FR-8 (composition glue)
+
+name: distill
+display_name: Distill
+description: >
+  Post-session skill. Reads a prose transcript + structured sidecar and produces
+  a compressed digest of design findings. The digest is both Gygax-ingestible
+  (when Gygax is installed) and self-describing (standalone-valuable).
+type: batch   # non-interactive; runs once on a session file
+domain: design
+construct: arneson
+
+flags:
+  - name: session
+    type: string
+    required: true
+    description: "Path to session transcript (.md) or sidecar (.events.yaml). If .md given, sibling .events.yaml is loaded automatically."
+
+output:
+  digest: "grimoires/arneson/digests/{source-session}.digest.yaml"
+
+composition:
+  produces_for_gygax:
+    - grimoires/arneson/digests/*.digest.yaml
+  consumed_by:
+    - "Gygax /cabal --from-session"

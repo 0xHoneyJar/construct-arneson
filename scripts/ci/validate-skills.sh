@@ -10,6 +10,7 @@ FAIL=0
 # Skills implemented so far (updated each sprint)
 IMPLEMENTED_SKILLS=(
   braunstein    # Sprint 2
+  distill       # Sprint 3
 )
 
 # Skills declared in construct.yaml but not yet implemented (no failure — just note)
@@ -20,7 +21,6 @@ DECLARED_NOT_IMPLEMENTED=(
   improvise     # Sprint 5
   arneson       # Sprint 6
   fragment      # Sprint 6
-  distill       # Sprint 3
 )
 
 for skill in "${IMPLEMENTED_SKILLS[@]}"; do
