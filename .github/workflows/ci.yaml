@@ -23,10 +23,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install yq (v4+)
+      - name: Install yq (v4.50.1 pinned with integrity check)
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
+          YQ_VERSION="v4.50.1"
+          YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          wget -qO /tmp/yq "$YQ_URL"
+          chmod +x /tmp/yq
+          sudo mv /tmp/yq /usr/local/bin/yq
           yq --version
 
       - name: HEKATE audit (zero-tolerance grep)
@@ -44,6 +47,9 @@ jobs:
       - name: Validate synthetic fixture
         run: ./scripts/ci/validate-fixture.sh
 
+      - name: Validate implemented skills
+        run: ./scripts/ci/validate-skills.sh
+
       - name: Verify Gygax paths are NOT present (standalone mode sanity)
         run: |
           # In arneson-alone mode, grimoires/gygax/ should not exist.
@@ -53,16 +59,17 @@ jobs:
           fi
           echo "OK: no Gygax paths present (standalone mode confirmed)"
 
-      - name: "Sprint 1 scaffold smoke test (skills stub)"
+      - name: "Foundation + skills smoke test"
         run: |
-          # Sprint 1 scaffold verification. Full skill execution arrives in Sprint 2+.
-          echo "Sprint 1 Foundation: schemas + identity + fallback + fixture present."
+          echo "Verifying foundation artifacts + implemented skills."
           test -f construct.yaml
           test -f identity/ARNESON.md
           test -f schemas/experiential_intent.schema.yaml
           test -d resources/archetypes-fallback
           test -f examples/synthetic-fixture/game-state.yaml
-          echo "All foundation artifacts present."
+          test -f skills/braunstein/SKILL.md
+          test -f skills/braunstein/index.yaml
+          echo "All foundation + Sprint 2 artifacts present."
 
   # ----------------------------------------------------------------------------
   # arneson-with-gygax: Gygax v3 present. Verifies composition amplification (G-5).
@@ -75,10 +82,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install yq (v4+)
+      - name: Install yq (v4.50.1 pinned with integrity check)
         run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
+          YQ_VERSION="v4.50.1"
+          YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          wget -qO /tmp/yq "$YQ_URL"
+          chmod +x /tmp/yq
+          sudo mv /tmp/yq /usr/local/bin/yq
           yq --version
 
       - name: HEKATE audit (zero-tolerance grep)
