@@ -1,0 +1,183 @@
+# schemas/digest.schema.yaml
+# Output format of /distill — the composition glue.
+# Must be both:
+#   (a) Gygax-ingestible (when Gygax installed, /cabal --from-session consumes this format)
+#   (b) Self-describing (standalone-valuable; readable by any YAML consumer)
+#
+# See SDD §3.2.7 and PRD FR-8.
+
+schema:
+  name: digest
+  version: 1
+  description: >
+    Compressed session findings. Produced by /distill from a session transcript + its sidecar.
+    Preserves the signal in the sidecar in a form Gygax analyzers can ingest directly.
+
+digest_preamble:
+  fields:
+    source_session:
+      type: string
+      required: true
+      description: "Relative path to the source transcript .md file."
+    source_sidecar:
+      type: string
+      required: true
+      description: "Relative path to the source .events.yaml file."
+    digested_at:
+      type: string
+      format: iso8601-datetime
+      required: true
+    digest_schema_version:
+      type: integer
+      required: true
+      description: "Bumped when digest schema makes breaking changes."
+    gygax_ingestible:
+      type: boolean
+      required: true
+      description: >
+        True if this digest's schema matches current Gygax /cabal --from-session contract.
+        False when /distill was run without Gygax installed (digest is still valid — just not
+        verified against a live consumer).
+    compatibility_note:
+      type: string
+      required: false
+      description: >
+        Explanation when gygax_ingestible is false, or when there are known schema drift
+        issues. Example: "Digest schema v1; Gygax v3 expects v1 — ingestible."
+    partial_session:
+      type: boolean
+      default: false
+      description: "True if source sidecar lacks session_end event (session crashed or was interrupted)."
+
+findings:
+  description: "The core extracted signal. Every field may be empty array; fields MUST all be present."
+
+  rule_invocations:
+    type: array
+    description: "Every time a rule fired during the session, grouped by rule."
+    items:
+      type: object
+      fields:
+        rule_ref: {type: string, description: "Game-state mechanic reference."}
+        invocation_count: {type: integer}
+        contexts:
+          type: array
+          items: {type: string}
+          description: "Scene or scene-frame references where this rule fired."
+        outcomes:
+          type: array
+          items:
+            type: object
+            fields:
+              raw_outcome: {type: string}
+              count: {type: integer}
+
+  rule_of_cool_overrides:
+    type: array
+    description: "Every rule that was bent for fiction during the session."
+    items:
+      type: object
+      fields:
+        rule_ref: {type: string}
+        count: {type: integer}
+        patterns:
+          type: array
+          items: {type: string}
+          description: "Free-text patterns about WHY the rule was ignored."
+
+  clarifying_questions:
+    type: array
+    description: "Questions surfaced during play about rules or mechanics."
+    items:
+      type: object
+      fields:
+        rule_or_mechanic_ref: {type: string}
+        question_text: {type: string}
+        frequency: {type: integer}
+        asker_profile:
+          type: object
+          fields:
+            user_count: {type: integer}
+            archetype_count: {type: integer}
+            pc_count: {type: integer}
+
+  signal_flags:
+    type: object
+    description: "Signals grouped by type."
+    fields:
+      confusion:
+        type: array
+        items:
+          type: object
+          fields:
+            text: {type: string}
+            scene_frame_ref: {type: string}
+            source: {type: enum, values: [user, arneson]}
+      friction: {type: array, items_shape: "same as confusion"}
+      bottleneck: {type: array, items_shape: "same as confusion"}
+      delight: {type: array, items_shape: "same as confusion"}
+      surprise: {type: array, items_shape: "same as confusion"}
+      boredom: {type: array, items_shape: "same as confusion"}
+
+  intent_conflicts:
+    type: array
+    description: "Tensions between mechanical and experiential intent observed during session."
+    items:
+      type: object
+      fields:
+        mechanic_ref: {type: string}
+        conflict_description: {type: string}
+        resolution: {type: enum, values: [preserved_mechanical, user_arbitrated, flagged_for_review]}
+
+  dead_design_space:
+    type: array
+    description: >
+      Safety triggers, surfaced as design findings.
+      (Per teammate feedback 2026-04-13 — NOTES.md.)
+      When a safety tool fired, the game-state pushed into a region this table cannot render.
+      That's a design constraint, not only a social event.
+    items:
+      type: object
+      fields:
+        content_category: {type: string}
+        trigger_type: {type: enum, values: [x_card, line, veil, script_change_pause]}
+        count: {type: integer}
+        game_state_region:
+          type: string
+          description: "The game-state area the session was in when the trigger fired."
+
+  experiential_intent_observations:
+    type: array
+    description: "How well experiential_intent landed during the session."
+    items:
+      type: object
+      fields:
+        mechanic_or_scene_ref: {type: string}
+        experiential_intent_declared: {type: string}
+        observed_resonance:
+          type: enum
+          values: [aligned, misaligned, ambiguous]
+        notes: {type: string}
+
+archetype_memory_updates:
+  type: array
+  description: >
+    What the archetype instance learned this session — candidate entries for
+    voice-archetype.memory_slots. Applied after designer review.
+  items:
+    type: object
+    fields:
+      archetype_ref: {type: string}
+      candidate_memory:
+        type: object
+        fields:
+          slot_id: {type: string}
+          content: {type: string}
+          retention_priority: {type: enum, values: [high, medium, low]}
+      applied: {type: boolean, default: false, description: "True after designer confirms write-back."}
+
+validation_rules:
+  - "digest_preamble.source_session and source_sidecar must reference files that exist at digest creation time"
+  - "digest_schema_version must be an integer (currently 1 for v1)"
+  - "When gygax_ingestible is false, compatibility_note MUST be populated"
+  - "All findings fields MUST be present, even if empty array — consumers expect the key to exist"

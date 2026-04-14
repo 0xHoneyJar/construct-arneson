@@ -1,0 +1,67 @@
+# schemas/voice-pc.schema.yaml
+# Extends voice-base. PC voices used during /improvise mode (Arneson GMs, user plays a PC).
+# See SDD §3.2.5 and PRD FR-5, FR-13.
+
+schema:
+  name: voice-pc
+  version: 1
+  extends: voice-base
+  description: >
+    PC voice state for /improvise sessions. Includes player-consent metadata that
+    Arneson honors when GMing. Distinct from voice-npc because PCs carry consent
+    boundaries and are typically played by the designer themselves.
+
+additional_fields:
+  pc_ref:
+    type: string
+    required: true
+    description: "Stable id; unique within voices/pcs/."
+
+  pc_class:
+    type: string
+    required: false
+    description: >
+      Class, role, archetype, or tradition-equivalent identifier.
+      Free text — this construct does not enforce a class taxonomy (that belongs to the game).
+
+  player_consent_metadata:
+    type: object
+    required: true
+    description: >
+      Consent boundaries that Arneson honors when narrating around this PC.
+      Loaded into session safety agreement at /improvise open.
+    fields:
+      lines:
+        type: array
+        items: {type: string}
+        description: "Topics that must not appear in the fiction at all."
+      veils:
+        type: array
+        items: {type: string}
+        description: "Topics that must be handled off-stage / implied-not-shown."
+      x_card_active:
+        type: boolean
+        default: true
+        description: "Whether /x-card is honored during sessions featuring this PC. Default true; only set false with explicit user confirmation."
+
+  session_carryover:
+    type: object
+    required: false
+    description: "PC state that carries between /improvise sessions."
+    fields:
+      unresolved_threads:
+        type: array
+        items: {type: string}
+        description: "Narrative threads left open at last session exit."
+      recent_scars:
+        type: array
+        items:
+          type: object
+          fields:
+            description: {type: string}
+            session_source: {type: string}
+
+validation_rules:
+  - "pc_ref must match filename stem"
+  - "player_consent_metadata.lines and veils may be empty arrays but the fields must exist"
+  - "When x_card_active is false, arneson logs a warning at session open"

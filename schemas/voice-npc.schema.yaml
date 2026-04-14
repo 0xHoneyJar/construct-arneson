@@ -1,0 +1,64 @@
+# schemas/voice-npc.schema.yaml
+# Extends voice-base. NPCs workshopped via /voice persist here.
+# See SDD §3.2.4 and PRD FR-2, FR-13.
+
+schema:
+  name: voice-npc
+  version: 1
+  extends: voice-base
+  description: >
+    NPC workshop state. Authored or iterated via /voice sessions.
+    May appear inside /braunstein or /improvise sessions when the designer invokes them.
+
+additional_fields:
+  npc_ref:
+    type: string
+    required: true
+    description: "Stable id; unique within voices/npcs/."
+
+  location:
+    type: string
+    required: false
+    description: "Game-state location where this NPC is found. Free text; references a setting element."
+
+  faction:
+    type: string
+    required: false
+    description: "Faction affiliation if relevant in this game's tradition."
+
+  role:
+    type: string
+    required: false
+    description: "In-game role (shopkeeper, oracle, adversary, etc.) Free text."
+
+  workshop_state:
+    type: object
+    required: true
+    description: "Tracks how developed this NPC is across iterative /voice sessions."
+    fields:
+      stage:
+        type: enum
+        values:
+          - drafting       # first few sessions; voice is still finding itself
+          - refining       # voice is recognizable; fine-tuning specifics
+          - locked         # designer has marked this NPC as done; no further drift expected
+        default: drafting
+      iteration_count:
+        type: integer
+        default: 0
+        description: "Number of /voice sessions this NPC has been through."
+      last_workshop_session:
+        type: string
+        required: false
+        description: "Filename of most recent session that featured this NPC."
+
+  tradition_affinity:
+    type: string
+    required: false
+    description: >
+      Tradition this NPC was primarily developed in. Used to flag when the NPC
+      is being invoked in a different tradition than they were written for.
+
+validation_rules:
+  - "npc_ref must match filename stem"
+  - "workshop_state.stage 'locked' implies iteration_count >= 3 (informal convention)"

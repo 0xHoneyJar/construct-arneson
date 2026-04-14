@@ -1,0 +1,99 @@
+# schemas/voice-base.schema.yaml
+# Shared voice fields. Extended by voice-archetype, voice-npc, voice-pc schemas.
+# See SDD §3.2.2 and PRD FR-13.
+
+schema:
+  name: voice-base
+  version: 1
+  description: "Common fields for any Arneson voice — archetype, NPC, or PC."
+
+fields:
+  voice_id:
+    type: string
+    required: true
+    description: "Stable id; matches filename stem."
+
+  display_name:
+    type: string
+    required: true
+    description: "Human-readable name for use in prose."
+
+  speech_patterns:
+    type: object
+    required: true
+    fields:
+      sentence_length:
+        type: enum
+        values: [terse, clipped, varied, verbose, rambling]
+        description: "Baseline sentence shape."
+      vocabulary_register:
+        type: enum
+        values: [formal, colloquial, archaic, technical, mythic, intimate]
+      distinctive_markers:
+        type: array
+        items: {type: string}
+        description: "Verbal tics, catchphrases, characteristic patterns."
+
+  reaction_tempo:
+    type: enum
+    required: true
+    values:
+      - immediate          # responds before thinking
+      - pause-then-respond # takes a beat, then responds
+      - slow-burn          # accumulates and releases
+      - interruptive       # cuts in, does not wait
+    description: "How this voice handles turn-timing."
+
+  emotional_register:
+    type: object
+    required: true
+    fields:
+      baseline:
+        type: string
+        description: "Default emotional state."
+      triggers:
+        type: array
+        items:
+          type: object
+          fields:
+            stimulus: {type: string}
+            response: {type: string}
+        description: "Named stimulus → characteristic response pairs."
+
+  memory_slots:
+    type: array
+    required: false
+    items:
+      type: object
+      fields:
+        slot_id: {type: string}
+        content: {type: string}
+        session_source: {type: string, description: "Which session introduced this memory."}
+        retention_priority: {type: enum, values: [high, medium, low]}
+    description: "Explicit memory items this voice retains across sessions."
+
+  known_facts:
+    type: array
+    required: false
+    items:
+      type: object
+      fields:
+        fact: {type: string}
+        source: {type: string, description: "Where the voice learned this (game-state field, prior session, etc.)"}
+        confidence: {type: enum, values: [certain, believed, rumored]}
+    description: "What the voice knows, and how confidently."
+
+  created_at:
+    type: string
+    format: iso8601-date
+    required: true
+
+  updated_at:
+    type: string
+    format: iso8601-date
+    required: true
+
+validation_rules:
+  - "voice_id must be unique within its directory (voices/archetypes, voices/npcs, voices/pcs)"
+  - "voice_id must match filename stem (newcomer.yaml → voice_id: newcomer)"
+  - "speech_patterns.distinctive_markers must contain at least 1 entry (otherwise this voice is indistinct)"

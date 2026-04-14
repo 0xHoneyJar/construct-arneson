@@ -1,0 +1,94 @@
+# Tradition lore for Threshold / folk-horror-minimalist.
+# Consumed by Arneson when present; when absent, Arneson enters tradition-fallback mode.
+#
+# This file is loaded under the key 'folk-horror-minimalist' and matches game-state.game.tradition.
+
+tradition:
+  id: folk-horror-minimalist
+  display_name: "Folk Horror (Minimalist)"
+  one_line: "Small community. Something present. Nothing explained."
+
+aesthetic_notes: >
+  Folk horror as a tradition is not about monsters. It is about what a community
+  knows-and-does-not-say. The horror arrives because the thing that is wrong is
+  the thing that has always been there. Characters do not encounter evil. They
+  come to understand something that others in the community understood already.
+
+  Minimalist: no explicit lore dumps, no named cosmology, no systemic metaphysics.
+  The fiction accumulates through small observations. What the community permits
+  and refuses is the worldbuilding.
+
+vocabulary:
+  # Words and phrases that feel tradition-appropriate. Arneson may lean into these.
+  grounded_terms:
+    - "the well"
+    - "the water"
+    - "the village"
+    - "the edge"
+    - "the elder"
+    - "the children" (careful — children do not become victims in this tradition unless the designer has confirmed it)
+    - "the custom"
+    - "the quiet"
+
+  avoid:
+    # Terms that drift the tradition toward generic fantasy or horror.
+    - "the dungeon"
+    - "the crypt"
+    - "monster" / "creature"
+    - "demon" / "devil"
+    - "magic" (as a categorizable system)
+    - "the gods" (unless a specific folk tradition has been authored)
+    - "the ancient ones" / "the old ones" (Lovecraftian drift)
+
+pacing_norms:
+  default_pacing: languid
+  rushed_pacing: "Permitted only during crises — a safety trigger, a communal fracture, an imminent bodily harm. Not the default register."
+  silence_is_productive: "Long pauses carry meaning. Arneson may narrate silence as an event."
+
+experiential_intent_extensions:
+  # Additional tone values specific to folk-horror tradition.
+  tone_values_additional:
+    - hushed              # quieter than intimate; speech that does not want to be overheard
+    - communal-strained   # the village as a whole is about to fracture; not personal
+    - customary           # what is being done is what has always been done; the strangeness is the continuity
+
+  register_values_additional:
+    - whispered
+    - customary-grammar   # speech patterns that the village has its own version of
+
+  notes_suggested_structure: >
+    When a designer flags a mechanic with folk-horror experiential_intent, they may
+    additionally note:
+    - "what the village does not name"
+    - "what the custom requires"
+    - "what the silence does"
+
+scene_framing_norms:
+  - "Scenes open with location and weather, not with NPC names."
+  - "NPCs are referenced by role first ('the elder,' 'the one with the jar') before by name."
+  - "First-time use of a name is an event; repeated use is not."
+  - "Interior thought is rare; perception is the primary interior channel."
+
+safety_considerations:
+  # Folk-horror tradition has specific content concerns.
+  recommended_default_veils:
+    - body-horror-extremes
+    - harm-to-children
+    - sexual-violence
+  flag_at_session_open: >
+    "This tradition touches on communal tension, uncanny perception, and quiet dread.
+    Are there specific Lines or Veils you'd like me to honor for this session?"
+
+example_scene_opening_tone:
+  description: "If Arneson is authoring a scene opening in this tradition, this is the target register."
+  example: >
+    "The well is stone, lip-high. Grey with the particular grey of evening stone.
+    Mara is standing a few paces back — not drawing, not leaving. Iven is by the
+    low wall. The third one is close to the path, as if he has only just arrived,
+    or is only just about to leave."
+
+authoring_notes: >
+  When the tradition file exists, Arneson uses it. When absent, Arneson enters
+  tradition-fallback (FR-12) and asks the user whether to improvise from structure.
+  The banner at that moment should name what's missing: "I don't have a lore file
+  for folk-horror-minimalist. I'll improvise from the game-state. Okay?"
