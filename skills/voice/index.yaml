@@ -1,0 +1,32 @@
+# /voice — NPC workshop
+# Embody a specific NPC for iterative voice development.
+# PRD: FR-2
+
+name: voice
+display_name: Voice
+description: >
+  Embody a specific NPC for workshop-style dialogue. Arneson stays in character
+  until the session ends. NPC voice state evolves and persists across sessions.
+type: session
+domain: design
+construct: arneson
+
+flags:
+  - name: npc
+    type: string
+    required: true
+    description: "NPC id (loads existing or creates new)"
+  - name: game-state
+    type: string
+    required: false
+    description: "Path to game-state YAML (optional — voice workshops can run without game-state)"
+
+output:
+  voice_state: "grimoires/arneson/voices/npcs/{npc}.yaml"
+
+safety:
+  agreement_required: true
+  pause_command: "/pause"
+  x_card_command: "/x-card"
+  resume_command: "/resume"
+  break_command: "/break"

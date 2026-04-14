@@ -1,0 +1,4 @@
+Sprint 4 (Primitives — /narrate, /voice, /scene / M3) COMPLETED
+Implemented: 2026-04-13 | Reviewed: All good | Audited: APPROVED
+Deliverables: skills/{narrate,voice,scene}/SKILL.md + index.yaml. FR-2, FR-3, FR-4 addressed.
+Next: Sprint 5 (GM-Side — /improvise)
