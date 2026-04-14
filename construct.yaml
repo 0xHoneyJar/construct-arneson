@@ -8,7 +8,7 @@
 schema_version: 3
 slug: arneson
 name: construct-arneson
-version: 1.0.0-alpha
+version: 1.0.0
 type: skill-pack
 domain: design
 
