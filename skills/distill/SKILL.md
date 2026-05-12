@@ -150,3 +150,40 @@ Findings summary:
 **Multiple scene_frames:** Group findings by scene. Each finding retains its `scene_frame_ref`.
 
 **Events referencing unknown game_state_refs:** Preserve the refs as-is. Don't validate them against the game-state (that's Gygax's job). If refs are malformed, note it but don't fail.
+
+---
+
+## Consumer-Specific Output: freeside-characters
+
+When the session's domain is `character-voice` and the consumer is `freeside-characters`
+(detected from `construct.yaml` `domains.character-voice.consumers`), `/distill` produces
+**persona.md edit recommendations** alongside the standard digest.
+
+### Edit Recommendation Format
+
+For each finding, map to a specific persona.md section edit:
+
+```
+Voice Drift: [persona] used [wrong register] ([whose] register)
+  -> Edit: [section in persona.md], add to DON'T list
+  -> File: apps/character-[id]/persona.md
+
+Canon Match: "[exact line]" -- clean hit on [win/lose/draw] register
+  -> Capture as exemplar: apps/character-[id]/exemplars/[name].md
+
+Engagement Gap: No response pattern for [topic]
+  -> Edit: ### decline patterns, add in-voice decline
+  -> Edit: TOOL USE section in system prompt template
+
+Anti-Pattern Hit: [pattern] detected in output
+  -> Edit: DON'T section in system prompt template
+
+Meta-Interaction Break: [type] handled in assistant-mode
+  -> Edit: moments+modes, add meta-handling note for [type]
+```
+
+Each recommendation references:
+- The specific persona.md section to edit
+- What to add/change
+- Why (traced to the sidecar event)
+- Both layers if the edit affects the system prompt template (per adapter sync contract)
