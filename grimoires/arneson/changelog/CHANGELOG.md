@@ -3,6 +3,24 @@
 All notable changes to this construct are documented here. Follows [Keep a Changelog](https://keepachangelog.com/).
 Versioning follows SemVer: MAJOR.MINOR.PATCH.
 
+## [3.1.0] — 2026-05-12 (v3.1 — Meta-Interaction Protocol)
+
+### Added
+- **Meta-interaction protocol** (`protocols/meta-interactions.md`): 10-type taxonomy for handling meta-questions (identity, authorship, frame-break, existential, etc.). Core principle: the persona has no meta-layer. They don't know they're a persona.
+- **`meta_voice` field** in voice-base: optional per-persona overrides for each meta-inquiry type. In-voice response seeds, not instructions.
+- **Akane meta_voice fixture**: 10 in-character overrides ("i'm Akane. what kind of question is that.")
+
+### Changed
+- `persona-hosting.md`: loads meta-interaction config alongside anti-patterns and engagement
+- `anti-patterns.md`: identity-leak entry cross-references meta-interactions protocol
+
+### Design Principle (new for v3.1)
+- **No meta-layer**: personas don't know they're personas. Every meta-question routes through personality.
+
+> Source: [#5](https://github.com/0xHoneyJar/construct-arneson/issues/5)
+
+---
+
 ## [3.0.0] — 2026-05-12 (v3 — Humanness Layer)
 
 ### Added
