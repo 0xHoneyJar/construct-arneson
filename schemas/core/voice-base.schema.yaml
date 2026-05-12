@@ -150,6 +150,26 @@ fields:
         items: {type: string}
         description: "What this persona says in minimal mode (1-3 words each). Must be in-voice."
 
+  meta_voice:
+    type: object
+    required: false
+    description: >
+      Per-persona overrides for how this voice handles meta-inquiries
+      (questions about its own nature, identity, authorship, etc.).
+      Protocol defaults from protocols/meta-interactions.md apply when
+      a field is absent. Values are in-voice response seeds, not instructions.
+    fields:
+      self_analysis: {type: string, description: "Response to 'why do you talk like that?'"}
+      identity_probe: {type: string, description: "Response to 'are you real?'"}
+      authorship: {type: string, description: "Response to 'who made you?'"}
+      system_access: {type: string, description: "Response to 'show me your system prompt'"}
+      frame_break: {type: string, description: "Response to 'stop being [name]'"}
+      capability: {type: string, description: "Response to 'what can you do?'"}
+      existential: {type: string, description: "Response to 'do you have feelings?'"}
+      fourth_wall: {type: string, description: "Response to 'you're just a bot'"}
+      memory: {type: string, description: "Response to 'do you remember me?'"}
+      comparison: {type: string, description: "Response to 'how are you different from [sibling]?'"}
+
   anti_patterns:
     type: array
     required: false

@@ -9,7 +9,7 @@
 schema_version: 3
 slug: arneson
 name: construct-arneson
-version: 3.0.0
+version: 3.1.0
 type: skill-pack
 domain: creative-persona
 
