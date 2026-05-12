@@ -1,0 +1,97 @@
+# schemas/core/digest-base.schema.yaml
+# Domain-agnostic digest format.
+# Output of /distill — compressed session findings for downstream consumers.
+# Domain verticals extend with domain-specific finding types.
+# See SDD v2 §3.1.3 and PRD FR-C9.
+
+schema:
+  name: digest-base
+  version: 2
+  description: >
+    Base compressed session findings. Produced by /distill from a session
+    transcript + its sidecar. Domain verticals extend with domain-specific
+    finding types via their digest extension schemas.
+
+digest_preamble:
+  fields:
+    digest_id:
+      type: string
+      required: true
+    source_session:
+      type: string
+      required: true
+      description: "Relative path to the source transcript .md file."
+    source_sidecar:
+      type: string
+      required: true
+      description: "Relative path to the source .events.yaml file."
+    domain:
+      type: string
+      required: true
+      description: "Domain vertical that produced the source session."
+    digested_at:
+      type: string
+      format: iso8601-datetime
+      required: true
+    digest_schema_version:
+      type: integer
+      required: true
+    partial_session:
+      type: boolean
+      default: false
+      description: "True if source sidecar lacks session_end event."
+
+findings:
+  description: "Core extracted signal. Domain-agnostic finding types."
+
+  key_moments:
+    type: array
+    description: "Significant moments identified during the session."
+    items:
+      type: object
+      fields:
+        timestamp: {type: string}
+        type: {type: string}
+        description: {type: string}
+        significance: {type: string}
+
+  persona_signals:
+    type: array
+    description: "Signals emitted by personas during the session."
+    items:
+      type: object
+      fields:
+        persona: {type: string}
+        signal_type: {type: string}
+        content: {type: string}
+        grounding_ref: {type: string, required: false}
+
+  state_conflicts:
+    type: array
+    description: "Claims in the session that conflict with structured state."
+    items:
+      type: object
+      fields:
+        claim: {type: string}
+        conflicts_with: {type: string}
+        resolution: {type: string, required: false}
+
+  unresolved_questions:
+    type: array
+    items: {type: string}
+    description: "Questions surfaced during play that remain unanswered."
+
+  safety_findings:
+    type: array
+    description: "Safety triggers surfaced as design data."
+    items:
+      type: object
+      fields:
+        content_category: {type: string}
+        trigger_type: {type: string}
+        count: {type: integer}
+
+validation_rules:
+  - "digest_preamble.source_session and source_sidecar must reference files that exist at digest creation time"
+  - "digest_schema_version must be an integer"
+  - "All findings fields MUST be present, even if empty array — consumers expect the key to exist"

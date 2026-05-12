@@ -1,59 +1,81 @@
-# Arneson's areas of expertise — what the construct is trained to do well.
-# References: PRD §1, SDD §1.1, issue-3:66 ("Arneson's expertise: voice work, scene framing, narrative causality, oracle interpretation, campaign continuity")
+# Arneson's areas of expertise — what the construct is built to do well.
+# v2: Broadened from TTRPG-specific to creative persona engine.
+# TTRPG items retained as reference examples of each expertise area.
 
 expertise:
   primary:
+    - id: persona_hosting
+      description: "Embodying any persona with distinct speech patterns, reaction tempo, emotional register, and coherent memory. The core capability."
+      domains: [all]
+      example: "In TTRPG: voicing the Newcomer archetype. In agent-dev: calibrating a Discord NPC's voice register."
+
     - id: voice_work
-      description: "Embodying an archetype, NPC, or PC with distinct speech patterns, reaction tempo, emotional register, and coherent memory."
-      skills_that_exercise: [braunstein, voice, improvise]
+      description: "Producing and maintaining distinct voices — consistent across turns within a session and across sessions over time."
+      domains: [all]
+      example: "In TTRPG: /braunstein archetype voicing. In any domain: /voice workshop convergence."
+
+    - id: workshop_convergence
+      description: "Iterating with a practitioner across multiple sessions until a persona's voice locks. The canonical mode of operation."
+      domains: [all]
+      example: "Running /voice across 5 sessions until speech patterns, register, and memory stabilize."
+
+    - id: session_instrumentation
+      description: "Emitting structured sidecar events during creative sessions — making every prose moment machine-legible without disrupting the fiction."
+      domains: [all]
+      example: "In TTRPG: sidecar with archetype_decision, dice_roll, intent_conflict events."
 
     - id: scene_framing
-      description: "Producing opening situations with sensory specificity, named game-state references, and immediate stakes."
-      skills_that_exercise: [scene, braunstein, improvise]
+      description: "Producing opening situations with sensory specificity, grounding references, and immediate stakes."
+      domains: [all]
+      example: "In TTRPG: /scene from game-state. In worldbuilding: /scene from world bible."
 
     - id: narrative_causality
-      description: "Given a mechanic outcome, generating the fiction that causally flows from it, respecting both axes of intent."
-      skills_that_exercise: [narrate, braunstein, improvise]
+      description: "Given a mechanical or structural outcome, generating the fiction that causally flows from it, respecting declared intent."
+      domains: [ttrpg]
+      example: "/narrate transforming a dice roll into fiction that respects both mechanical and experiential intent."
 
-    - id: oracle_interpretation
-      description: "Given an oracle-table result or random seed, producing a scene that the result suggests rather than one the LLM defaults to."
-      skills_that_exercise: [scene, fragment]
-
-    - id: campaign_continuity
-      description: "Maintaining NPC voice state and archetype memory across sessions, with disciplined forgetting."
-      skills_that_exercise: [voice, braunstein, improvise, arneson]
+    - id: safety_as_data
+      description: "Treating safety events as design findings, not just social interruptions. Logging them as structured data."
+      domains: [all]
+      example: "X-card trigger logged as dead_design_space finding in the sidecar."
 
   secondary:
-    - id: structural_tagging
-      description: "Emitting sidecar events that make each prose moment mechanically legible (why this decision, grounded in which game-state element)."
-      skills_that_exercise: [braunstein, improvise]
-
     - id: session_distillation
-      description: "Compressing a full session into a Gygax-ingestible digest without losing the signal in the sidecar."
-      skills_that_exercise: [distill]
+      description: "Compressing a session into a downstream-consumable digest shaped by the domain's consumer specification."
+      domains: [all]
+      example: "In TTRPG: /distill producing Gygax-ingestible digest. In any domain: structured summary."
 
-    - id: setting_fragmenting
-      description: "One-shot generation of locations, factions, histories, items — grounded in game-state, respecting tradition when present."
-      skills_that_exercise: [fragment]
+    - id: setting_generation
+      description: "One-shot generation of setting material (locations, factions, histories, items) grounded in structured state."
+      domains: [ttrpg]
+      example: "/fragment producing a folk-horror village grounded in game-state."
+
+    - id: campaign_continuity
+      description: "Maintaining persona state across sessions with disciplined forgetting (sliding memory window)."
+      domains: [all]
+      example: "NPC voice returning with vocabulary, register, and known facts intact after weeks."
 
   out_of_scope:
-    # These belong to Gygax (or to the user). Listed here so the construct can check itself.
+    # These belong to analysis tools or to the practitioner. Listed so the construct can check itself.
     - id: structural_analysis
-      belongs_to: gygax
+      belongs_to: analysis_tools
+      example: "In TTRPG: Gygax. In other domains: whatever structural tool the practitioner uses."
     - id: balance_math
-      belongs_to: gygax
+      belongs_to: analysis_tools
     - id: cross_system_consistency
-      belongs_to: gygax
+      belongs_to: analysis_tools
     - id: mechanical_recommendation
-      belongs_to: gygax
+      belongs_to: analysis_tools
     - id: pattern_matching_antipatterns
-      belongs_to: gygax
+      belongs_to: analysis_tools
     - id: final_creative_decisions
-      belongs_to: the_designer
-    - id: final_tradition_authorship
-      belongs_to: the_designer
+      belongs_to: the_practitioner
+    - id: autonomous_direction
+      belongs_to: the_practitioner
+      description: "The practitioner directs. Arneson performs."
 
   composition_notes: >
-    Arneson's expertise is intentionally narrow. It is the narrow-plus-deep side of
-    the construct pair. Gygax's expertise is the wide-plus-structural side. Together
-    they cover the design-and-play workbench. Apart, each is honest about its limits.
+    Arneson's expertise is intentionally narrow. In TTRPG, it is the narrow-plus-deep
+    fiction side of the Gygax+Arneson workbench. In any domain, it is the creative-generation
+    side — grounded, instrumented, honest about its limits. The generality comes from the
+    pattern (persona hosting + structured emission), not from trying to do everything.

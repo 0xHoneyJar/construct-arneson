@@ -45,26 +45,42 @@ if [ "$slug" != "arneson" ]; then
   FAIL=1
 fi
 
-# Verify 8 skills declared
-skill_count=$(yq eval '.skills | length' "$MANIFEST")
-if [ "$skill_count" != "8" ]; then
-  echo "FAIL: expected 8 skills in construct.yaml; got $skill_count"
+# Verify 3 core skills declared
+core_skill_count=$(yq eval '.skills | length' "$MANIFEST")
+if [ "$core_skill_count" != "3" ]; then
+  echo "FAIL: expected 3 core skills in construct.yaml; got $core_skill_count"
   FAIL=1
 fi
 
-# Verify expected skill names present
-EXPECTED_SKILLS=(braunstein voice scene narrate improvise arneson fragment distill)
-for skill in "${EXPECTED_SKILLS[@]}"; do
+# Verify core skill names
+EXPECTED_CORE_SKILLS=(arneson distill voice)
+for skill in "${EXPECTED_CORE_SKILLS[@]}"; do
   exists=$(yq eval ".skills[] | select(. == \"$skill\")" "$MANIFEST")
   if [ -z "$exists" ]; then
-    echo "FAIL: expected skill '$skill' not in construct.yaml"
+    echo "FAIL: expected core skill '$skill' not in construct.yaml"
     FAIL=1
   fi
 done
 
-# Verify each declared schema file exists
-schemas=$(yq eval '.schemas[]' "$MANIFEST")
-for schema_path in $schemas; do
+# Verify 5 TTRPG domain skills declared
+ttrpg_skill_count=$(yq eval '.domains.ttrpg.skills | length' "$MANIFEST")
+if [ "$ttrpg_skill_count" != "5" ]; then
+  echo "FAIL: expected 5 TTRPG domain skills; got $ttrpg_skill_count"
+  FAIL=1
+fi
+
+# Verify TTRPG skill names
+EXPECTED_TTRPG_SKILLS=(braunstein scene narrate improvise fragment)
+for skill in "${EXPECTED_TTRPG_SKILLS[@]}"; do
+  exists=$(yq eval ".domains.ttrpg.skills[] | select(. == \"$skill\")" "$MANIFEST")
+  if [ -z "$exists" ]; then
+    echo "FAIL: expected TTRPG skill '$skill' not in construct.yaml"
+    FAIL=1
+  fi
+done
+
+# Verify each declared schema file exists (core + ttrpg)
+for schema_path in $(yq eval '.schemas.core[]' "$MANIFEST") $(yq eval '.schemas.ttrpg[]' "$MANIFEST"); do
   if [ ! -f "$schema_path" ]; then
     echo "FAIL: declared schema $schema_path does not exist"
     FAIL=1
@@ -89,4 +105,4 @@ if [ $FAIL -eq 1 ]; then
   exit 1
 fi
 
-echo "OK: construct.yaml validates — all required fields present, 8 skills declared, schemas + identity files exist."
+echo "OK: construct.yaml validates — all required fields present, 3 core + 5 TTRPG skills declared, schemas + identity files exist."

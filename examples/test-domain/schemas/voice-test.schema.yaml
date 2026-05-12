@@ -1,0 +1,17 @@
+# Test domain voice extension — validates that voice-base can be extended by any domain.
+schema:
+  name: voice-test
+  version: 1
+  extends: voice-base
+  description: "Minimal test domain voice extension for extension story validation."
+
+additional_fields:
+  test_role:
+    type: string
+    required: true
+    description: "Role this test persona plays (interviewer, subject, observer)."
+  confidence_level:
+    type: enum
+    values: [low, medium, high]
+    required: false
+    default: medium

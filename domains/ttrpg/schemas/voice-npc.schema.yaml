@@ -31,26 +31,7 @@ additional_fields:
     required: false
     description: "In-game role (shopkeeper, oracle, adversary, etc.) Free text."
 
-  workshop_state:
-    type: object
-    required: true
-    description: "Tracks how developed this NPC is across iterative /voice sessions."
-    fields:
-      stage:
-        type: enum
-        values:
-          - drafting       # first few sessions; voice is still finding itself
-          - refining       # voice is recognizable; fine-tuning specifics
-          - locked         # designer has marked this NPC as done; no further drift expected
-        default: drafting
-      iteration_count:
-        type: integer
-        default: 0
-        description: "Number of /voice sessions this NPC has been through."
-      last_workshop_session:
-        type: string
-        required: false
-        description: "Filename of most recent session that featured this NPC."
+  # workshop_state: inherited from voice-base (v2). No local override needed.
 
   tradition_affinity:
     type: string

@@ -1,0 +1,133 @@
+# domains/ttrpg/schemas/digest-ttrpg.schema.yaml
+# TTRPG-specific digest extensions.
+# Extends schemas/core/digest-base.schema.yaml with TTRPG finding types.
+# See SDD v2 §3.2.3.
+
+schema:
+  name: digest-ttrpg
+  version: 2
+  extends: digest-base
+  description: >
+    TTRPG-specific digest findings. Preserves the signal in a form
+    Gygax analyzers can ingest directly via /cabal --from-session.
+
+preamble_extensions:
+  fields:
+    gygax_ingestible:
+      type: boolean
+      required: true
+      description: >
+        True if this digest matches current Gygax /cabal --from-session contract.
+        False when /distill was run without Gygax installed.
+    compatibility_note:
+      type: string
+      required: false
+      description: "Explanation when gygax_ingestible is false."
+
+ttrpg_findings:
+
+  rule_invocations:
+    type: array
+    description: "Every time a rule fired during the session, grouped by rule."
+    items:
+      type: object
+      fields:
+        rule_ref: {type: string}
+        invocation_count: {type: integer}
+        contexts:
+          type: array
+          items: {type: string}
+        outcomes:
+          type: array
+          items:
+            type: object
+            fields:
+              raw_outcome: {type: string}
+              count: {type: integer}
+
+  rule_of_cool_overrides:
+    type: array
+    description: "Every rule that was bent for fiction during the session."
+    items:
+      type: object
+      fields:
+        rule_ref: {type: string}
+        count: {type: integer}
+        patterns:
+          type: array
+          items: {type: string}
+
+  clarifying_questions:
+    type: array
+    items:
+      type: object
+      fields:
+        rule_or_mechanic_ref: {type: string}
+        question_text: {type: string}
+        frequency: {type: integer}
+        asker_profile:
+          type: object
+          fields:
+            user_count: {type: integer}
+            archetype_count: {type: integer}
+            pc_count: {type: integer}
+
+  signal_flags:
+    type: object
+    description: "Signals grouped by type."
+    fields:
+      confusion: {type: array, items_shape: "{text, scene_frame_ref, source}"}
+      friction: {type: array, items_shape: "same as confusion"}
+      bottleneck: {type: array, items_shape: "same as confusion"}
+      delight: {type: array, items_shape: "same as confusion"}
+      surprise: {type: array, items_shape: "same as confusion"}
+      boredom: {type: array, items_shape: "same as confusion"}
+
+  intent_conflicts:
+    type: array
+    items:
+      type: object
+      fields:
+        mechanic_ref: {type: string}
+        conflict_description: {type: string}
+        resolution: {type: enum, values: [preserved_mechanical, user_arbitrated, flagged_for_review]}
+
+  dead_design_space:
+    type: array
+    description: "Safety triggers surfaced as design findings."
+    items:
+      type: object
+      fields:
+        content_category: {type: string}
+        trigger_type: {type: enum, values: [x_card, line, veil, script_change_pause]}
+        count: {type: integer}
+        game_state_region: {type: string}
+
+  experiential_intent_observations:
+    type: array
+    items:
+      type: object
+      fields:
+        mechanic_or_scene_ref: {type: string}
+        experiential_intent_declared: {type: string}
+        observed_resonance: {type: enum, values: [aligned, misaligned, ambiguous]}
+        notes: {type: string}
+
+  archetype_memory_updates:
+    type: array
+    description: "What the archetype learned this session — candidates for voice-archetype.memory_slots."
+    items:
+      type: object
+      fields:
+        archetype_ref: {type: string}
+        candidate_memory:
+          type: object
+          fields:
+            slot_id: {type: string}
+            content: {type: string}
+            retention_priority: {type: enum, values: [high, medium, low]}
+        applied: {type: boolean, default: false}
+
+validation_rules:
+  - "When gygax_ingestible is false, compatibility_note MUST be populated"
+  - "All ttrpg_findings fields MUST be present, even if empty array"

@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-FALLBACK_DIR="resources/archetypes-fallback"
+FALLBACK_DIR="domains/ttrpg/resources/archetypes-fallback"
 
 EXPECTED_ARCHETYPES=(
   newcomer

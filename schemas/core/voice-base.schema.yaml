@@ -1,11 +1,11 @@
-# schemas/voice-base.schema.yaml
-# Shared voice fields. Extended by voice-archetype, voice-npc, voice-pc schemas.
-# See SDD §3.2.2 and PRD FR-13.
+# schemas/core/voice-base.schema.yaml
+# Domain-agnostic voice fields. Extended by domain-specific voice schemas.
+# See SDD v2 §3.1.1 and PRD FR-C1, FR-C8.
 
 schema:
   name: voice-base
-  version: 1
-  description: "Common fields for any Arneson voice — archetype, NPC, or PC."
+  version: 2
+  description: "Common fields for any Arneson voice — any domain, any persona type."
 
 fields:
   voice_id:
@@ -82,6 +82,40 @@ fields:
         source: {type: string, description: "Where the voice learned this (game-state field, prior session, etc.)"}
         confidence: {type: enum, values: [certain, believed, rumored]}
     description: "What the voice knows, and how confidently."
+
+  workshop_state:
+    type: object
+    required: false
+    description: >
+      Tracks workshop convergence for personas developed iteratively via /voice.
+      Not all voices go through workshop (e.g., archetypes loaded from definitions).
+      See FR-C8 (workshop-then-serialize pattern).
+    fields:
+      stage:
+        type: enum
+        values:
+          - drafting       # first few sessions; voice is still finding itself
+          - refining       # voice is recognizable; fine-tuning specifics
+          - locked         # practitioner has marked this voice as done; no further drift expected
+        default: drafting
+      iteration_count:
+        type: integer
+        default: 0
+        description: "Number of workshop sessions this voice has been through."
+      last_workshop_session:
+        type: string
+        required: false
+        description: "Filename of most recent session that featured this voice."
+      convergence_notes:
+        type: array
+        items: {type: string}
+        required: false
+        description: "Practitioner notes on what's converging or needs work."
+
+  grounding_state_path:
+    type: string
+    required: false
+    description: "Path to the structured state this voice grounds against."
 
   created_at:
     type: string

@@ -1,16 +1,17 @@
-# construct-arneson v1
-# The narrative-generation and fiction-instrumenting half of a design-and-play workbench.
-# Pairs with construct-gygax v3 via grimoire-level composition.
+# construct-arneson v2
+# A creative persona engine that hosts personas grounded in structured state
+# and emits structured data from creative sessions.
+# TTRPG design is the first and reference vertical, not the identity.
 #
-# References: grimoires/loa/prd.md, grimoires/loa/sdd.md (esp. Appendix 11.A)
+# References: grimoires/loa/prd.md (v2), grimoires/loa/sdd.md (v2)
 # Principle: standalone-plus-composable. Works without Gygax; amplified by Gygax.
 
 schema_version: 3
 slug: arneson
 name: construct-arneson
-version: 1.0.0
+version: 2.0.0
 type: skill-pack
-domain: design
+domain: creative-persona
 
 identity:
   prose: identity/ARNESON.md
@@ -22,15 +23,30 @@ quick_start:
   command: /braunstein
   description: "Start a live playtest session with an archetype from the cabal."
 
+# Core skills (domain-agnostic)
 skills:
-  - braunstein    # flagship: live playtest, archetype-as-character
-  - voice         # NPC workshop
-  - scene         # scene generator
-  - narrate       # fiction-mechanics-fiction primitive
-  - improvise     # inverse of braunstein — Arneson GMs, user plays PC
-  - arneson       # status dashboard (read-only)
-  - fragment      # setting material generator
-  - distill       # session compressor (composition glue)
+  - arneson       # status dashboard (domain-aware)
+  - distill       # session compressor (domain-aware)
+  - voice         # persona workshop (core, domain-parameterized)
+
+# Domain verticals
+domains:
+  ttrpg:
+    description: "TTRPG design — the reference implementation"
+    skills:
+      - braunstein    # flagship: live playtest, archetype-as-character
+      - scene         # scene generator
+      - narrate       # fiction-mechanics-fiction primitive
+      - improvise     # inverse of braunstein — Arneson GMs, user plays PC
+      - fragment      # setting material generator
+    schemas:
+      - domains/ttrpg/schemas/voice-archetype.schema.yaml
+      - domains/ttrpg/schemas/voice-npc.schema.yaml
+      - domains/ttrpg/schemas/voice-pc.schema.yaml
+      - domains/ttrpg/schemas/session-events-ttrpg.schema.yaml
+      - domains/ttrpg/schemas/digest-ttrpg.schema.yaml
+    resources:
+      archetypes_fallback: domains/ttrpg/resources/archetypes-fallback/
 
 composition:
   siblings:
@@ -39,24 +55,35 @@ composition:
       minimum_version: "3.0.0"
       read_paths:
         - grimoires/gygax/game-state/
-        - identity/persona.yaml             # archetype SSOT (when present)
-        - identity/expertise.yaml           # archetype SSOT (when present)
+        - identity/persona.yaml
+        - identity/expertise.yaml
         - skills/cabal/resources/archetypes.yaml
         - skills/lore/resources/
       detection_probe:
         path: grimoires/gygax/game-state/
         probe_type: directory_exists
   fallbacks:
-    archetypes: resources/archetypes-fallback/
+    archetypes: domains/ttrpg/resources/archetypes-fallback/
 
 schemas:
-  - schemas/experiential_intent.schema.yaml
-  - schemas/voice-base.schema.yaml
-  - schemas/voice-archetype.schema.yaml
-  - schemas/voice-npc.schema.yaml
-  - schemas/voice-pc.schema.yaml
-  - schemas/session-events.schema.yaml
-  - schemas/digest.schema.yaml
+  core:
+    - schemas/core/experiential_intent.schema.yaml
+    - schemas/core/voice-base.schema.yaml
+    - schemas/core/session-events-base.schema.yaml
+    - schemas/core/digest-base.schema.yaml
+    - schemas/core/safety.schema.yaml
+  ttrpg:
+    - domains/ttrpg/schemas/voice-archetype.schema.yaml
+    - domains/ttrpg/schemas/voice-npc.schema.yaml
+    - domains/ttrpg/schemas/voice-pc.schema.yaml
+    - domains/ttrpg/schemas/session-events-ttrpg.schema.yaml
+    - domains/ttrpg/schemas/digest-ttrpg.schema.yaml
+
+protocols:
+  - protocols/persona-hosting.md
+  - protocols/session-lifecycle.md
+  - protocols/safety-protocol.md
+  - protocols/workshop-convergence.md
 
 output_paths:
   grimoire_root: grimoires/arneson/
@@ -76,6 +103,7 @@ examples:
 
 metadata:
   created_at: 2026-04-13
+  updated_at: 2026-05-12
   inspired_by:
     - "Dave Arneson, Blackmoor (1971) — campaign structure, improvisational GMing, dungeon crawl"
     - "Braunstein (1969) — the proto-RPG that led directly to D&D"

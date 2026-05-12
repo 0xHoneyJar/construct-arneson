@@ -3,6 +3,47 @@
 All notable changes to this construct are documented here. Follows [Keep a Changelog](https://keepachangelog.com/).
 Versioning follows SemVer: MAJOR.MINOR.PATCH.
 
+## [2.0.0] — 2026-05-12 (v2 — Creative Persona Engine)
+
+### Changed
+- **Identity reframe**: Arneson is now a *creative persona engine*, not TTRPG-specific. Gygax-inversion retained as one contextual facet, not the defining identity. `ARNESON.md`, `persona.yaml`, `expertise.yaml`, `refusals.yaml` all updated.
+- **Domain broadened**: `construct.yaml` domain changed from `design` to `creative-persona`.
+- **construct.yaml v2**: Skills split into core (3) + domain-registered (5 TTRPG). New `domains:` section. Schemas split into `core` + `ttrpg`.
+
+### Added
+- **Core/vertical architecture**: Domain-agnostic core (`schemas/core/`, `protocols/`, core skills) + domain verticals (`domains/ttrpg/`).
+- **3 new core schemas**: `session-events-base` (domain-agnostic events), `digest-base` (domain-agnostic digest), `safety` (non-negotiable safety config).
+- **4 core protocols**: `persona-hosting.md`, `session-lifecycle.md`, `safety-protocol.md`, `workshop-convergence.md`.
+- **Domain extension interface**: Five-part contract (state, personas, events, resolution, consumer). Convention-based discovery via `domains/*/`.
+- **TTRPG reference vertical**: `domains/ttrpg/` with domain conventions doc, extension schemas (`session-events-ttrpg`, `digest-ttrpg`), 5 skills, fallback archetypes.
+- **Workshop-then-serialize pattern** (FR-C8): `workshop_state` field added to `voice-base` schema. Two valid shapes documented. Informed by arneson#2.
+- **Extension story**: `examples/test-domain/` with minimal domain (3 schemas, 1 skill, sample state + persona). CI validates zero-core-change constraint.
+- **Consumer-pattern guide** (`docs/CONSUMER-PATTERNS.md`): Distinguishes workshop tool vs doctrine reference shapes.
+- **Extension guide** (`docs/EXTENSION-GUIDE.md`): Step-by-step guide for adding new domains.
+- **Governance**: `CONTRIBUTING.md`, `SECURITY.md`.
+- **Three-matrix CI**: arneson-alone, arneson-with-gygax, extension-story.
+
+### Architecture
+- Core skills (domain-agnostic): `/arneson`, `/distill`, `/voice`
+- TTRPG skills (reference vertical): `/braunstein`, `/scene`, `/narrate`, `/improvise`, `/fragment`
+- `/voice` elevated to core (workshop convergence is domain-agnostic)
+- Gygax remains a sibling composition, not a domain
+- Base+extension schema pattern for all structured data
+
+### Functional Requirements Addressed
+- FR-C1 through FR-C9 (9 core requirements)
+- FR-T1 through FR-T9 (9 TTRPG requirements, regression from v1)
+- FR-X1 (persona portability, Nice to Have)
+
+### Design Principles (carried from v1, expanded)
+- **Standalone-plus-composable**: works without Gygax; amplified by Gygax
+- **Director/performer**: practitioner always directs; Arneson always performs
+- **Workshop-then-serialize**: the iteration loop IS the product
+- **Safety is non-negotiable**: every domain, every session, every mode
+- **Dual-audience output**: human-readable transcripts + machine-parseable sidecars
+
+---
+
 ## [1.0.0] — 2026-04-13 (v1 Release)
 
 ### Added

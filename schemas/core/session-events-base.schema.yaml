@@ -1,0 +1,139 @@
+# schemas/core/session-events-base.schema.yaml
+# Domain-agnostic session event schema.
+# Defines the base event envelope and event types present in EVERY domain.
+# Domain verticals extend this with domain-specific event types.
+# See SDD v2 §3.1.2 and PRD FR-C3.
+
+schema:
+  name: session-events-base
+  version: 2
+  description: >
+    Base structured event log emitted during session-length skills.
+    Written append-only during the session (durable to crashes).
+    Domain verticals extend with domain-specific event types.
+
+session_preamble:
+  description: "Written once at session open. Immutable for the session."
+  fields:
+    session_id:
+      type: string
+      required: true
+      description: "Unique session identifier."
+    domain:
+      type: string
+      required: true
+      description: "Which domain vertical produced this session (e.g., 'ttrpg')."
+    mode:
+      type: string
+      required: true
+      description: "Skill that produced the session (e.g., 'braunstein', 'voice')."
+    started_at:
+      type: string
+      format: iso8601-datetime
+      required: true
+    state_path:
+      type: string
+      required: false
+      description: "Relative path to the structured state used for grounding."
+    state_checksum:
+      type: string
+      required: false
+      description: "SHA256 of state file contents. Enables replay / forensic validation."
+    safety_agreement:
+      type: object
+      required: true
+      fields:
+        agreed_at:
+          type: string
+          format: iso8601-datetime
+        boundaries:
+          type: array
+          items: {type: string}
+          description: "Content boundaries agreed to for this session."
+        x_card_active:
+          type: boolean
+          default: true
+
+event_types:
+  # Base event types present in every domain.
+
+  dialogue:
+    description: "A persona speaks."
+    fields:
+      speaker: {type: string, required: true}
+      content: {type: string, required: true}
+      grounding_refs:
+        type: array
+        items: {type: string}
+        required: false
+        description: "References to structured state this dialogue grounds against."
+      tone: {type: string, required: false}
+
+  signal:
+    description: "Practitioner or persona flags something."
+    fields:
+      source: {type: string, required: true}
+      classification:
+        type: enum
+        values: [safety, insight, concern, friction, praise, confusion, delight, surprise, boredom]
+        required: true
+      content: {type: string, required: true}
+
+  decision:
+    description: "A creative decision is made."
+    fields:
+      what: {type: string, required: true}
+      why: {type: string, required: true}
+      alternatives_considered:
+        type: array
+        items: {type: string}
+        required: false
+
+  pause:
+    description: "Session paused."
+    fields:
+      reason: {type: string, required: true}
+      initiated_by: {type: string, required: true}
+
+  scene_transition:
+    description: "Context shifts."
+    fields:
+      from_context: {type: string, required: true}
+      to_context: {type: string, required: true}
+      trigger: {type: string, required: true}
+
+  state_reference:
+    description: "Output references structured state."
+    fields:
+      path: {type: string, required: true}
+      field: {type: string, required: false}
+      how_used: {type: string, required: true}
+
+  safety_trigger:
+    description: "A safety tool fired. Also surfaces as data (findings, not just interruptions)."
+    fields:
+      trigger_type:
+        type: enum
+        values: [x_card, line, veil, pause, boundary_violation, script_change_pause]
+        required: true
+      content_category: {type: string, required: false}
+      action:
+        type: enum
+        values: [immediate_halt, off_stage, tone_shift, retract]
+        required: true
+      dead_design_space_flag: {type: boolean, default: true}
+
+session_end:
+  description: "Written once on session close."
+  fields:
+    ended_at: {type: string, format: iso8601-datetime, required: true}
+    end_reason:
+      type: enum
+      values: [completed, user_interrupt, crash, safety_halt]
+      required: true
+
+validation_rules:
+  - "session_preamble.domain MUST be a recognized domain vertical name"
+  - "session_end event, if present, MUST be the last event in the file"
+  - "Sidecar files with missing session_end are valid (consumed as 'partial' sessions)"
+  - "Every event MUST include a timestamp (ISO8601)"
