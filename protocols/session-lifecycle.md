@@ -52,8 +52,15 @@ Load the persona per persona-hosting.md protocol:
 ### Active
 The turn cycle. Each turn:
 1. **Direction**: Practitioner provides input (dialogue, action, prompt).
-2. **Generation**: Arneson generates grounded response in the persona's voice.
-3. **Sidecar**: Capture events (dialogue, decisions, signals, state_references) to the sidecar.
+2. **Engagement evaluation**: If the persona has an `engagement` config, evaluate the prompt:
+   - Match prompt content against `high_topics` and `low_topics`
+   - Combine with `threshold` and `default_mode` to determine response mode
+   - **Full**: proceed to generation
+   - **Minimal**: generate from `minimal_vocabulary` only (1-3 words, in-voice)
+   - **Silence**: skip generation, log `chose_not_to_respond` event to sidecar
+   - If no `engagement` config: default to full (v2 behavior)
+3. **Generation** (full or minimal mode): Arneson generates grounded response in the persona's voice.
+4. **Sidecar**: Capture events (dialogue, decisions, signals, state_references, or chose_not_to_respond) to the sidecar.
 
 Safety commands (/pause, /x-card, /resume) are available at all times.
 

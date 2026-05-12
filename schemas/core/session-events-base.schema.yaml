@@ -68,6 +68,12 @@ event_types:
         required: false
         description: "References to structured state this dialogue grounds against."
       tone: {type: string, required: false}
+      engagement_mode:
+        type: enum
+        values: [full, minimal]
+        required: false
+        default: full
+        description: "Whether this was a full response or minimal (from minimal_vocabulary)."
 
   signal:
     description: "Practitioner or persona flags something."
@@ -122,6 +128,25 @@ event_types:
         values: [immediate_halt, off_stage, tone_shift, retract]
         required: true
       dead_design_space_flag: {type: boolean, default: true}
+
+  chose_not_to_respond:
+    description: >
+      Persona decided not to engage with a prompt. The absence of response
+      IS data. Captures what was asked, why engagement was low, and how
+      close the persona was to responding.
+    fields:
+      persona: {type: string, required: true}
+      prompt_summary: {type: string, required: true, description: "What they were asked."}
+      reason: {type: string, required: true, description: "Why they didn't engage."}
+      engagement_score:
+        type: float
+        required: false
+        description: "0.0-1.0. How close the persona was to engaging. Low = confident silence."
+      mode:
+        type: enum
+        values: [silence, delayed]
+        required: true
+        description: "How the non-response manifests."
 
 session_end:
   description: "Written once on session close."
