@@ -1,0 +1,14 @@
+# Test domain digest extension — validates that digest-base can be extended.
+schema:
+  name: digest-test
+  version: 1
+  extends: digest-base
+  description: "Minimal test domain digest extension for extension story validation."
+
+test_findings:
+  observations_by_category:
+    type: object
+    fields:
+      behavioral: {type: array, items: {type: string}}
+      structural: {type: array, items: {type: string}}
+      unexpected: {type: array, items: {type: string}}

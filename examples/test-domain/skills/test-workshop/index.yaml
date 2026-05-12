@@ -1,0 +1,9 @@
+name: test-workshop
+description: "Minimal workshop skill for extension story validation."
+domain: test-domain
+type: session
+protocols:
+  - persona-hosting
+  - session-lifecycle
+  - safety-protocol
+  - workshop-convergence

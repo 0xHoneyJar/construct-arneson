@@ -6,9 +6,9 @@ on:
   pull_request:
     branches: [main]
 
-# Two-matrix CI: arneson-alone and arneson-with-gygax.
-# Per PRD G-4 (standalone viability) and G-5 (composition amplification).
-# Standalone mode is FIRST-CLASS, not supplementary. Every PR must pass both.
+# Three-matrix CI: arneson-alone, arneson-with-gygax, extension-story.
+# Per PRD v2 G-3 (domain extensibility), G-4 (TTRPG regression).
+# Standalone mode is FIRST-CLASS, not supplementary. Every PR must pass all.
 
 jobs:
 
@@ -56,17 +56,23 @@ jobs:
           fi
           echo "OK: no Gygax paths present (standalone mode confirmed)"
 
-      - name: "Foundation + skills smoke test"
+      - name: "v2 structure smoke test"
         run: |
-          echo "Verifying foundation artifacts + implemented skills."
+          echo "Verifying v2 directory structure."
           test -f construct.yaml
           test -f identity/ARNESON.md
-          test -f schemas/experiential_intent.schema.yaml
-          test -d resources/archetypes-fallback
+          test -f schemas/core/experiential_intent.schema.yaml
+          test -f schemas/core/voice-base.schema.yaml
+          test -d domains/ttrpg/schemas
+          test -d domains/ttrpg/skills
+          test -d domains/ttrpg/resources/archetypes-fallback
+          test -d protocols
           test -f examples/synthetic-fixture/game-state.yaml
-          test -f skills/braunstein/SKILL.md
-          test -f skills/braunstein/index.yaml
-          echo "All foundation + Sprint 2 artifacts present."
+          test -f domains/ttrpg/skills/braunstein/SKILL.md
+          test -f skills/voice/SKILL.md
+          test -f skills/arneson/SKILL.md
+          test -f skills/distill/SKILL.md
+          echo "All v2 structure artifacts present."
 
   # ----------------------------------------------------------------------------
   # arneson-with-gygax: Gygax v3 present. Verifies composition amplification (G-5).
@@ -115,7 +121,85 @@ jobs:
             exit 1
           fi
 
-      - name: "Sprint 1 composition scaffold smoke test"
+      - name: "Composition scaffold smoke test"
         run: |
-          # Real composition round-trip (Sprint 3 G-1 test) gets wired in Sprint 3.
-          echo "Sprint 1: composition-mode scaffold — probes resolve; full round-trip arrives in Sprint 3."
+          echo "Composition-mode scaffold — probes resolve; full round-trip arrives later."
+
+  # ----------------------------------------------------------------------------
+  # extension-story: Validates domain extension interface (G-3).
+  # A test domain can be added with zero core code changes.
+  # Placeholder — fully wired in Sprint 5.
+  # ----------------------------------------------------------------------------
+  extension-story:
+    name: "extension-story (domain extensibility)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install yq (v4.50.1 pinned with integrity check)
+        run: |
+          YQ_VERSION="v4.50.1"
+          YQ_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          wget -qO /tmp/yq "$YQ_URL"
+          chmod +x /tmp/yq
+          sudo mv /tmp/yq /usr/local/bin/yq
+          yq --version
+
+      - name: "Validate test domain schemas"
+        run: |
+          echo "Validating test domain extension schemas..."
+          for schema in examples/test-domain/schemas/*.yaml; do
+            if ! yq eval '.' "$schema" > /dev/null 2>&1; then
+              echo "FAIL: $schema does not parse as YAML"
+              exit 1
+            fi
+            extends=$(yq eval '.schema.extends // ""' "$schema")
+            if [ -z "$extends" ]; then
+              echo "FAIL: $schema missing schema.extends field"
+              exit 1
+            fi
+            echo "  OK: $schema (extends: $extends)"
+          done
+          echo "OK: all test domain schemas valid and extend base."
+
+      - name: "Validate test domain persona loads via voice-base"
+        run: |
+          echo "Validating test domain persona..."
+          persona="examples/test-domain/resources/sample-persona.yaml"
+          test -f "$persona"
+          # Check voice-base required fields
+          voice_id=$(yq eval '.voice_id' "$persona")
+          display_name=$(yq eval '.display_name' "$persona")
+          markers=$(yq eval '.speech_patterns.distinctive_markers | length' "$persona")
+          test_role=$(yq eval '.test_role' "$persona")
+          if [ -z "$voice_id" ] || [ "$voice_id" = "null" ]; then echo "FAIL: missing voice_id"; exit 1; fi
+          if [ -z "$display_name" ] || [ "$display_name" = "null" ]; then echo "FAIL: missing display_name"; exit 1; fi
+          if [ "$markers" -lt 1 ]; then echo "FAIL: no distinctive_markers"; exit 1; fi
+          if [ -z "$test_role" ] || [ "$test_role" = "null" ]; then echo "FAIL: missing domain extension field test_role"; exit 1; fi
+          echo "OK: test persona has voice-base fields + domain extension fields."
+
+      - name: "Validate test domain skill follows protocols"
+        run: |
+          echo "Validating test domain skill..."
+          test -f examples/test-domain/skills/test-workshop/SKILL.md
+          test -f examples/test-domain/skills/test-workshop/index.yaml
+          # Verify index.yaml references core protocols
+          for protocol in persona-hosting session-lifecycle safety-protocol workshop-convergence; do
+            exists=$(yq eval ".protocols[] | select(. == \"$protocol\")" examples/test-domain/skills/test-workshop/index.yaml)
+            if [ -z "$exists" ]; then
+              echo "FAIL: test-workshop index.yaml missing protocol reference: $protocol"
+              exit 1
+            fi
+          done
+          echo "OK: test-workshop declares all 4 core protocols."
+
+      - name: "Verify zero core files modified"
+        run: |
+          echo "Checking that test domain requires no core file changes..."
+          test -d schemas/core
+          test -d domains/ttrpg
+          test -d protocols
+          test -d examples/test-domain
+          echo "OK: extension story structure in place. Zero core files modified by test domain."

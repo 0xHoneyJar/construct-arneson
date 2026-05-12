@@ -1,15 +1,16 @@
-# Product Requirements Document: construct-arneson v1
+# Product Requirements Document: construct-arneson v2
 
-**Version:** 1.0
-**Date:** 2026-04-13
+**Version:** 2.0
+**Date:** 2026-05-12
 **Author:** PRD Architect Agent (/plan-and-analyze)
 **Status:** Draft
 
 > **Sources used across this document:**
 > - `grimoires/loa/context/00-READ-FIRST-proposal-issue-3.md` (GH issue 0xHoneyJar/construct-gygax#3)
 > - `grimoires/loa/context/arneson-v1-concept.md`
-> - `grimoires/loa/NOTES.md` (decision log, teammate feedback)
-> - /plan-and-analyze discovery interview, 2026-04-13 (Phases 1–7)
+> - `grimoires/loa/NOTES.md` (decision log, teammate feedback from v1 cycle)
+> - Codebase analysis (/ride, 2026-05-12) — Sprint 1 implementation verified
+> - /plan-and-analyze discovery interview, 2026-05-12 (Phases 1-7)
 
 ---
 
@@ -33,13 +34,13 @@
 
 ## Executive Summary
 
-**construct-arneson v1** is a Loa-framework skill-pack construct for tabletop-RPG designers. It is the narrative-generation companion to [construct-gygax](https://github.com/0xHoneyJar/construct-gygax) — named for Dave Arneson (Blackmoor, 1971), whose historical complementarity with Gary Gygax the construct pair deliberately mirrors. Arneson embraces exactly what Gygax refuses: fiction generation, NPC voicing, scene framing, live playtesting, and improvisational GMing.
+**construct-arneson v2** reframes the construct from a TTRPG-specific narrative companion into a **creative persona engine** — a tool that hosts personas grounded in practitioner-provided structured state and emits structured data from creative sessions. TTRPG design is the first vertical and reference implementation, not the identity.
 
-The construct's identity is **data-emitting fiction**, not merely fiction. Every session transcript is instrumented with a structured sidecar and distillable into a Gygax-ingestible digest, making narrative play *admissible as evidence* in structural re-analysis. This closes the design-iteration loop at the tool level: Gygax analyzes → designer changes → Arneson plays the change → Gygax re-analyzes the transcript → next iteration.
+The v1 cycle (2026-04-13) built strong foundations: 8 skills, 7 schemas, 9 archetypes, a safety-first session flow, and a working prototype. The codebase is clean (hygiene grade A, consistency 9/10) and the core capabilities — persona hosting, grounded fiction generation, structured event capture, transcript+sidecar output — are already more general than their TTRPG framing suggests. v2 makes that generality explicit by extracting a domain-agnostic core, defining an extension interface for domain verticals, and reframing the identity around creative persona work broadly.
 
-v1 ships **eight skills** (`/braunstein`, `/voice`, `/scene`, `/narrate`, `/improvise`, `/arneson`, `/fragment`, `/distill`), with the flagship `/braunstein` proving admissibility end-to-end against a synthetic neutral reference fixture. The construct works **standalone** (without Gygax installed) and is **amplified** by Gygax composition when present.
+The construct serves any creative practitioner — writers, game designers, worldbuilders, agent developers — who needs personas that do generative work against structured state and produce usable data. Named for Dave Arneson, whose improvisational approach to collaborative fiction-making transcends any single game or genre.
 
-> **Sources**: issue-3:37-47, concept:1-19, Phase 1–6 synthesis
+> **Sources**: issue-3:37-47, concept:1-19, Phase 1-7 synthesis (2026-05-12)
 
 ---
 
@@ -47,31 +48,43 @@ v1 ships **eight skills** (`/braunstein`, `/voice`, `/scene`, `/narrate`, `/impr
 
 ### The Problem
 
-TTRPG designers have no tool that grounds *fictional play* in the same persistent game-state used for *structural analysis*. Spreadsheets and probability scripts model mechanics; LLM chats improvise fiction. Neither couples to the other. Neither respects designer intent as a load-bearing input.
+Creative practitioners across domains share a common gap: they lack tools where **personas can do generative work grounded in structured state and emit usable data from that work**.
 
-The sibling construct [Gygax v3](https://github.com/0xHoneyJar/construct-gygax) handles the structural half with a deliberately narrow identity — it refuses to write fiction, refuses to voice characters, refuses final creative decisions. Those refusals are *load-bearing*: they are what make Gygax trustworthy as an analyst.
+Generic LLM chat generates fiction but is ungrounded — it doesn't read your world bible, your game state, your behavioral spec, or your intent declarations. Static profiles (character sheets, persona documents, agent configs) capture structure but don't generate. Nothing couples the two: structured state flowing into grounded fiction, structured data flowing back out.
 
-> From issue-3:43-46: *"Gygax's identity is load-bearing. Its persona explicitly refuses to generate narrative prose, voice characters, or make final creative decisions. These refusals are what make Gygax trustworthy as an analyst... Adding fiction-generation capabilities inside Gygax would weaken that contract."*
+> From issue-3:43-46: *"Gygax's identity is load-bearing. Its persona explicitly refuses to generate narrative prose, voice characters, or make final creative decisions. These refusals are what make Gygax trustworthy as an analyst."*
 
-The cleanest architectural answer is an inverse-identity companion whose refusals are equally load-bearing in the opposite direction.
+The original v1 framing identified this gap in TTRPG design specifically — Gygax handles structure, Arneson handles fiction. But the gap is universal: game writers need characters grounded in story bibles. Agent developers need persona calibration against behavioral specs. Worldbuilders need factions and NPCs grounded in established lore. The pattern is the same: **structured state in, grounded creative generation, structured data out**.
+
+> **Sources**: issue-3:43-46, concept:130-133, Phase 1 (2026-05-12)
 
 ### User Pain Points
 
-- **Design-and-play rupture**: Designers iterate mechanics in spreadsheets, then test the resulting *feel* in separate LLM chats with no persistent grounding. Findings from play do not round-trip back into analysis.
-- **Hollow LLM fiction**: General-purpose LLMs improvise plausibly but ignore game-state — they "fudge" outcomes to serve narrative satisfaction, which destroys admissibility for design analysis.
-- **Intent erasure**: Designers flag mechanics with deliberate intent ("lethal by design," "heroic," "desperate"). Current fiction tools ignore these signals and smooth them away.
-- **Post-hoc-only signal capture**: Gygax v3's cabal captures experience signals only from analytical walkthroughs, not from the moment-of-play where they actually emerge.
-- **Voice inconsistency**: A designer workshopping an NPC across multiple sessions has no tool that preserves that NPC's voice state; every session starts from zero.
+- **Grounding gap**: Creative generation happens in tools that don't read the practitioner's structured state. Output drifts from established facts, intent, and constraints.
+- **Data loss**: Creative sessions produce prose but not structured data. Insights, decisions, and signals are trapped in narrative and must be manually extracted.
+- **Persona inconsistency**: Characters and agents lose voice across sessions because there's no persistent persona state with memory and behavioral grounding.
+- **Tool fragmentation**: Structure lives in spreadsheets/YAML/databases. Fiction lives in chat windows. Neither knows about the other.
+- **No feedback loop**: Creative output doesn't round-trip back to structural analysis. Design-and-play (or write-and-test) remain separate activities.
+
+> **Sources**: issue-3:50-60 (TTRPG-specific pain points, generalized), concept:130-133, Phase 1 (2026-05-12)
 
 ### Current State
 
-Designers cobble together spreadsheets + generic LLM chats + hand-written session notes. The three don't compose. Evidence from play is anecdotal; evidence from analysis is structural; they rarely meet.
+Practitioners use:
+- Generic LLM chats for fiction (ungrounded, no persistent state, no structured output)
+- Static documents for character/agent profiles (no generative capability)
+- Domain-specific tools that don't compose (TTRPG VTTs, writing software, agent frameworks)
+- Manual processes to bridge structure and fiction (copy-paste, re-prompting, mental models)
 
 ### Desired State
 
-A designer can move fluidly between structural analysis (Gygax) and narrative play (Arneson) on a *single* persistent game-state. Transcripts produced in play are mechanically instrumented and feed directly back into analysis. Intent (both mechanical and experiential) is respected across the boundary. Safety triggers become design findings, not just social events.
-
-> **Sources**: issue-3:43-102, concept:19-34, concept:129-133, Phase 1–2 synthesis
+A single construct that:
+1. Reads any practitioner-provided structured state (game state, story bible, behavioral spec, world lore)
+2. Hosts personas grounded in that state with persistent memory across sessions
+3. Generates fiction that respects intent, constraints, and established facts
+4. Emits structured session data (events, signals, decisions) alongside human-readable transcripts
+5. Produces output consumable by both the practitioner and downstream tools
+6. Supports new creative domains without core code changes
 
 ---
 
@@ -81,434 +94,513 @@ A designer can move fluidly between structural analysis (Gygax) and narrative pl
 
 | ID | Goal | Measurement | Validation Method |
 |----|------|-------------|-------------------|
-| G-1 | **Admissibility**: A `/braunstein` transcript is trustworthy enough to be cited as evidence in Gygax re-analysis. | Binary: Gygax's `/cabal --from-session` can ingest a `/distill`ed Arneson transcript without manual reformatting. | Round-trip integration test against synthetic fixture. |
-| G-2 | **Identity contract**: Arneson refuses structural analysis, probability math, mechanical recommendations, and pattern-matching against anti-patterns. | Audit: no refusal-target vocabulary appears in output during acceptance scenarios. | Identity audit during `/audit-sprint`, modeled on Gygax's refusal audit. |
-| G-3 | **Intent fidelity**: When `mechanical_intent` or `experiential_intent` is non-default, Arneson's voicing shifts accordingly *without prompt-tuning*. | Comparative: same game-state with intent flipped (Lethal → Heroic) produces materially different voicing on the same roll outcome. | Paired acceptance test — A/B intent transcripts, blind-read differentiated. |
-| G-4 | **Standalone viability**: Arneson produces useful output when Gygax is not installed. | Binary: all eight skills complete their primary task with Gygax paths absent. | CI matrix: `arneson-alone` and `arneson-with-gygax` both green. |
-| G-5 | **Composition amplification**: When Gygax is installed, Arneson's outputs feed Gygax's analyzers and vice versa. | Binary: bidirectional round-trip (scry-fork → braunstein → distill → cabal → re-scry). | End-to-end composition test in CI. |
-| G-6 | **Archetype distinctness**: ≥3 archetypes produce voices identifiable by blind attribution. | Designer (or rater) correctly attributes transcript excerpts to archetypes at rate clearly above chance. | Blind-attribution protocol documented in acceptance tests. |
+| G-1 | **Persona believability** — personas are distinct, consistent, and grounded enough that practitioners trust the creative output | Qualitative: voice distinctness across sessions; quantitative: grounding citations per generated passage | Regression against Sprint 0 prototype quality bar (5/5 axes) |
+| G-2 | **Structured output fidelity** — session data is machine-parseable and consumable by any downstream tool | Sidecar events validate against schema; round-trip test with at least one consumer | Schema validation pass rate; `/distill` output parseable by downstream |
+| G-3 | **Domain extensibility** — a new domain vertical can be added without modifying core Arneson code | Extension story: add a hypothetical domain vertical using only the extension interface | Integration test: domain vertical loads, sessions run, output validates |
+| G-4 | **TTRPG vertical regression** — existing TTRPG capabilities work at least as well as v1 | All v1 acceptance criteria still pass | CI suite from Sprint 1 + manual `/braunstein` regression |
+| G-5 | **Dual-audience output** — all output is simultaneously human-readable and machine-parseable | Transcripts render as presentable markdown; sidecars parse as valid structured data | Manual review + schema validation |
+| G-6 | **Safety universality** — safety infrastructure works in every domain, every session, every mode | Safety flow (agreement, X-card, pause) activates regardless of domain context | Test safety triggers across TTRPG and at least one non-TTRPG session |
 
-### Key Performance Indicators (KPIs)
+> **Sources**: Phase 2 (2026-05-12) — success metrics; Phase 1 reframing; v1 NOTES.md decision log
 
-This is a tool, not a SaaS product — traditional user-engagement KPIs do not apply. The KPIs are build-completion indicators tied to goals.
+### Key Performance Indicators
 
-| Metric | Baseline | Target | Source Goal |
-|--------|----------|--------|-------------|
-| Skills implemented at v1 | 0 | 8 | — |
-| Round-trip `/braunstein` → `/distill` → Gygax `/cabal --from-session` passes | 0 | 1 | G-1 |
-| Archetypes voiced with distinct speech patterns | 0 | ≥3 (target: all 9) | G-6 |
-| Blind-attribution accuracy for archetype-to-transcript | chance | > chance significantly | G-6 |
-| CI modes green | 0/2 | 2/2 (alone + composed) | G-4, G-5 |
-| Identity-refusal audit violations in acceptance scenarios | — | 0 | G-2 |
+| Metric | Baseline (v1) | Target (v2) | Goal ID |
+|--------|---------------|-------------|---------|
+| Domain verticals supported | 1 (TTRPG) | 1 + extension point validated | G-3 |
+| Core code changes for new domain | N/A (monolithic) | 0 files modified | G-3 |
+| v1 TTRPG acceptance criteria passing | 100% | 100% | G-4 |
+| Schema validation pass rate | Manual | Automated, 100% | G-2 |
+| Safety coverage | TTRPG only | All domains | G-6 |
 
 ### Constraints
 
-- **Timeline**: Quality-driven, no fixed ship date. Ship when admissibility is real, not when the calendar says so. (Phase 2 decision.)
-- **No MIBERA: HEKATE**: HEKATE is private/upstream. Zero references in Arneson code, examples, tests, or docs. v1 ships HEKATE-free for community shippability. (Phase 6 user directive.)
-- **Standalone-plus-composable**: Neither construct may hard-depend on the other. (Phase 4 design principle.)
-- **Designer-only UX for v1**: No direct player-at-table interaction surface. (Phase 3 decision.)
+- **Quality-driven timeline**: No fixed ship date. Ship when it's right.
+- **Standalone-plus-composable**: Arneson must work without Gygax installed. Gygax must work without Arneson installed. Composition is opt-in amplification, not dependency.
+- **No private/upstream game references**: No HEKATE or other private game names in shippable files. The construct stands on its own.
+- **Director/performer model**: The practitioner always directs. Arneson always performs within their constraints. No autonomous mode.
 
-> **Sources**: issue-3:192-200 (original success criteria, reframed), Phase 2 (admissibility), Phase 3 (audience + player scope), Phase 4 (teammate feedback), Phase 6 (HEKATE exclusion, build ordering)
+> **Sources**: Phase 2 (2026-05-12); NOTES.md decisions (standalone-plus-composable, HEKATE exclusion, director/performer)
 
 ---
 
 ## User Personas & Use Cases
 
-### Primary Persona: The TTRPG Designer
+### Persona: The Creative Practitioner
 
 **Demographics:**
-- Role: Designer of tabletop RPGs — anything from one-page dungeon-crawlers to multi-year campaign systems
-- Technical proficiency: comfortable with markdown, YAML, git, and CLI tools (Loa-framework literate)
-- Scope: any designer using a Gygax-supported tradition from day one of v1 (Phase 3 decision: "Gygax community from day one")
-
-**Goals:**
-- Close the loop between structural analysis and experiential playtesting
-- Preserve NPC voice state across design sessions
-- Test mechanical changes *fictionally* (not only numerically) before committing to them
-- Generate design findings from play, not only from analysis
+- Role: Writer, game designer, worldbuilder, agent developer, narrative designer, or any creative professional working with personas and structured state
+- Technical Proficiency: Comfortable with CLI tools and YAML/markdown. Not necessarily a software engineer.
+- Goals: Create believable, grounded creative output with structured data capture. Iterate between structure and fiction fluidly.
 
 **Behaviors:**
-- Iterates on a single game design over months or years, returning to the same game-state
-- Uses Gygax for probability math, cabal archetype analysis, and cross-system comparison
-- Flags mechanics with intent (both axes, once v1 ships)
-- Reads sidecar data to identify friction hotspots
+- Maintains structured state (game state, story bibles, behavioral specs, world lore) in YAML/markdown
+- Needs personas that stay consistent across sessions and respect established constraints
+- Reviews both the creative output (prose) and the structured data (events, signals)
+- Uses downstream tools to consume session data (analysis tools, other constructs, CI pipelines)
 
 **Pain Points:**
-- (See Problem Statement → User Pain Points)
+- Creative generation drifts from established facts when the tool doesn't read their state
+- Insights from creative sessions are lost because they're trapped in unstructured prose
+- Persona voice degrades across sessions without persistent memory
+- No single tool bridges structure and fiction
 
-### Secondary Persona: The Gygax Analyzer (non-human)
-
-The sibling Gygax v3 construct itself, treated as a stakeholder because its analyzers (`/cabal --from-session`, future `/scry --from-session`, etc.) consume Arneson's outputs. Arneson's API shape must satisfy Gygax's ingestion contracts.
+> **Sources**: Phase 3 (2026-05-12), generalized from v1 TTRPG designer persona
 
 ### Use Cases
 
-#### UC-1: Closed-loop design iteration
-**Actor:** Designer (with Gygax + Arneson both installed)
-**Preconditions:** Game-state YAML exists; Gygax v3 installed; Arneson installed.
+#### UC-1: TTRPG Live Playtest (Reference Vertical)
+**Actor:** Game designer
+**Preconditions:** Game state YAML exists with mechanics, entities, intent declarations. Archetype definitions available (Gygax-provided or fallback).
 **Flow:**
-1. Designer runs Gygax `/cabal` to analyze the current game-state — receives structural findings.
-2. Designer edits a mechanic in response.
-3. Designer runs `/braunstein --newcomer` against the updated game-state; plays the scene (Arneson voices the Newcomer archetype; designer GMs).
-4. Arneson writes `{session}.md` (prose transcript) + `{session}.events.yaml` (structured sidecar) atomically during the session.
-5. Designer runs `/distill {session}` → produces a Gygax-ingestible digest.
-6. Designer runs Gygax `/cabal --from-session {digest}` — receives experiential findings reflecting the change.
-7. Loop: designer iterates.
+1. Designer invokes `/braunstein --newcomer` against their game state
+2. Arneson loads the Newcomer archetype, reads game state and intent
+3. Designer GMs; Arneson plays the Newcomer in-character
+4. Session produces transcript (markdown) + sidecar (structured events)
+5. Designer runs `/distill` to compress session into downstream-consumable format
 
-**Postconditions:** Session and digest persist in `grimoires/arneson/sessions/` and `grimoires/arneson/digests/`. Game-state unchanged by default.
+**Postconditions:** Transcript is presentable markdown. Sidecar validates against session-events schema. Distill output is parseable by Gygax's `/cabal --from-session`.
 **Acceptance Criteria:**
-- [ ] Digest parses cleanly in Gygax's `/cabal --from-session` without manual reformatting
-- [ ] Intent changes between steps 2–3 visibly affect step 3's voicing
-- [ ] Sidecar events correctly distinguish "fictional friction" from "mechanical bottleneck"
+- [ ] Persona voice is distinct and grounded in archetype definition
+- [ ] Intent fields are respected (non-negotiable mechanics played into, not against)
+- [ ] Safety flow activates before creative generation begins
+- [ ] Sidecar captures: dialogue, dice rolls, signal flags, intent conflicts, scene transitions
+- [ ] Transcript + sidecar are a paired output
 
-#### UC-2: Standalone playtest (no Gygax)
-**Actor:** Designer (Arneson only)
-**Preconditions:** Game-state YAML exists; Arneson installed; Gygax NOT installed.
+#### UC-2: Character Voice Workshop
+**Actor:** Writer or game designer
+**Preconditions:** Character profile exists (NPC definition, behavioral spec, or persona config).
 **Flow:**
-1. Arneson detects absence of `grimoires/gygax/`; uses its fallback archetype bundle (Arneson-authored mirror of Gygax's 9 archetypes, marked as fallback).
-2. Designer runs `/braunstein --newcomer`; plays the scene.
-3. Arneson writes prose transcript + sidecar.
-4. `/distill` produces a self-contained digest (consumable by any reader, not just Gygax).
+1. Practitioner invokes `/voice {character-id}`
+2. Arneson loads the character profile and stays in-character
+3. Practitioner conducts workshop dialogue — testing voice, reactions, consistency
+4. Session produces transcript + sidecar with dialogue events and signal flags
 
-**Postconditions:** Digest is useful on its own — readable, structured, complete.
+**Postconditions:** Character voice is consistent with profile. Session data is structured.
 **Acceptance Criteria:**
-- [ ] All paths execute without reference to Gygax files
-- [ ] Output format is self-describing (no external schema required to read)
-- [ ] Banner in output clearly notes standalone mode
+- [ ] Character voice matches profile traits (speech patterns, emotional register, knowledge level)
+- [ ] Voice persists across conversation turns without drift
+- [ ] Workshop produces structured dialogue events, not just prose
 
-#### UC-3: NPC voice workshop
-**Actor:** Designer
-**Preconditions:** Optional existing NPC state file (`grimoires/arneson/voices/npcs/{id}.yaml`); session-level safety agreement.
+#### UC-3: Scene Generation From State
+**Actor:** Worldbuilder or narrative designer
+**Preconditions:** Structured state exists (world lore, location data, faction relationships, or equivalent).
 **Flow:**
-1. Designer runs `/voice {npc-id}` (or new-id; creates fresh NPC).
-2. Arneson embodies the NPC for workshop-style dialogue; holds character until session ends.
-3. NPC state evolves (voice parameters, memory, known facts); persists to `voices/npcs/{id}.yaml` on exit.
+1. Practitioner invokes `/scene` with a seed (prompt, oracle result, or state reference)
+2. Arneson reads structured state for grounding
+3. Generates a scene: opening situation, sensory detail, immediate stakes
+4. Scene is grounded in established state — no facts contradicted
 
-**Postconditions:** NPC voice state is preserved for next session.
+**Postconditions:** Scene is presentable markdown. References to state are verifiable.
 **Acceptance Criteria:**
-- [ ] NPC stays in character for the full session
-- [ ] State diff is legible on exit; designer can review before committing
-- [ ] Re-invoking `/voice {npc-id}` reloads the voice with continuity
+- [ ] Scene respects all constraints from structured state
+- [ ] Sensory detail and stakes are present
+- [ ] No hallucinated facts that contradict established state
 
-#### UC-4: Scry-fork playtest
-**Actor:** Designer (Gygax + Arneson)
-**Preconditions:** Gygax `/scry` fork exists at an alternate game-state.
+#### UC-4: Agent Persona Calibration (Grounded in Real Usage)
+**Actor:** Agent developer / curator authoring a Discord NPC
+**Preconditions:** Behavioral spec exists (persona config, voice parameters, constraint set). Lore source exists (grail entry, character bible, or equivalent structured state).
+
+**Real-world grounding:** The construct-mongolian project (0xHoneyJar/construct-mibera-codex#76) is already using this pattern — a curator authors voice + judgment rubric for a Grail-entity Discord agent using arneson's `/voice` workshop to converge the NPC's voice register, then serializes the locked voice-state into a `persona.yaml` for a Discord bot. The two-tier doctrine (construct judges / substrate verifies) maps directly to arneson's director/performer model.
+
 **Flow:**
-1. Designer runs `/scry "what if threshold was 4?"` (Gygax) — produces forked game-state.
-2. Designer runs `/braunstein --fork threshold-4 --newcomer` — plays the fork.
-3. Designer reads both transcripts (base + fork) side by side to feel the change.
-4. Optional: `/distill` both; Gygax cross-compares.
+1. Curator invokes `/voice {agent-id}` against their behavioral spec + lore source
+2. Arneson hosts the persona and generates workshop dialogue across multiple sessions
+3. Curator iterates until voice converges (register, judgment vocabulary, emotional range)
+4. Locked voice-state.yaml is exported as the agent's persona definition
+5. Optionally serialized into a static prompt for downstream bot/agent runtime
 
-**Postconditions:** Designer has experiential evidence of the fork's effect.
+**Postconditions:** Workshopped voice-state captures the agent's behavioral profile. Output is both human-reviewable and machine-consumable.
 **Acceptance Criteria:**
-- [ ] `--fork` flag correctly loads the forked game-state
-- [ ] Session transcript is tagged with fork identifier
-- [ ] Digest makes the fork comparison legible to Gygax analyzers
+- [ ] Domain vertical loads without core code changes
+- [ ] `/voice` workshop supports convergence tracking across sessions
+- [ ] Locked voice-state.yaml is exportable for downstream agent runtimes
+- [ ] Session uses the domain's event taxonomy and resolution mechanics
+- [ ] Output format matches the domain's consumer spec
 
-#### UC-5: Setting fragment generation
-**Actor:** Designer
-**Preconditions:** Game-state with setting-context fields (or user-provided prompt).
+> **Sources**: 0xHoneyJar/construct-mibera-codex#76 (construct-mongolian Track A — real-world agent persona authoring using arneson)
+
+#### UC-5: Extending Arneson to a New Domain
+**Actor:** Construct developer or advanced practitioner
+**Preconditions:** Arneson core is installed. New domain's structured state, persona definitions, event taxonomy, resolution mechanics, and consumer spec are prepared.
 **Flow:**
-1. Designer runs `/fragment location` (or `/fragment faction`, etc.).
-2. Arneson produces a one-shot setting fragment grounded in game-state.
-3. Fragment saved to `grimoires/arneson/fragments/{date}-{scope}.md`.
+1. Developer creates domain vertical files following Arneson's extension conventions
+2. Arneson discovers the new domain configuration
+3. Domain-specific skills become available
+4. Sessions run against the new domain's structured state and produce domain-shaped output
 
-**Postconditions:** Fragment is presentable, exportable, and tagged by scope.
+**Postconditions:** New domain works without any modifications to Arneson core code.
 **Acceptance Criteria:**
-- [ ] Fragment references at least one game-state element verbatim (grounding check)
-- [ ] Fragment respects tradition conventions when a tradition lore file is present
-- [ ] Fragment flags itself as "improvised against structural-only context" when no tradition file is present
+- [ ] Zero core files modified
+- [ ] Domain's personas load and voice correctly
+- [ ] Domain's event taxonomy is used in sidecar output
+- [ ] Safety infrastructure activates in the new domain context
 
-#### UC-6: GM-side design test
-**Actor:** Designer
-**Preconditions:** Playable game-state.
+#### UC-6: Fiction-Mechanics-Fiction Loop
+**Actor:** Game designer or narrative designer
+**Preconditions:** A mechanical outcome has been determined (dice roll, rule resolution, stat check).
 **Flow:**
-1. Designer runs `/improvise --pc` (or with a named PC).
-2. Arneson GMs; designer plays a PC.
-3. Same sidecar + digest pipeline as `/braunstein`.
+1. Practitioner invokes `/narrate` with the mechanical outcome
+2. Arneson reads the current state and the outcome
+3. Generates the "new fiction" that flows from the mechanical result
+4. Fiction respects intent declarations — a `non_negotiable: true` mechanic is narrated faithfully
 
-**Postconditions:** Transcript tests the GM-facing side of the design.
+**Postconditions:** Fiction bridges the mechanical outcome back into the narrative.
 **Acceptance Criteria:**
-- [ ] Arneson voices world and NPCs distinctly from each other and from archetypes
-- [ ] Designer actions as PC are captured faithfully in the sidecar
-- [ ] Rule-of-cool overrides (where Arneson-as-GM bent a rule for fiction) are flagged
-
-> **Sources**: issue-3:68-102 (flows), concept:36-79 (composition), Phase 3 Q1-Q2 (audience), Phase 4 (teammate feedback), Phase 5 decisions
+- [ ] Generated fiction is grounded in the mechanical outcome
+- [ ] Intent declarations are respected
+- [ ] Output includes both prose and structured event capture
 
 ---
 
 ## Functional Requirements
 
-### FR-1: `/braunstein` — Flagship Live Playtest
-**Priority:** Must Have (P0)
-**Description:** Interactive session skill. User GMs; Arneson plays an archetype (from Gygax's cabal definitions, or Arneson's fallback bundle) as an actual character. Dialogue, in-character reactions, dice rolls (per FR-6), and real-time sidecar emission.
+### Core Requirements (Domain-Agnostic)
+
+#### FR-C1: Persona Hosting Engine
+**Priority:** Must Have
+**Description:** Load, voice, and persist any persona definition from any domain. The hosting engine manages voice generation, memory (configurable sliding window), behavioral grounding against structured state, and session persistence. Persona definitions are domain-provided; the hosting engine is core.
 
 **Acceptance Criteria:**
-- [ ] Opens with a session safety agreement (per FR-10)
-- [ ] Loads archetype from Gygax's `identity/persona.yaml` when available; from Arneson fallback bundle otherwise
-- [ ] Reads both `mechanical_intent` and `experiential_intent` fields from game-state
-- [ ] Writes prose transcript to `grimoires/arneson/sessions/{date}-braunstein-{archetype}.md`
-- [ ] Writes structured sidecar to `grimoires/arneson/sessions/{date}-braunstein-{archetype}.events.yaml`
-- [ ] Sidecar events include: scene frames, dice rolls with context, archetype decisions with "why" grounding, signal flags, intent conflicts, GM prompts (`"I don't know how this mechanic resolves"`), safety triggers
-- [ ] Each archetype decision includes a classification tag: `fictional_friction` or `mechanical_bottleneck` (or both)
-- [ ] `--fork` flag supports scry-forked game-state
-- [ ] Archetype-instance memory applies 3-session sliding window (per FR-8)
-- [ ] Session is resumable — state written on any exit, including user interrupt
+- [ ] Persona loads from any domain's definition format (via voice-base schema + domain extensions)
+- [ ] Persona maintains consistent voice across turns within a session
+- [ ] Persona memory persists across sessions (configurable window, default 3 sessions)
+- [ ] Persona respects behavioral constraints from its definition
+- [ ] Persona reads and grounds against practitioner-provided structured state
 
-**Dependencies:** FR-6 (dice), FR-7 (intent), FR-8 (memory), FR-10 (safety), FR-11 (sidecar schema)
+**Dependencies:** FR-C6 (domain extension point provides persona definitions)
 
-### FR-2: `/voice {npc-id}` — NPC Workshop
-**Priority:** Must Have (P0)
-**Description:** Embody a specific NPC for workshop-style dialogue. Arneson stays in character until session ends. NPC voice state evolves and persists.
+> **Sources**: Phase 4 (2026-05-12); v1 FR-10 (archetype memory), FR-13 (voice schema)
+
+#### FR-C2: Session Management
+**Priority:** Must Have
+**Description:** Start, stop, pause, and resume creative sessions with structured event capture. Every session produces a transcript+sidecar pair. Sessions are domain-aware — they load the active domain's event taxonomy and resolution mechanics.
 
 **Acceptance Criteria:**
-- [ ] Accepts existing npc-id OR fresh id (creates new NPC YAML)
-- [ ] Opens with session safety agreement
-- [ ] NPC state uses shared voice base schema + NPC-specific extensions (per FR-12)
-- [ ] Holds character throughout session; leaving character requires explicit `/break` command
-- [ ] On exit, displays state diff and asks for confirmation before persisting
-- [ ] Persists to `grimoires/arneson/voices/npcs/{id}.yaml`
-- [ ] Sidecar emission for substantial turns (voice drift moments, factual reveals, memory additions)
+- [ ] Session lifecycle: start → active → pause/resume → end
+- [ ] Session state persists (can be resumed after interruption)
+- [ ] Events captured in real-time to sidecar
+- [ ] Session metadata tracks: domain, personas involved, state references, timestamps
+- [ ] Multiple sessions can coexist (different domains, different personas)
 
-**Dependencies:** FR-10 (safety), FR-12 (voice schema)
+**Dependencies:** FR-C4 (safety integrates into session lifecycle)
 
-### FR-3: `/scene` — Scene Generator
-**Priority:** Must Have (P0)
-**Description:** Generate a scene from a seed, oracle-table output, or user prompt. Produces opening situation, sensory detail, immediate stakes. One-shot by default; re-runnable with variation flags.
+> **Sources**: v1 `/braunstein` state machine (7 states); Phase 4 (2026-05-12)
 
-**Acceptance Criteria:**
-- [ ] Accepts seed text, oracle result, or structured prompt
-- [ ] References at least one game-state element verbatim (grounding check)
-- [ ] Respects tradition conventions when a tradition lore file is present
-- [ ] Output flags itself as "improvised against structural-only context" when no tradition match
-- [ ] Writes to `grimoires/arneson/scenes/{date}-{scope}.md`
-- [ ] Inherits project-level safety config (no per-invocation prompt)
+#### FR-C3: Sidecar Event Schema
+**Priority:** Must Have
+**Description:** Base event types (dialogue, signal, decision, pause, scene_transition) that are present in every domain. Domains extend the base with domain-specific event types. The base schema defines the envelope; domains define the payload.
 
-**Dependencies:** FR-9 (tradition fallback), FR-10 (safety)
-
-### FR-4: `/narrate` — Fiction-Mechanics-Fiction Primitive
-**Priority:** Must Have (P0)
-**Description:** When a mechanic fires, generate the "new fiction" that flows from it. Implements the PbtA-derived fiction-mechanics-fiction loop at the tooling level. The foundational primitive underneath `/braunstein`, `/voice`, `/scene`.
+**Base Event Types:**
+- `dialogue` — persona speaks (who, what, grounding references)
+- `signal` — practitioner or persona flags something (safety trigger, insight, concern)
+- `decision` — a creative decision is made (what, why, alternatives considered)
+- `pause` — session paused (reason)
+- `scene_transition` — context shifts (from, to, trigger)
+- `state_reference` — output references structured state (what, where, how used)
 
 **Acceptance Criteria:**
-- [ ] Accepts a mechanic outcome (roll result, triggered move, resource change, etc.) + game-state context
-- [ ] Produces narration grounded in both `mechanical_intent` (what happened mechanically) and `experiential_intent` (how it should feel)
-- [ ] Does not fudge: if `mechanical_intent: lethal`, narration does not soften the mechanical outcome to save a PC
-- [ ] Returns structured output: prose + optional sidecar fragment (for callers like `/braunstein` to concatenate)
-- [ ] One-shot by default; callable as a library primitive by other skills
+- [ ] Base schema validates across all domains
+- [ ] Domain-specific event types extend the base without modifying it
+- [ ] Every event includes: timestamp, event_type, actor, grounding_refs
+- [ ] Sidecar is valid YAML that parseable independently of the transcript
 
-**Dependencies:** FR-7 (intent)
+**Dependencies:** FR-C6 (domains declare their event extensions)
 
-### FR-5: `/improvise` — GM-Side Design Test
-**Priority:** Must Have (P0)
-**Description:** Inverse of `/braunstein`. Arneson GMs; user plays a PC. For testing the GM-facing side of a design.
+> **Sources**: v1 `schemas/session-events.schema.yaml` (12+ event types); Phase 4 (2026-05-12)
 
-**Acceptance Criteria:**
-- [ ] Opens with session safety agreement
-- [ ] Arneson voices world and NPCs; user inputs as PC
-- [ ] Same sidecar + transcript pipeline as `/braunstein`
-- [ ] Rule-of-cool overrides (Arneson bent a rule for fiction) flagged in sidecar as `rule_of_cool` events
-- [ ] Clarifying questions from user (as PC or as designer-stepping-out) flagged as `clarifying_question` events
-- [ ] Distinguishes its transcripts with mode tag (`mode: improvise` in sidecar preamble)
-
-**Dependencies:** FR-1 (shares infrastructure)
-
-### FR-6: `/arneson` — Status Dashboard
-**Priority:** Must Have (P0)
-**Description:** Status-only read skill. Lists active sessions, voiced NPCs, recent scenes, and campaign continuity state (archetype memory windows).
+#### FR-C4: Safety Infrastructure
+**Priority:** Must Have
+**Description:** Safety mechanics work in every domain, every session, every mode. No opt-out. Includes: pre-session agreement flow, in-session safety commands (/pause, /x-card, /resume), safety triggers logged as structured data (findings, not just interruptions), and configurable content boundaries (Lines & Veils equivalent).
 
 **Acceptance Criteria:**
-- [ ] Reports Gygax composition state (detected / absent)
-- [ ] Lists sessions with timestamps, mode, archetype/PC
-- [ ] Lists NPC state files with last-edit timestamps
-- [ ] Lists scene and fragment files
-- [ ] Reports archetype memory windows (which archetypes have N/3 sessions in recent memory)
-- [ ] Reports safety-findings count (if any)
-- [ ] Read-only; writes nothing
+- [ ] Pre-session safety agreement is mandatory (cannot be skipped)
+- [ ] /pause, /x-card, /resume work in any session regardless of domain
+- [ ] Safety triggers are logged as `signal` events in the sidecar with `safety` classification
+- [ ] Safety events are treated as data points (Dead Design Space findings), not just interruptions
+- [ ] Content boundaries are configurable per session and per domain
 
-**Dependencies:** none (reads from `grimoires/arneson/*`)
+**Dependencies:** None (safety is foundational)
 
-### FR-7: `/fragment` — Setting Material Generator
-**Priority:** Must Have (P0)
-**Description:** Generate setting material (locations, histories, factions, items). Low-effort, high-value for world-building.
+> **Sources**: v1 FR-15 (safety as finding); issue-3:131-133 (safety as load-bearing); Phase 4 (2026-05-12)
 
-**Acceptance Criteria:**
-- [ ] Accepts scope argument: `location`, `faction`, `history`, `item`, or free-form
-- [ ] References at least one game-state element (grounding check)
-- [ ] Respects tradition conventions when available
-- [ ] Writes to `grimoires/arneson/fragments/{date}-{scope}.md`
-- [ ] Fragment can be injected back into game-state YAML via explicit user action (no auto-injection)
-
-**Dependencies:** FR-9 (tradition fallback)
-
-### FR-8: `/distill` — Session Compressor
-**Priority:** Must Have (P0) — composition glue
-**Description:** Post-playtest skill. Converts a session's prose transcript + structured sidecar into a Gygax-ingestible digest. Identifies every rule invocation, every rule-of-cool override, every clarifying question, every signal flag, every safety trigger.
+#### FR-C5: Transcript + Sidecar Output
+**Priority:** Must Have
+**Description:** Every session produces a paired output: human-readable markdown transcript AND machine-parseable YAML sidecar. The transcript is presentable standalone (grimoire-as-deliverable). The sidecar is consumable by downstream tools. Neither is optional.
 
 **Acceptance Criteria:**
-- [ ] Accepts session path (either `{session}.md` or sibling `.events.yaml`)
-- [ ] Extracts: rule invocations (tagged by mechanic), rule-of-cool overrides, clarifying questions, signal flags (friction/bottleneck), safety triggers (as `dead_design_space` findings), intent conflicts
-- [ ] Writes digest to `grimoires/arneson/digests/{session}.digest.yaml`
-- [ ] Digest is self-describing (readable without Gygax installed)
-- [ ] When Gygax is installed, digest format is schema-compatible with `/cabal --from-session` (binary round-trip test)
-- [ ] When Gygax is absent, digest still compresses the session usefully (standalone success)
+- [ ] Transcript renders as clean, presentable markdown
+- [ ] Sidecar validates against the session-events schema (base + domain extensions)
+- [ ] Transcript and sidecar are paired (same session ID, co-located in grimoire)
+- [ ] Transcript is readable without the sidecar; sidecar is parseable without the transcript
+- [ ] Output paths follow grimoire conventions per domain
 
-**Dependencies:** FR-1 (sidecar format contract)
+**Dependencies:** FR-C3 (sidecar schema)
 
-### FR-9: Intent Interface (Two-Axis Schema)
-**Priority:** Must Have (P0) — composition contract
-**Description:** Formal schema for intent blocks in game-state YAML. Two axes: `mechanical_intent` (owned by Gygax) and `experiential_intent` (owned by Arneson).
+> **Sources**: v1 FR-16 (structural tagging/sidecar); issue-3:151-153 (handoff format); Phase 2 (dual-audience)
 
-**Acceptance Criteria:**
-- [ ] Arneson ships `schemas/experiential_intent.schema.yaml` with full field definitions and controlled vocabulary
-- [ ] Arneson reads both axes when present; gracefully degrades when only one is present
-- [ ] Degradation path: if only single-axis `intent` present (pre-split Gygax), Arneson treats it as `mechanical_intent` and defaults `experiential_intent` to neutral
-- [ ] A file Gygax-side PR is authored to extend Gygax's schema to split single-axis `intent` into `mechanical_intent` + `experiential_intent` (tracked as external dependency)
-- [ ] Changing only `experiential_intent` (same mechanical_intent) produces materially different voicing in acceptance test (G-3 validation)
+#### FR-C6: Domain Extension Point
+**Priority:** Must Have
+**Description:** A new domain vertical can be added to Arneson without modifying any core code. A domain provides: structured state format, persona definitions, event taxonomy (extending base), resolution mechanics, and downstream consumer specification. The extension interface prioritizes maximum customizability for the practitioner.
 
-**Dependencies:** external Gygax schema PR (tracked as assumption)
-
-### FR-10: Archetype Memory (3-Session Sliding Window)
-**Priority:** Must Have (P0)
-**Description:** Archetype-instances carry memory across sessions within a capped sliding window.
+**A domain vertical provides:**
+1. **Structured state** — the format of the domain's grounding data (game state, story bible, behavioral spec)
+2. **Persona definitions** — how personas are defined in this domain (archetypes, NPCs, agents, characters)
+3. **Event taxonomy** — domain-specific event types extending the base sidecar schema
+4. **Resolution mechanics** — how decisions are resolved in this domain (dice, oracle tables, deterministic rules, or none)
+5. **Consumer specification** — what downstream tools expect from `/distill` output
 
 **Acceptance Criteria:**
-- [ ] Most recent 3 sessions inform archetype behavior on subsequent invocations
-- [ ] Archetype identity never fully extinguishes (the Newcomer stays a Newcomer regardless of memory)
-- [ ] Memory lives in `grimoires/arneson/voices/archetypes/{archetype}.state.yaml` (separate from the SSOT archetype definition)
-- [ ] Memory is pruned automatically as new sessions enter the window
-- [ ] User can inspect and edit the memory state file directly
-- [ ] User can clear memory with explicit command (scoped to single archetype or all)
+- [ ] Adding a domain vertical requires zero modifications to core Arneson files
+- [ ] Domain is discoverable by Arneson (convention-based, maximum flexibility)
+- [ ] Domain's persona definitions are loadable by the persona hosting engine (FR-C1)
+- [ ] Domain's event types extend the base schema (FR-C3) without conflicts
+- [ ] Domain's resolution mechanics are invocable during sessions
+- [ ] Domain's consumer spec is used by `/distill` to shape output
+- [ ] TTRPG vertical serves as reference implementation and documentation of the extension interface
 
-**Dependencies:** none
+**Dependencies:** All other core FRs (this is the integration point)
 
-### FR-11: Dice Resolution Authority
-**Priority:** Must Have (P0)
-**Description:** Dice resolution during `/braunstein` and `/improvise` is user-configurable. Default: user rolls and reports.
+> **Sources**: Phase 2 proof point (extension story); Phase 4 (2026-05-12)
 
-**Acceptance Criteria:**
-- [ ] Per-session flag: `--dice=user|arneson|hybrid` (default `user`)
-- [ ] Mode `user`: Arneson prompts user for roll outcome; Arneson does not generate random numbers
-- [ ] Mode `arneson`: Arneson resolves rolls using Gygax probability scripts (when available) or standalone RNG; outcome logged deterministically in sidecar
-- [ ] Mode `hybrid`: Arneson proposes a roll outcome; user confirms or re-rolls
-- [ ] All three modes log roll events identically in sidecar (same schema)
-
-**Dependencies:** optional Gygax probability scripts
-
-### FR-12: Tradition Fallback (Structural Improvisation)
-**Priority:** Must Have (P0)
-**Description:** When a tradition lore file is absent or thin, Arneson improvises from game-state structure and flags the improvisation to the user.
+#### FR-C7: Status Dashboard (`/arneson`)
+**Priority:** Should Have
+**Description:** Domain-aware status display showing active sessions, voiced personas, recent output, and domain health across all installed verticals.
 
 **Acceptance Criteria:**
-- [ ] At session start: if tradition YAML matches exactly, proceed silently
-- [ ] If tradition YAML missing or thin: display banner (`"I don't have a lore file for this tradition — I'll improvise from mechanics. Okay to proceed?"`), prompt user
-- [ ] If user confirms: proceed in "improvised tradition" mode; tag sidecar preamble accordingly
-- [ ] Improvisation notes saved back to `grimoires/arneson/fragments/improvised-tradition-{tradition}-{date}.md` for designer review
-- [ ] User can reject and abort the session
+- [ ] Shows active sessions grouped by domain
+- [ ] Shows recently voiced personas with last-session timestamps
+- [ ] Shows domain vertical status (installed, healthy, configuration issues)
+- [ ] Works with zero domains installed (shows core status only)
 
-**Dependencies:** FR-9 (intent), read-only access to `skills/lore/resources/` when Gygax installed
+**Dependencies:** FR-C6 (domain awareness)
 
-### FR-13: Voice Schema (Shared Base + Type-Specific Extensions)
-**Priority:** Must Have (P0)
-**Description:** Voice files share a common base schema. Archetypes, NPCs, and PCs extend the base with type-specific fields.
+> **Sources**: v1 FR-6 (`/arneson` status)
 
-**Acceptance Criteria:**
-- [ ] `schemas/voice-base.schema.yaml` defines: speech_patterns, reaction_tempo, emotional_register, memory_slots, known_facts
-- [ ] `schemas/voice-archetype.schema.yaml` extends base with: experiential_intent_weights, memory_window_size, chaos_axis_config (for Chaos Agent)
-- [ ] `schemas/voice-npc.schema.yaml` extends base with: location, faction, workshop_state
-- [ ] `schemas/voice-pc.schema.yaml` extends base with: player_consent_metadata, pc_class (or tradition-equivalent)
-- [ ] All three extensions validate as valid instances of the base
+#### FR-C8: Workshop-Then-Serialize Pattern
+**Priority:** Must Have
+**Description:** The canonical flow for persona development is iterative workshop convergence, not one-shot generation. A practitioner invokes `/voice` (or equivalent domain skill) across multiple sessions until the persona's voice *locks* — producing a persisted voice-state that captures speech patterns, memory, register, and behavioral grounding. Only AFTER a workshop has converged may the voice-state be serialized for downstream consumption (e.g., static prompt for a Discord bot, agent config, character bible entry).
 
-**Dependencies:** none
+Skipping the workshop and extracting voice doctrine directly into a static prompt is a documented misuse pattern — the static embed loses the iteration loop, the grounding, and the sidecar emission that make arneson a workshop instrument rather than an IP-to-photocopy source.
 
-### FR-14: Chaos Agent Bounding
-**Priority:** Must Have (P0)
-**Description:** The Chaos Agent archetype is narratively bounded and structurally unbounded. Mechanically unpredictable decisions; intelligible narration.
+**Two valid shapes:**
+
+| Shape | What it is | What it produces | Valid? |
+|-------|-----------|------------------|--------|
+| **Workshop tool** (canonical) | Invoke `/voice` iteratively across sessions until voice converges | Locked voice-state.yaml with speech patterns, memory, register | Always |
+| **Doctrine reference** (consumer) | Serialize a locked voice-state into a static prompt for downstream use | One-shot voice approximation grounded in workshopped state | Only after Shape 1 |
 
 **Acceptance Criteria:**
-- [ ] Chaos Agent voice YAML (`voice-archetype` extension) declares `chaos_axis_config: { structural: unbounded, narrative: bounded }`
-- [ ] Structural axis: archetype decision distribution across legal moves is unconstrained (may pick any move with any probability per turn)
-- [ ] Narrative axis: speech remains intelligible in-fiction (no reality-breaks, no frame-shatter, no meta-awareness); narration stays grounded in the game-state's fiction
-- [ ] Sidecar emission hard-capped per turn to prevent context-window blow-up
-- [ ] Per-turn cap is configurable; default set based on empirical testing during vertical-slice build
+- [ ] `/voice` (and equivalent domain workshop skills) support multi-session iteration with convergence tracking
+- [ ] Voice-state.yaml is the canonical output of a completed workshop (exportable, serializable)
+- [ ] Consumer-pattern documentation distinguishes the two valid shapes explicitly
+- [ ] Arneson's identity/README flags that skipping the workshop is a misuse pattern
 
-**Dependencies:** FR-13 (voice schema)
+**Dependencies:** FR-C1, FR-C2
 
-### FR-15: Safety as Load-Bearing Mechanic
-**Priority:** Must Have (P0)
-**Description:** Session-length skills (`/braunstein`, `/voice`, `/improvise`) open with a safety agreement. Triggered safety events are logged as `dead_design_space` findings.
+> **Sources**: 0xHoneyJar/construct-arneson#2 (text-embed vs workshop misuse pattern, filed by consumer, self-corrected); Phase 4 (2026-05-12)
 
-**Acceptance Criteria:**
-- [ ] Session-length skills prompt Lines & Veils / X-card at session open
-- [ ] Session-level pause command (`/pause` or `/x-card`) works at any time
-- [ ] Pause halts generation immediately; resume is explicit (`/resume`)
-- [ ] Triggered events log as `dead_design_space` events in sidecar
-- [ ] Project-level aggregation: safety events also append to `grimoires/arneson/safety-findings.md` (human-readable, stays out of normal transcripts)
-- [ ] One-shot skills (`/scene`, `/narrate`, `/fragment`) inherit project-level safety config; do not re-prompt
-- [ ] Safety taxonomy follows TTRPG community conventions (Lines & Veils, X-card, Script Change) — no proprietary terminology
-
-**Dependencies:** none
-
-### FR-16: Structural Tagging (Sidecar Event Schema)
-**Priority:** Must Have (P0) — admissibility infrastructure
-**Description:** The `{session}.events.yaml` sidecar is a structured event log that makes admissibility mechanically verifiable.
+#### FR-C9: Session Distillation (`/distill`)
+**Priority:** Must Have
+**Description:** Compress any session's transcript+sidecar into a downstream-consumable format, configured per domain's consumer specification. In the TTRPG vertical, this means Gygax-ingestible digest. In other domains, the consumer spec defines the shape.
 
 **Acceptance Criteria:**
-- [ ] `schemas/session-events.schema.yaml` defines event types: `scene_frame`, `dice_roll`, `archetype_decision`, `signal_flag`, `intent_conflict`, `gm_prompt`, `safety_trigger` (= `dead_design_space`), `rule_of_cool`, `clarifying_question`
-- [ ] Each `archetype_decision` event includes: archetype id, decision text, classification (`fictional_friction` | `mechanical_bottleneck` | both), game-state reference(s) that informed the decision
-- [ ] Each `dice_roll` event includes: mechanic id, outcome, mode (`user`/`arneson`/`hybrid`), reference to game-state mechanic
-- [ ] Each `signal_flag` event includes: signal type (confusion, friction, bottleneck, delight, etc.), source (user-flagged or Arneson-inferred), scene_frame back-reference
-- [ ] Sidecar is written incrementally during the session (durable across crashes)
+- [ ] Reads transcript + sidecar pair for any domain
+- [ ] Applies domain's consumer specification to shape output
+- [ ] Output validates against domain's expected digest format
+- [ ] Produces useful output even without a consumer spec (generic structured summary)
+- [ ] Identifies: key moments, persona signals, state conflicts, unresolved questions
 
-**Dependencies:** FR-1 (/braunstein emits), FR-5 (/improvise emits), FR-8 (/distill consumes)
+**Dependencies:** FR-C5 (transcript+sidecar), FR-C6 (domain consumer spec)
 
-### FR-17: Standalone Fallback Archetype Bundle
-**Priority:** Must Have (P0) — standalone-plus-composable
-**Description:** When Gygax is absent, Arneson ships a minimal fallback copy of the 9 archetypes (marked as fallback) so that archetype-dependent skills still function.
+> **Sources**: v1 FR-8 (`/distill`); teammate feedback §5 (`/distill` as composition glue)
+
+### TTRPG Vertical Requirements (Reference Implementation)
+
+#### FR-T1: `/braunstein` — Live Playtest Session
+**Priority:** Must Have
+**Description:** Flagship TTRPG skill. User GMs, Arneson plays an archetype (from Gygax's cabal definitions or fallback bundle) as an actual character. Dialogue, in-character reactions, dice rolls, real-time experience signal capture. Named after Arneson's 1969 proto-RPG.
 
 **Acceptance Criteria:**
-- [ ] Arneson ships `resources/archetypes-fallback/*.yaml` — mirrors Gygax's 9 archetypes
-- [ ] Each fallback file includes a comment: `# FALLBACK: overridden by Gygax's identity/persona.yaml when Gygax is installed`
-- [ ] Archetype-dependent skills (`/braunstein`, `/improvise`) prefer Gygax's SSOT when present; fall back when absent
-- [ ] Fallback files are kept semantically in sync with Gygax's SSOT (test: fallback loads without errors against current Gygax version) — divergence flagged in release notes
+- [ ] Archetype loads from Gygax (if installed) or fallback bundle (standalone)
+- [ ] State machine: SETUP → ARCHETYPE_SELECT → GAME_STATE_LOAD → INTENT_READ → SAFETY_AGREEMENT → ACTIVE_PLAY → WRAP_UP
+- [ ] Dice resolution: user-configurable (user rolls / Arneson rolls / hybrid), default user rolls
+- [ ] Intent-aware: `non_negotiable: true` mechanics played into, not against
+- [ ] Experiential intent shapes narrative tone (desperate, triumphant, eerie, etc.)
+- [ ] Produces transcript + sidecar pair per FR-C5
+- [ ] Composition detection: checks for `grimoires/gygax/` at session start
 
-**Dependencies:** Gygax v3 (as SSOT source; but construct works without it)
+**Dependencies:** FR-C1, FR-C2, FR-C3, FR-C4, FR-C5
 
-> **Sources**: issue-3:68-78 (skill list), issue-3:125-135 (principles), Phase 4 (teammate feedback, skill ordering), Phase 5 (all technical decisions), NOTES.md Decision Log
+> **Sources**: issue-3:73 (`/braunstein`); v1 FR-1; NOTES.md teammate feedback §1-4
+
+#### FR-T2: `/voice` — NPC Workshop Dialogue
+**Priority:** Must Have
+**Description:** Embody a specific NPC for workshop-style dialogue. Arneson stays in character until the session ends. NPC state persists in `grimoires/arneson/voices/npcs/`.
+
+**Acceptance Criteria:**
+- [ ] NPC voice loads from voice definition (voice-npc schema)
+- [ ] Voice is consistent with defined speech patterns, emotional register, knowledge level
+- [ ] Workshop loop: practitioner speaks → Arneson responds in-character → iterate
+- [ ] NPC state updates persist across workshop sessions
+
+**Dependencies:** FR-C1, FR-C2
+
+> **Sources**: issue-3:74; v1 FR-2; concept:42-44
+
+#### FR-T3: `/scene` — Scene Generation
+**Priority:** Must Have
+**Description:** Generate a scene from game-state + seed (prompt, oracle table output, or state reference). Produces opening situation, sensory detail, immediate stakes. Grounded in game-state.
+
+**Acceptance Criteria:**
+- [ ] Reads game-state for grounding (locations, factions, tensions, constraints)
+- [ ] Tradition-aware: adapts tone and detail to the game's tradition (if Gygax provides tradition lore)
+- [ ] Scene includes: opening hook, sensory detail, immediate stakes
+- [ ] Output is presentable markdown (grimoire-as-deliverable)
+
+**Dependencies:** FR-C1, FR-C5
+
+> **Sources**: issue-3:75-76; v1 FR-3; concept:46-47
+
+#### FR-T4: `/narrate` — Fiction-Mechanics-Fiction Bridge
+**Priority:** Must Have
+**Description:** When a mechanic fires, generate the "new fiction" that flows from it. Implements the PbtA-derived fiction-mechanics-fiction loop. Callable by `/braunstein` and `/improvise`.
+
+**Acceptance Criteria:**
+- [ ] Reads mechanical outcome and current narrative context
+- [ ] Generates fiction that bridges the mechanical result back into the narrative
+- [ ] Intent-aware: respects `non_negotiable` and experiential intent
+- [ ] Usable as a primitive by other skills (not just standalone)
+
+**Dependencies:** FR-C1
+
+> **Sources**: issue-3:76-77; v1 FR-4; concept:48-50
+
+#### FR-T5: `/improvise` — Arneson GMs, User Plays PC
+**Priority:** Must Have
+**Description:** Inverse of `/braunstein`. Arneson runs the world, voices NPCs, interprets mechanics into fiction. User plays a PC. For testing the GM-facing side of a design.
+
+**Acceptance Criteria:**
+- [ ] Arneson GMs: sets scenes, voices NPCs, resolves mechanics into fiction
+- [ ] User plays as PC: provides character actions, makes decisions
+- [ ] Same session infrastructure as `/braunstein` (transcript + sidecar, safety, intent)
+- [ ] Grounded in game-state (NPCs, locations, factions, mechanics)
+
+**Dependencies:** FR-C1, FR-C2, FR-T4
+
+> **Sources**: issue-3:77-78; v1 FR-5; concept:52-53
+
+#### FR-T6: `/fragment` — Setting Material Generation
+**Priority:** Should Have
+**Description:** Generate setting fragments (locations, histories, factions, NPC sketches) grounded in game-state and tradition. Low-effort, high-value for designers building worlds.
+
+**Acceptance Criteria:**
+- [ ] Generates: locations, histories, factions, NPC sketches
+- [ ] Grounded in existing game-state (no contradictions)
+- [ ] Tradition-aware: adapts tone to the game's tradition
+- [ ] Outputs presentable markdown to `grimoires/arneson/fragments/`
+
+**Dependencies:** FR-C1, FR-C5
+
+> **Sources**: issue-3:207; v1 FR-7
+
+#### FR-T7: Two-Axis Intent
+**Priority:** Must Have
+**Description:** Experiential intent (how it should feel) + mechanical intent (what the math should do). Arneson owns experiential_intent; Gygax owns mechanical_intent. Arneson reads both axes. Never fudges fiction to overrule mechanical intent.
+
+**Acceptance Criteria:**
+- [ ] `experiential_intent.schema.yaml` defines: tone, pacing, stakes, register
+- [ ] Both axes are read before any TTRPG session begins
+- [ ] When intent changes (Lethal → Heroic), voicing shifts without manual prompt-tuning
+- [ ] Mechanical intent is never overridden by narrative preference
+
+**Dependencies:** None (schema-level concern)
+
+> **Sources**: NOTES.md teammate feedback §2; v1 FR-9
+
+#### FR-T8: Archetype Memory
+**Priority:** Must Have
+**Description:** 3-session sliding window for archetype memory. The Newcomer who was confused last session carries that memory. Archetype identity never fully extinguishes — the Newcomer remains a Newcomer regardless of experience.
+
+**Acceptance Criteria:**
+- [ ] Memory window configurable (default: 3 sessions)
+- [ ] Recent sessions inform current behavior
+- [ ] Core archetype identity persists regardless of accumulated experience
+- [ ] Memory state stored in `grimoires/arneson/voices/archetypes/*.yaml`
+
+**Dependencies:** FR-C1
+
+> **Sources**: issue-3:139-141; v1 FR-10; concept:107-108
+
+#### FR-T9: Gygax Composition
+**Priority:** Should Have (amplification, not dependency)
+**Description:** When Gygax is installed, Arneson reads game-state, archetype definitions, intent fields, and tradition lore from Gygax's grimoire. Arneson writes transcripts and voice state that Gygax can analyze. When Gygax is not installed, Arneson uses fallback archetypes and functions standalone.
+
+**Acceptance Criteria:**
+- [ ] Composition detection: checks for `grimoires/gygax/` at startup
+- [ ] Reads: `grimoires/gygax/game-state/`, `skills/cabal/resources/archetypes.yaml`, intent fields, tradition lore
+- [ ] Writes: `grimoires/arneson/sessions/*.md` consumable by `/cabal --from-session`
+- [ ] Standalone mode: fallback archetype bundle in `resources/archetypes-fallback/`
+- [ ] Gygax is never required — composition is opt-in amplification
+
+**Dependencies:** None (standalone-plus-composable)
+
+> **Sources**: issue-3:79-101; concept:59-69; NOTES.md (standalone-plus-composable decision)
+
+### Cross-Domain Requirements
+
+#### FR-X1: Persona Portability
+**Priority:** Nice to Have
+**Description:** A voice definition created in one domain can be loaded in another. The core voice schema (voice-base) is domain-agnostic; domain-specific extensions layer on top. A TTRPG NPC could be imported as a game-writing character; an agent persona could be tested in a TTRPG session.
+
+**Acceptance Criteria:**
+- [ ] Voice-base fields are readable by any domain's hosting engine
+- [ ] Domain-specific extension fields are ignored (gracefully) when loaded in a different domain
+- [ ] Persona memory does not transfer across domains (clean slate in new context)
+- [ ] Portability is opt-in, not automatic
+
+**Dependencies:** FR-C1, FR-C6
+
+> **Sources**: Phase 4 (2026-05-12) — agent recommendation, confirmed by user
 
 ---
 
 ## Non-Functional Requirements
 
-### Performance
-- Interactive sessions (`/braunstein`, `/voice`, `/improvise`) must respond to each user turn within a time budget that keeps conversation flowing. Target: initial response begins within 10 seconds of user input; full turn completes within 60 seconds for typical turns. Chaos Agent turns may be longer but are bounded by FR-14's per-turn cap.
-- One-shot skills (`/scene`, `/narrate`, `/fragment`) complete within a single LLM turn. Target: <60 seconds typical.
-- `/distill` is batch — no interactive performance requirement.
+### Extensibility
 
-### Reliability
-- Session state must be durable to crashes. `{session}.md` and `.events.yaml` must be written incrementally (append-only during session) so that an interrupted session leaves a readable partial transcript.
-- Memory-window files (`voices/archetypes/*.state.yaml`) must be written atomically (temp-file + rename) to prevent corruption on crash.
+- **NFR-1**: Adding a domain vertical requires zero changes to Arneson core code. The extension interface is the primary architectural constraint.
+- **NFR-2**: All schemas use base + extension pattern. Base schemas are core; extensions are domain-provided. No domain-specific fields in base schemas.
 
-### Scalability
-- Construct operates on a single designer's game-state. No multi-tenant, no concurrent-session requirements for v1.
-- Sidecar files must remain tractable. Target: typical session sidecar <500KB YAML. Hard cap: per-turn event emission (FR-14 prevents blow-up).
+> **Sources**: Phase 5 (2026-05-12); G-3
 
-### Security / Privacy
-- No outbound network calls from Arneson code except the LLM provider call (inherited from the Loa framework).
-- Game-state and session transcripts stay local to the user's repository. No telemetry beyond what Loa provides at the framework level.
-- Safety-findings are local-only; they appear only in `grimoires/arneson/safety-findings.md` and the sidecar. Never transmitted externally.
+### Resilience
 
-### Compliance
-- Safety taxonomy must follow TTRPG community conventions (Lines & Veils, X-card, Script Change). No proprietary invention here.
-- No personal player data stored in v1 (designer-only UX means no player-identifiable information enters the system).
+- **NFR-3**: Graceful degradation — if domain configuration is incomplete, Arneson falls back to sensible defaults (structural improvisation + user confirmation). Missing persona definitions → generic voice. Missing event taxonomy → base events only. Missing resolution mechanics → no resolution (pure narrative).
+- **NFR-4**: If Gygax is not installed, all TTRPG capabilities work via fallback bundle. No error, no degraded UX — just standalone mode.
 
-### Accessibility
-- Markdown-native output. No non-text-required modes.
-- All skills must operate from a text terminal without visual-only cues.
+> **Sources**: v1 decisions (tradition fallback = structural improvisation); Phase 5 (2026-05-12)
 
-### Portability
-- Arneson installs as a Loa-framework skill-pack. Supported platforms match Loa's supported platforms (darwin, linux). Windows: untested in v1.
+### Safety
 
-> **Sources**: issue-3:125-135 (principles), Phase 5 (technical decisions), Phase 6 (scope)
+- **NFR-5**: Safety is non-negotiable. Every domain, every session, every mode. No opt-out. No "skip safety for this session" option.
+- **NFR-6**: Safety triggers are data, not just interruptions. Every safety event is captured in the sidecar as a finding.
+
+> **Sources**: issue-3:131-133; v1 FR-15; NOTES.md teammate feedback §4
+
+### Output Quality
+
+- **NFR-7**: All output is simultaneously human-readable AND machine-parseable. Transcripts are presentable standalone markdown. Sidecars are valid YAML.
+- **NFR-8**: Grimoire-as-deliverable: every session transcript, every voiced persona, every generated scene is saved as presentable, exportable markdown.
+
+> **Sources**: Phase 2 (dual-audience); issue-3:135 (grimoire-as-deliverable)
+
+### Compatibility
+
+- **NFR-9**: Construct validates at L0/L1/L2 (Loa construct validation levels).
+- **NFR-10**: CI workflow validates all schemas, all verticals, standalone and composed modes.
+
+> **Sources**: issue-3:192; v1 CI design
 
 ---
 
@@ -516,60 +608,27 @@ The sibling Gygax v3 construct itself, treated as a stakeholder because its anal
 
 ### Key User Flows
 
-#### Flow 1: Closed-loop design iteration (UC-1)
+#### Flow 1: First Session (TTRPG)
 ```
-Gygax /cabal analysis
-  → designer edits mechanic
-  → /braunstein --newcomer
-  → [prose transcript + events.yaml written incrementally]
-  → /distill {session}
-  → Gygax /cabal --from-session {digest}
-  → next iteration
+/braunstein --newcomer → Safety Agreement → Game State Load → Intent Read → Active Play → Wrap Up → Transcript + Sidecar
 ```
 
-#### Flow 2: Standalone playtest (UC-2)
+#### Flow 2: Voice Workshop
 ```
-/braunstein --newcomer
-  → [Arneson detects no Gygax; uses fallback archetypes; banner notes standalone mode]
-  → session proceeds
-  → /distill {session}
-  → self-describing digest written
+/voice {character-id} → Safety Agreement → Workshop Dialogue → Iterate → End Session → Voice State Updated
 ```
 
-#### Flow 3: NPC voice workshop (UC-3)
+#### Flow 3: Extend Arneson (New Domain)
 ```
-/voice masked-mibera
-  → [safety agreement]
-  → [Arneson loads npc state, or creates new]
-  → workshop dialogue
-  → /break (or session exit)
-  → [diff displayed, user confirms]
-  → state persisted
-```
-
-#### Flow 4: Intent-flip comparison test (G-3 validation)
-```
-game-state with experiential_intent: desperate
-  → /braunstein (capture transcript A)
-edit game-state: experiential_intent: heroic (mechanical_intent unchanged)
-  → /braunstein --same-scene (capture transcript B)
-blind-read A vs B
-  → voicing materially differs
+Create domain files → Place in domain directory → Arneson discovers domain → Domain skills available → Run session → Domain-shaped output
 ```
 
 ### Interaction Patterns
 
-- **Session-length skills** (`/braunstein`, `/voice`, `/improvise`): open with safety agreement, sustain character/scene across many user turns, exit cleanly with state diff preview.
-- **One-shot skills** (`/scene`, `/narrate`, `/fragment`): single request → single response; re-invoke for variation.
-- **Meta skills** (`/arneson`, `/distill`): read or batch-process existing files; no interactive state.
-- **Graceful degradation**: all skills detect missing composition targets (Gygax, tradition lore, game-state fields) and either degrade with a banner or prompt the user for confirmation.
-
-### Accessibility Requirements
-
-- Text-only. All outputs are markdown and YAML, legible in any editor or terminal.
-- No time-pressured interaction patterns (user sets the pace).
-
-> **Sources**: Phase 3 (designer-only), Phase 4 (interactivity: hybrid per skill), Phase 5 (interaction decisions)
+- **Director/performer**: Practitioner always directs. Arneson always performs within their constraints.
+- **Session-based**: All creative work happens within sessions. Sessions have explicit start/end.
+- **Paired output**: Every session produces transcript + sidecar. The practitioner reads the transcript; tools read the sidecar.
+- **Safety-first**: Safety agreement before any creative generation. Safety commands available at all times during session.
 
 ---
 
@@ -577,277 +636,177 @@ blind-read A vs B
 
 ### Architecture Notes
 
-construct-arneson is a **Loa-framework skill-pack construct** (schema_version 3). It operates within the State Zone (`grimoires/arneson/`) and does not modify the System Zone (`.claude/`). All interactive behavior is implemented as Skills with SKILL.md entry points; no custom runtime is required.
+The core architectural shift from v1 to v2 is extracting a **domain-agnostic core** from TTRPG-specific code:
 
-**Composition model**: standalone-plus-composable. Arneson runs as a self-contained construct and detects sibling construct (Gygax v3) presence at runtime via filesystem checks (e.g., existence of `grimoires/gygax/` and `skills/cabal/`). When Gygax is detected, Arneson upgrades from fallback mode (using `resources/archetypes-fallback/`) to composed mode (reading Gygax's SSOT files).
+- **Core**: Persona hosting engine, session management, sidecar event schema (base), safety infrastructure, transcript+sidecar output, distillation engine, status dashboard
+- **Domain vertical**: Structured state format, persona definitions, event taxonomy extensions, resolution mechanics, consumer specification
+- **Extension interface**: Convention-based discovery with maximum practitioner flexibility (exact mechanism TBD in SDD)
 
-**Identity files**: `identity/ARNESON.md` (prose identity narrative), `identity/persona.yaml` (warm, improvisational, collaborative), `identity/expertise.yaml` (voice work, scene framing, narrative causality, oracle interpretation, campaign continuity), `identity/refusals.yaml` (structural analysis, probability math, mechanical recommendations, pattern-matching).
-
-**Schemas**: `schemas/experiential_intent.schema.yaml`, `schemas/voice-base.schema.yaml` + extensions, `schemas/session-events.schema.yaml`, `schemas/digest.schema.yaml`.
-
-**Grimoire structure** (per issue-3:105-123, extended):
-```
-grimoires/arneson/
-  voices/
-    archetypes/           # Instance state (memory, scars, preferences)
-    npcs/                 # Workshop NPCs
-    pcs/                  # PC voices for /improvise mode
-  scenes/                 # /scene outputs
-  sessions/               # /braunstein + /improvise transcripts (.md + .events.yaml pairs)
-  digests/                # /distill outputs
-  improv/                 # /improvise-only session logs (if distinct from sessions/)
-  fragments/              # /fragment outputs + improvised-tradition notes
-  safety-findings.md      # Project-level safety event log
-  changelog/
-```
+The existing v1 codebase provides the reference implementation. The refactoring is primarily reorganization (clean separation of concerns), not rewrite — the codebase is clean (hygiene A) and the core capabilities are already more general than their TTRPG framing.
 
 ### Integrations
 
-| System | Integration Type | Purpose |
-|--------|------------------|---------|
-| Gygax v3 `grimoires/gygax/game-state/` | Read-only filesystem | Mechanics, stats, intent fields |
-| Gygax v3 `skills/cabal/resources/archetypes.yaml` | Read-only filesystem | Archetype behavioral SSOT (with Arneson fallback) |
-| Gygax v3 `identity/persona.yaml` + `expertise.yaml` | Read-only filesystem | Archetype voice SSOT |
-| Gygax v3 `skills/lore/resources/{tradition}.yaml` | Read-only filesystem | Tradition conventions (with structural-improvisation fallback) |
-| Gygax v3 probability scripts | Read-only filesystem + subprocess | Dice mode `arneson` roll resolution (when Gygax present) |
-| Gygax v3 `/cabal --from-session` | File handoff | Consumes `/distill` digest output |
-| Loa framework | Skill harness | Skill loading, permission prompts, hooks, memory, trajectory logging |
-
-### Dependencies
-
-- **Loa framework** (mounted as submodule; currently v1.71.1)
-- **Gygax v3** — *optional amplifier* per standalone-plus-composable; not hard-required
-- **yq v4+** (configurable-paths feature; already required by Loa)
-- **Beads** for task tracking (present in `.beads/`)
+| System | Integration Type | Purpose | Required |
+|--------|------------------|---------|----------|
+| Gygax | Grimoire composition | TTRPG grounding (game-state, archetypes, intent, tradition) | No (opt-in) |
+| Loa framework | Construct runtime | Skill invocation, grimoire management, CI | Yes |
+| Domain verticals | Extension interface | Domain-specific capabilities | At least 1 (TTRPG ships as reference) |
 
 ### Technical Constraints
 
-- All output is markdown + YAML. No binary formats.
-- No outbound network calls outside the LLM provider (framework-level).
-- MIBERA: HEKATE must not appear anywhere in code, examples, tests, or docs.
-- Standalone mode must be a tested CI configuration, not an afterthought.
-
-> **Sources**: issue-3:104-166 (grimoire structure + identity files), Phase 4–5 (composition + schema decisions), NOTES.md Decision Log
+- Loa framework construct schema v3
+- YAML for all structured data (schemas, state, configuration)
+- Markdown for all prose output (transcripts, scenes, fragments)
+- Filesystem-first architecture (no database, no server — grimoire IS the persistence)
 
 ---
 
 ## Scope & Prioritization
 
-### In Scope (v1)
-
-All 17 functional requirements (FR-1 through FR-17). The eight user-facing skills:
-- `/braunstein` (flagship, P0)
-- `/voice` (P0)
-- `/scene` (P0)
-- `/narrate` (P0)
-- `/improvise` (P0)
-- `/arneson` (P0, status-only read)
-- `/fragment` (P0)
-- `/distill` (P0, composition glue)
-
-Plus supporting infrastructure: intent schema, voice schema, session-event schema, digest schema, archetype fallback bundle, safety machinery.
-
-### In Scope (Future Iterations)
-
-| Item | Why deferred |
-|------|--------------|
-| Direct player-at-table UX | v2 — needs multi-actor session format; designer-only is already full v1 |
-| Campaign arc modeling beyond 3-session archetype memory | v2+ — sliding window covers immediate designer needs |
-| Non-text output modes (audio, image, VTT integration) | v2+ — markdown-native v1 is sufficient for admissibility |
-| Auto-generated tradition lore YAMLs | v2+ — risky (might fabricate tradition details); user must author |
-| External rater protocol for blind-attribution tests | v2 — designer self-test suffices for v1 if successful (see assumption #5) |
-| Multi-model voice consistency regression suite | v2 — nice-to-have; tracked as risk R-8 |
-
-### Explicitly Out of Scope
-
-| Item | Reason |
-|------|--------|
-| Structural analysis features | Arneson's identity refusal — that's Gygax |
-| Probability math | Arneson's identity refusal |
-| Mechanical recommendations | Arneson's identity refusal |
-| Pattern-matching against anti-patterns | Arneson's identity refusal |
-| MIBERA: HEKATE references of any kind | User directive — private/upstream |
-| Cross-construct schema package (shared package both depend on) | Rejected in Phase 4; axis-split ownership is cleaner |
-
-### Priority Matrix
+### In Scope (v2)
 
 | Feature | Priority | Effort | Impact |
 |---------|----------|--------|--------|
-| FR-1 `/braunstein` | P0 | L | High (flagship) |
-| FR-16 Sidecar event schema | P0 | M | High (admissibility infra) |
-| FR-9 Intent interface | P0 | M | High (composition contract) |
-| FR-8 `/distill` | P0 | M | High (composition glue) |
-| FR-15 Safety machinery | P0 | M | High (load-bearing principle) |
-| FR-17 Fallback archetype bundle | P0 | S | High (standalone viability) |
-| FR-4 `/narrate` | P0 | M | High (primitive, extracted after vertical slice) |
-| FR-2 `/voice` | P0 | M | Med-High |
-| FR-3 `/scene` | P0 | S | Med |
-| FR-5 `/improvise` | P0 | M | Med |
-| FR-6 `/arneson` status | P0 | S | Med (meta) |
-| FR-7 `/fragment` | P0 | S | Med |
-| FR-10 Archetype memory | P0 | S | Med |
-| FR-11 Dice authority | P0 | S | Med |
-| FR-12 Tradition fallback | P0 | S | Med |
-| FR-13 Voice schema | P0 | S | Med |
-| FR-14 Chaos Agent bounding | P0 | S | Low-Med (single archetype) |
+| Extract domain-agnostic core from TTRPG code | P0 | L | High |
+| Define domain extension interface | P0 | M | High |
+| Reframe identity layer (ARNESON.md, persona.yaml, refusals.yaml) | P0 | S | High |
+| TTRPG vertical as reference implementation | P0 | M | High |
+| Validate extension story (hypothetical second domain) | P0 | M | High |
+| Base sidecar schema (domain-agnostic events) | P1 | M | Medium |
+| Persona portability (FR-X1) | P2 | S | Low |
+| Governance docs (CONTRIBUTING.md, SECURITY.md, CODEOWNERS) | P2 | S | Low |
 
-**Build ordering**: Vertical slice first, then extract. Ship `/braunstein` end-to-end against the synthetic fixture (with sidecar + safety + intent) first, then refactor out `/narrate`, `/voice`, `/scene`, `/distill` from real usage, then `/improvise`, `/fragment`, `/arneson`.
+### In Scope (Future / v3+)
 
-> **Sources**: issue-3:70-78 (skills), Phase 4 (scope tier, teammate feedback), Phase 6 (build ordering, HEKATE exclusion, explicit out-of-scope)
+- Ship a second domain vertical (game-writing or agent persona dev)
+- Cross-domain workflows (output from one domain consumed by another)
+- Domain marketplace / community verticals
+- Campaign arc modeling beyond 3-session memory window
+- Player-facing UX (practitioner-only in v2)
+
+### Explicitly Out of Scope
+
+- **Autonomous mode** — Arneson does not self-direct. Director/performer holds. (Reason: scope discipline; autonomy is a fundamentally different interaction model)
+- **Shipping a second domain vertical** — the extension point ships, not a second vertical. (Reason: the proof is in the interface quality, not in building multiple domains ourselves)
+- **Player-facing UX** — no end-user interaction. Practitioner-only. (Reason: same as v1; player UX is a v3+ concern)
+- **Runtime dependencies on Gygax** — standalone-plus-composable. No Gygax required. (Reason: load-bearing design principle)
 
 ---
 
 ## Success Criteria
 
-### Launch Criteria (v1 ship)
+### Launch Criteria
 
-- [ ] Construct validates at Loa L0/L1/L2
-- [ ] All 17 functional requirements implemented with acceptance criteria green
-- [ ] All eight skills execute against the synthetic reference fixture
-- [ ] `/braunstein` → `/distill` → Gygax `/cabal --from-session` round-trip passes (G-1, G-5)
-- [ ] Identity-refusal audit passes: no structural-analysis, probability-math, or mechanical-recommendation output in acceptance scenarios (G-2)
-- [ ] Intent-flip comparative test passes: identical game-state with `experiential_intent` changed produces materially different voicing (G-3)
-- [ ] CI matrix: `arneson-alone` and `arneson-with-gygax` both green (G-4, G-5)
-- [ ] ≥3 archetypes voiced distinctly per blind-attribution protocol (G-6)
-- [ ] Safety machinery tested: opt-in agreement, pause/resume, `dead_design_space` logging all work
-- [ ] Chaos Agent per-turn cap empirically set based on vertical-slice data; no context blow-up in acceptance
-- [ ] Zero MIBERA: HEKATE references anywhere in construct files (grep audit)
-- [ ] Synthetic reference fixture authored and shipped in `examples/`
-- [ ] README + identity prose + `/arneson` status message all avoid framing Arneson as "half of" anything — construct stands on its own
+- [ ] Domain-agnostic core is cleanly separated from TTRPG vertical
+- [ ] Extension interface is defined and documented
+- [ ] TTRPG vertical works as reference implementation (all v1 acceptance criteria pass)
+- [ ] Extension story validated: a hypothetical domain vertical can be added with zero core code changes
+- [ ] Identity layer reframed around creative persona engine (not Gygax-inverse)
+- [ ] Safety infrastructure works across any domain context
+- [ ] All output is dual-audience (human-readable + machine-parseable)
+- [ ] Construct validates at L0/L1/L2
+- [ ] CI passes (schemas, skills, standalone mode, composed mode)
 
-### Post-Launch Success
+### Post-Launch Validation
 
-- [ ] At least one published demo session transcript + digest (demonstrates admissibility to community)
-- [ ] Gygax schema PR for two-axis intent merged, closing assumption #1
-- [ ] At least one designer outside the author reports successful `/braunstein` run against their own game-state
-
-### Long-term Success
-
-- [ ] Closed-loop design iteration (UC-1) used repeatedly by the author over sustained design cycles
-- [ ] Structural-tagging sidecar schema stable across a minor version with no breaking changes
-- [ ] Community adoption: at least one non-author construct builds on Arneson's event schema or digest schema
-
-> **Sources**: issue-3:192-200 (original criteria, reframed), Goals G-1 through G-6, Phase 6 (out-of-scope)
+- [ ] A second domain vertical (game-writing, agent dev, or community-contributed) can be built using only the extension interface documentation
+- [ ] No core code changes required for the second vertical
+- [ ] Community feedback on extension interface usability
 
 ---
 
 ## Risks & Mitigation
 
-| ID | Risk | Probability | Impact | Mitigation Strategy |
-|----|------|-------------|--------|---------------------|
-| R-1 | **Identity drift** — Arneson edges into Gygax territory (makes mechanical recommendations, analyzes structure, fudges dice) | High | High | `identity/refusals.yaml` + identity-refusal audit in `/audit-sprint`, modeled on Gygax's pattern |
-| R-2 | **Hollow fiction** (admissibility failure) — plausible prose not grounded in game-state; sidecar present but vacuous | Med | High | Sidecar event schema (FR-16) requires grounding references per decision; round-trip round-trip test is launch criterion |
-| R-3 | **Intent contract violation** — Arneson voices away from `mechanical_intent` (fudges a lethal roll) | Med | High | Intent respect is architectural principle + paired A/B acceptance test; refusal audit catches fudging patterns |
-| R-4 | **Chaos Agent context-window blowup** | Med | Med | Per-turn sidecar emission cap (FR-14); narrative-bounded design reduces token pressure |
-| R-5 | **Tradition coverage gap** — community-from-day-one v1 lacks depth for every supported tradition | Med | Med | Structural-improvisation fallback (FR-12); user confirmation prevents silent hallucination |
-| R-6 | **Safety failure mode** — missed trigger, inadequate pause, safety log not surfaced | Med | High | Session-open agreement mandatory; project-level `safety-findings.md` visible; community-standard taxonomy |
-| R-7 | **Gygax schema-bump coordination** — intent axis split requires Gygax minor version | Med | Med | Arneson ships unilateral `experiential_intent`; graceful degradation path in FR-9; concurrent Gygax issue filed |
-| R-8 | **LLM voice drift** — model updates shift voice consistency across sessions (drift not caused by code) | High | Med | Pin identity prose; periodic regression test against recorded baseline voice samples; tracked for v2 regression suite |
-| R-9 | **Persona memory leakage** — `/voice` workshop state bleeds into subsequent `/braunstein` archetype voicing | Med | Med | Explicit session boundaries; state cleared between sessions by default; cross-voice isolation test in acceptance |
-| R-10 | **Composition coupling** (bit-rot) — standalone mode degrades because dev always runs with Gygax present | Med | High | CI matrix REQUIRES `arneson-alone` mode green at every PR; treated as first-class not afterthought |
-| R-11 | **N=1 founder effect** — designer-only v1 with synthetic fixture means all validation is internal | High | Med | Publish demo transcript + digest publicly early; at least one external designer report is post-launch success criterion |
-| R-12 | **Scope ballooning** (8 skills is a lot) — quality-driven cadence becomes "never ships" | Med | High | Vertical-slice ordering creates a shippable milestone at `/braunstein` + sidecar + `/distill` even if other skills incomplete |
+| Risk | Probability | Impact | Mitigation Strategy |
+|------|-------------|--------|---------------------|
+| **R-1: Over-abstraction** — making everything generic breaks the TTRPG vertical that already works | Medium | High | TTRPG is the reference implementation and regression test. If it breaks, the abstraction is wrong. All v1 acceptance criteria must continue to pass. |
+| **R-2: Extension point too narrow** — designed around TTRPG patterns, doesn't actually fit other domains | Medium | High | Validate the interface against at least 2 hypothetical domains (game-writing, agent-dev) during architecture. Paper-test before code. |
+| **R-3: Extension point too wide** — so generic it provides no value, no conventions, no guardrails | Medium | Medium | The extension interface should provide useful defaults and conventions. "Convention-based with sensible defaults" not "empty plugin API." |
+| **R-4: Identity reframe weakens Arneson's voice** | Low | Medium | The Gygax-inversion is one facet of a broader identity, not removed entirely. Sprint 0 prototype quality (5/5 axes) is the regression bar. |
+| **R-5: Existing code requires more refactoring than expected** | Low-Medium | Medium | The codebase is clean. Most changes are reorganization. Start with the boundary that requires least code movement. |
+| **R-6: Schema generalization creates backwards incompatibility** | Low | Medium | Base+extension pattern preserves existing schemas. TTRPG-specific fields move to extensions; base fields remain stable. |
 
 ### Assumptions
 
-- **A-1**: Gygax will accept a PR to split single-axis `intent` into `mechanical_intent` + `experiential_intent`. *If wrong*: Arneson ships unilateral `experiential_intent` and reads Gygax's existing `intent` as `mechanical_intent` (FR-9 graceful degradation covers this).
-- **A-2**: A synthetic reference fixture can stay small (single-file, readable in one sitting) and still exercise all 8 skills. *If wrong*: grow fixture; split into multiple; accept that some skills exercise against stubs during acceptance.
-- **A-3**: Gygax v3's `identity/persona.yaml` + `expertise.yaml` (current shape) are sufficient SSOT for Arneson's voicing needs. *If wrong*: propose Gygax schema extension for voice fields; Arneson fallback bundle temporarily carries the delta.
-- **A-4**: Safety-as-data-point doesn't conflict with TTRPG community safety-tool conventions (Lines & Veils, X-card, Script Change). *If wrong*: adapt logging schema to match accepted formats; do not invent proprietary safety taxonomy.
-- **A-5**: Blind-attribution archetype-voice testing can be run by the designer alone (self-test, no external rater). *If wrong*: admissibility is harder to verify in v1; need pairwise or delayed-reading protocol; may downgrade G-6 validation.
+- [ASSUMPTION] The existing voice-base + extension schema pattern generalizes well to non-TTRPG persona definitions. (If wrong: need a new base schema, moderate rework.)
+- [ASSUMPTION] Convention-based discovery is sufficient for domain verticals — no formal manifest needed at v2. (If wrong: add a domain.yaml manifest, small effort.)
+- [ASSUMPTION] The 5-part domain interface (state, personas, events, resolution, consumer) is complete. (If wrong: missing interface components surface during extension story validation.)
 
 ### Dependencies on External Factors
 
-- **Loa framework** maintenance and stability (v1.71.1+; submodule mounted)
-- **Gygax v3** availability for composition tests (not required for core function per standalone rule, but required for CI `arneson-with-gygax` mode)
-- **LLM provider** behavior consistency (see R-8)
-- **TTRPG community safety-tool conventions** remain stable (new major revisions to X-card etc. would require schema update)
-
-> **Sources**: Phase 7 (full risk register + user-added R-8, R-9, R-10), Phase 4 teammate feedback, Phase 6 (A-2)
+- Loa framework stability (construct schema v3 must remain stable)
+- Gygax v3 archetype/intent interface stability (for TTRPG vertical composition)
 
 ---
 
 ## Milestones
 
-Timeline is **quality-driven, no fixed ship date** (Phase 2 decision). Milestones are logical checkpoints, not calendar targets.
+Quality-driven — no fixed dates. Ordered by dependency.
 
-| Milestone | Gate | Deliverables |
-|-----------|------|--------------|
-| M0 — Foundation | Loa construct scaffolded, identity files drafted, synthetic fixture authored | `construct.yaml`, `identity/` directory, `examples/{fixture}.yaml`, `schemas/` scaffolded |
-| M1 — Vertical Slice | `/braunstein` runs end-to-end against fixture with sidecar + safety + intent | `/braunstein` SKILL.md, FR-1/FR-15/FR-16/FR-17 implemented, round-trip-test-ready |
-| M2 — Admissibility | `/distill` implemented; Gygax round-trip passes | FR-8 complete, G-1 launch criterion green |
-| M3 — Primitives Extracted | `/narrate`, `/voice`, `/scene` refactored out of `/braunstein` code | FR-2, FR-3, FR-4 implemented |
-| M4 — GM-Side | `/improvise` symmetric to `/braunstein` | FR-5 implemented |
-| M5 — World-Building | `/fragment` shipped; `/arneson` status dashboard | FR-6, FR-7 implemented |
-| M6 — Composition Hardening | CI matrix green in both modes; identity-refusal audit clean | G-4, G-5, G-2 launch criteria green |
-| M7 — Launch | All launch criteria green | v1 release |
-
-> **Sources**: Phase 2 (no fixed timeline), Phase 6 (vertical-slice ordering)
+| Milestone | Deliverables | Depends On |
+|-----------|--------------|------------|
+| M-1: Core/Vertical Boundary | Domain-agnostic core extracted. TTRPG vertical isolated. Extension interface defined. | — |
+| M-2: Identity Reframe | ARNESON.md, persona.yaml, refusals.yaml reframed for creative persona engine. | M-1 |
+| M-3: Schema Generalization | Base sidecar schema + TTRPG extensions. Voice-base confirmed domain-agnostic. | M-1 |
+| M-4: TTRPG Regression | All v1 acceptance criteria pass against the refactored codebase. CI green. | M-1, M-3 |
+| M-5: Extension Story | Hypothetical second domain validated against the extension interface. Zero core changes. | M-1, M-3, M-4 |
+| M-6: Documentation & Governance | Extension interface documented. Consumer-pattern guide (workshop vs text-embed shapes). CONTRIBUTING.md, SECURITY.md, CODEOWNERS added. | M-5 |
+| M-7: Release | Construct validates L0/L1/L2. Tagged release. | All |
 
 ---
 
 ## Appendix
 
-### A. Stakeholder Insights
+### A. Real-World Consumer Evidence
 
-**From the author (Phases 1–7, 2026-04-13):**
-- The inverse-identity framing is load-bearing, not aesthetic
-- Standalone-plus-composable is a design principle that outlives this construct
-- HEKATE stays upstream; Arneson must be publicly shippable without private context
-- Trust grant: agent has permission to shift course and allocate 20% effort to intuition-led exploration (saved to project memory)
+Two issues provide grounding for the v2 generalization — they show arneson already being used (and misused) beyond its original TTRPG framing:
 
-**From the Gygax-side teammate (Phase 4 feedback):**
-- Arneson's value is **data-emitting fiction**, not fiction alone. Transcripts must be mechanically instrumented.
-- Intent is two-axis (mechanical / experiential); designers flip axes and expect voicing to follow without prompt-tuning
-- Archetypes are a Gygax SSOT; Arneson consumes the same behavioral definitions Gygax uses for math-sim
-- Safety triggers are design findings ("dead design space"), not only social events
-- `/distill` is required — Gygax needs a structured digest, not prose, to close the loop
+**0xHoneyJar/construct-arneson#2** — "doc clarity: workshop tool vs text-embed"
+A consumer (zksoju) building a Discord persona-bot extracted arneson's voice doctrine into a static `SKILL.md` prompt instead of invoking `/voice` as an iterative workshop. Self-corrected: the docs were clear, the misuse was operator-side. But the pattern reveals that the **iteration loop is the product** — not the doctrine itself. Informed FR-C8 (workshop-then-serialize pattern) and consumer-pattern documentation.
 
-### B. Competitive Analysis
+**0xHoneyJar/construct-mibera-codex#76** — "construct-mongolian: curator authoring (Track A)"
+The first real instance of the "mibera-as-npc" doctrine — a Grail entity (The Mongolian) becoming a Discord agent with curator-authored voice + judgment rubric. arneson's `/voice` workshop is proposed as the convergence instrument. The two-tier architecture (construct judges / substrate verifies) maps to arneson's director/performer model. This IS the agent-persona-development vertical in early production use. Informed UC-4 grounding.
 
-| Tool class | Does structural analysis | Does grounded fiction | Couples both |
-|------------|-------------------------|----------------------|---------------|
-| Spreadsheets (Google Sheets, Excel) | Yes | No | No |
-| Probability calculators (AnyDice etc.) | Yes (narrow) | No | No |
-| General-purpose LLM chats | No (pretends to) | Yes (ungrounded) | No |
-| Virtual tabletops (Roll20, Foundry) | Narrow (dice) | No | No (player-facing, not designer-facing) |
-| Gygax v3 alone | Yes | No (refuses) | No |
-| **Gygax + Arneson** | **Yes** | **Yes (grounded)** | **Yes (via game-state + sidecar + digest)** |
+### B. v1 Cycle Context
 
-No existing TTRPG tooling grounds fiction in a persistent, bidirectionally-composable game-state.
+The v1 cycle (2026-04-13) produced:
+- PRD v1 (853 lines, 17 FRs)
+- SDD (1,150 lines, filesystem-first skill graph architecture)
+- Sprint plan (7 sprints)
+- Sprint 1 implemented and reviewed (identity layer, 7 schemas, 9 archetypes, 8 skill scaffolds, CI workflow, synthetic fixture)
+- Sprint 0 prototype (hand-authored `/braunstein` turn, self-critique 5/5 axes)
 
-### C. Bibliography
+Key v1 decisions that carry forward:
+- Standalone-plus-composable (load-bearing design principle)
+- No HEKATE references in shippable files
+- Safety is non-negotiable
+- Grimoire-as-deliverable
+- Director/performer interaction model
 
-**Internal / project:**
-- Issue #3 (proposal): https://github.com/0xHoneyJar/construct-gygax/issues/3
-- Concept doc: `grimoires/loa/context/arneson-v1-concept.md`
-- Session NOTES: `grimoires/loa/NOTES.md`
+Key v1 decisions revised in v2:
+- Identity: was "Gygax's inverse" → now "creative persona engine with Gygax-inversion as one facet"
+- Scope: was "TTRPG-only" → now "domain-agnostic core with TTRPG as reference vertical"
+- Success metric: was "admissibility (Gygax can re-analyze)" → now "persona believability + structured output fidelity + extension story"
+- Audience: was "Gygax community / TTRPG designers" → now "creative practitioners broadly"
 
-**External:**
-- Lines & Veils / X-card safety tools: community-standard documents (Ron Edwards, John Stavropoulos, et al.)
-- Dave Arneson / Blackmoor (1971): historical context for naming
-- Braunstein (1969): historical context for flagship naming
-- PbtA fiction-mechanics-fiction loop: Baker (2008) *Apocalypse World*
+### C. Historical Naming
+
+The construct is named for **Dave Arneson** (1947-2009), co-creator of Dungeons & Dragons. Arneson brought improvisational GMing, the campaign structure, and collaborative fiction-within-rules to the hobby Gary Gygax then codified. The name evokes the fiction-generating, improvisational, persona-hosting side of creative work — a meaning that transcends TTRPG into any domain where personas do grounded creative generation.
 
 ### D. Glossary
 
 | Term | Definition |
 |------|------------|
-| **Admissibility** | The property that a `/braunstein` transcript is structured and grounded enough to be cited as evidence in Gygax re-analysis. Binary test: round-trip through `/distill` → Gygax `/cabal --from-session` without manual reformatting. |
-| **Archetype** | A behavioral profile from Gygax's cabal system (Newcomer, Optimizer, Chaos Agent, etc.). Arneson voices these as actual characters during `/braunstein`. |
-| **Braunstein** | Arneson's flagship skill; named after Dave Arneson's 1969 proto-RPG. Live playtest session where user GMs and Arneson plays an archetype. |
-| **Dead Design Space** | A region of the game-state where safety triggers fire, marking it as unsuitable for the current design frame. Logged as a design constraint, not only a social event. |
-| **Distill** | Skill that converts a session's prose + structured sidecar into a Gygax-ingestible digest. |
-| **Experiential Intent** | Designer-authored field declaring how a mechanic should *feel* (desperate, heroic, tragic, etc.). Owned by Arneson's schema. |
-| **Fallback bundle** | Arneson-shipped minimal copy of archetype YAMLs used when Gygax is not installed. Overridden by Gygax's SSOT when present. |
-| **Fictional friction** vs **Mechanical bottleneck** | Two classifications for in-session observed problems. Fictional friction = narrative awkwardness; mechanical bottleneck = structural constraint. Both are tagged in sidecar events. |
-| **Grimoire** | Persistent state-zone directory (`grimoires/arneson/`) where all session, voice, scene, fragment, and digest artifacts live. |
-| **Mechanical Intent** | Designer-authored field declaring what a mechanic should *do* numerically (this roll is hard, this resource depletes fast, etc.). Owned by Gygax's schema. |
-| **Narrative Chaos** vs **Structural Chaos** | Two axes of chaos-agent behavior. In v1, narrative is bounded (intelligible), structural is unbounded (unpredictable moves). |
-| **Sidecar** | `{session}.events.yaml` — structured event log written atomically alongside the prose transcript. |
-| **Standalone-plus-composable** | Design principle: constructs work independently AND compose into greater value. No hard dependencies on siblings. |
-| **Synthetic reference fixture** | A minimal public-shippable testbed game authored for Arneson; replaces MIBERA: HEKATE for examples and acceptance tests. |
+| **Creative persona engine** | A tool that hosts personas grounded in structured state and emits structured data from creative sessions |
+| **Structured state** | Practitioner-provided data that grounds creative generation (game state, story bible, behavioral spec, world lore) |
+| **Sidecar** | Machine-parseable YAML file paired with a human-readable transcript, capturing structured events from a session |
+| **Domain vertical** | A configuration package that adapts Arneson to a specific creative domain (TTRPG, game-writing, agent-dev) |
+| **Extension point** | The interface through which new domain verticals plug into Arneson core |
+| **Director/performer** | Interaction model where the practitioner directs and Arneson performs within their constraints |
+| **Admissibility** | (TTRPG-specific) A session transcript trustworthy enough for Gygax to re-analyze as evidence |
+| **Persona portability** | The ability to load a voice definition created in one domain into another domain |
+| **Braunstein** | Dave Arneson's 1969 proto-RPG that led to D&D; namesake for the flagship TTRPG session skill |
 
 ---
 
-*Generated by PRD Architect Agent (/plan-and-analyze), 2026-04-13*
+*Generated by PRD Architect Agent (/plan-and-analyze), 2026-05-12*

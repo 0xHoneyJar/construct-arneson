@@ -1,0 +1,147 @@
+# domains/ttrpg/schemas/session-events-ttrpg.schema.yaml
+# TTRPG-specific session event extensions.
+# Extends schemas/core/session-events-base.schema.yaml with TTRPG event types.
+# See SDD v2 §3.2.1.
+
+schema:
+  name: session-events-ttrpg
+  version: 2
+  extends: session-events-base
+  description: >
+    TTRPG-specific event types and preamble extensions for session sidecars.
+    All base event types (dialogue, signal, decision, pause, scene_transition,
+    state_reference, safety_trigger) are inherited from session-events-base.
+
+preamble_extensions:
+  description: "TTRPG-specific fields added to the base session preamble."
+  fields:
+    archetype:
+      type: string
+      required_if: "mode == braunstein"
+      description: "archetype_ref of the archetype being voiced."
+    pc_ref:
+      type: string
+      required_if: "mode == improvise"
+      description: "pc_ref of the PC being played by the user."
+    game_state_path:
+      type: string
+      required: true
+      description: "Relative path to the game-state YAML used for this session."
+    game_state_checksum:
+      type: string
+      required: true
+      description: "SHA256 of game-state file contents."
+    composition_mode:
+      type: enum
+      required: true
+      values: [standalone, composed-with-gygax, partial-gygax]
+    tradition:
+      type: string
+      required: false
+    tradition_fallback_mode:
+      type: boolean
+      required: true
+      default: false
+    dice_mode:
+      type: enum
+      required: true
+      values: [user, arneson, hybrid]
+
+additional_event_types:
+
+  scene_frame:
+    description: "A scene opening. Establishes setting, immediate stakes, and anchoring game-state references."
+    fields:
+      scene_id: {type: string, required: true}
+      setting: {type: string, required: true}
+      immediate_stakes: {type: string, required: true}
+      game_state_refs:
+        type: array
+        items: {type: string}
+        required: true
+        min_length: 1
+        description: "R-2 mitigation: hollow fiction prevented by requiring grounding."
+
+  dice_roll:
+    description: "A mechanical roll of any kind."
+    fields:
+      roll_id: {type: string, required: true}
+      mechanic_id: {type: string, required: true}
+      outcome: {type: string, required: true}
+      raw_roll_value: {type: number, required: false}
+      mode: {type: enum, values: [user, arneson, hybrid], required: true}
+      mechanical_intent_observed: {type: string, required: false}
+      experiential_intent_observed: {type: string, required: false}
+
+  archetype_decision:
+    description: "A significant in-character decision the archetype made."
+    fields:
+      decision_id: {type: string, required: true}
+      archetype_ref: {type: string, required: true}
+      decision_text: {type: string, required: true}
+      classification:
+        type: array
+        items: {type: enum, values: [fictional_friction, mechanical_bottleneck]}
+        required: true
+        min_length: 1
+      game_state_refs:
+        type: array
+        items: {type: string}
+        required: true
+        min_length: 1
+      scene_frame_ref: {type: string, required: true}
+
+  intent_conflict:
+    description: "Observed tension between mechanical_intent and experiential_intent."
+    fields:
+      conflict_id: {type: string, required: true}
+      mechanic_ref: {type: string, required: true}
+      mechanical_intent: {type: string, required: true}
+      experiential_intent: {type: string, required: true}
+      conflict_description: {type: string, required: true}
+      resolution:
+        type: enum
+        values: [preserved_mechanical, user_arbitrated, flagged_for_review]
+        required: true
+
+  gm_prompt:
+    description: "Arneson, out of character, handing control back to user-as-GM."
+    fields:
+      prompt_id: {type: string, required: true}
+      text: {type: string, required: true}
+      scene_frame_ref: {type: string, required: true}
+
+  rule_of_cool:
+    description: "A rule was bent for fiction."
+    fields:
+      override_id: {type: string, required: true}
+      rule_ref: {type: string, required: true}
+      what_was_ignored: {type: string, required: true}
+      why_it_was_ignored: {type: string, required: true}
+      mode: {type: enum, values: [braunstein_user_as_gm, improvise_arneson_as_gm], required: true}
+
+  clarifying_question:
+    description: "A question surfaced during play about how a rule or mechanic works."
+    fields:
+      question_id: {type: string, required: true}
+      asker: {type: enum, values: [user, archetype, pc], required: true}
+      question_text: {type: string, required: true}
+      rule_or_mechanic_ref: {type: string, required: true}
+
+ttrpg_session_end_extensions:
+  summary_counts:
+    type: object
+    fields:
+      dice_rolls: {type: integer}
+      archetype_decisions: {type: integer}
+      signal_flags: {type: integer}
+      intent_conflicts: {type: integer}
+      safety_triggers: {type: integer}
+      rule_of_cool: {type: integer}
+      clarifying_questions: {type: integer}
+
+validation_rules:
+  - "Every archetype_decision event MUST have non-empty game_state_refs (R-2 mitigation)"
+  - "Every scene_frame event MUST have non-empty game_state_refs"
+  - "Every scene_frame_ref in any event MUST match a declared scene_frame event earlier in the sidecar"
+  - "mode in preamble extensions MUST match the required id field (archetype for braunstein, pc_ref for improvise)"

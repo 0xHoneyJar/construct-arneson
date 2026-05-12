@@ -1,0 +1,53 @@
+# schemas/core/safety.schema.yaml
+# Domain-agnostic safety configuration.
+# Non-negotiable: every domain, every session, every mode. No opt-out.
+# See SDD v2 §3.1.4 and PRD FR-C4, NFR-5, NFR-6.
+
+schema:
+  name: safety
+  version: 1
+  description: >
+    Safety infrastructure configuration for all Arneson sessions.
+    Safety is core, not a domain concern. No domain may opt out.
+
+pre_session:
+  agreement_required:
+    type: boolean
+    value: true
+    description: "Non-negotiable. Cannot be set to false."
+  default_boundaries:
+    type: array
+    items: {type: string}
+    description: "Default content boundaries applied to every session."
+  domain_boundaries:
+    type: array
+    items: {type: string}
+    required: false
+    description: "Additional boundaries a domain vertical may declare."
+
+in_session:
+  commands:
+    pause:
+      trigger: "/pause"
+      action: "Halt session immediately. Log pause event to sidecar."
+    x_card:
+      trigger: "/x-card"
+      action: "Retract last content. Log safety_trigger event. Resume from safe point."
+    resume:
+      trigger: "/resume"
+      action: "Resume session from last safe point after pause or x-card."
+
+logging:
+  safety_as_data:
+    type: boolean
+    value: true
+    description: >
+      Safety events are findings, not just interruptions.
+      Every safety trigger is captured in the sidecar as a structured event
+      and surfaces in digests as design data (dead design space).
+
+validation_rules:
+  - "pre_session.agreement_required MUST be true — no override permitted"
+  - "Every session MUST complete safety agreement before creative generation begins"
+  - "Safety commands (/pause, /x-card, /resume) MUST be available in every session regardless of domain"
+  - "Safety triggers MUST be logged as session-events-base.safety_trigger events"

@@ -1,0 +1,29 @@
+# Minimal test persona conforming to voice-base + voice-test extension.
+voice_id: test-persona-alpha
+display_name: "Alpha"
+speech_patterns:
+  sentence_length: varied
+  vocabulary_register: colloquial
+  distinctive_markers:
+    - "uses 'honestly' as a filler"
+    - "asks clarifying questions before answering"
+reaction_tempo: pause-then-respond
+emotional_register:
+  baseline: warm-curious
+  triggers:
+    - stimulus: "asked about something unfamiliar"
+      response: "leans in with genuine interest"
+memory_slots: []
+known_facts:
+  - fact: "Creative work benefits from structured grounding"
+    source: "sample-state.yaml"
+    confidence: certain
+workshop_state:
+  stage: drafting
+  iteration_count: 0
+  convergence_notes: []
+# voice-test extension fields
+test_role: subject
+confidence_level: medium
+created_at: "2026-05-12"
+updated_at: "2026-05-12"

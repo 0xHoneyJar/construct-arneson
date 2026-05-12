@@ -4,27 +4,40 @@
 
 set -euo pipefail
 
-SCHEMAS_DIR="schemas"
+CORE_SCHEMAS_DIR="schemas/core"
+TTRPG_SCHEMAS_DIR="domains/ttrpg/schemas"
 
-if [ ! -d "$SCHEMAS_DIR" ]; then
-  echo "FAIL: $SCHEMAS_DIR directory missing"
+if [ ! -d "$CORE_SCHEMAS_DIR" ]; then
+  echo "FAIL: $CORE_SCHEMAS_DIR directory missing"
   exit 1
 fi
 
+if [ ! -d "$TTRPG_SCHEMAS_DIR" ]; then
+  echo "FAIL: $TTRPG_SCHEMAS_DIR directory missing"
+  exit 1
+fi
+
+# Core schemas (domain-agnostic) + TTRPG schemas (reference vertical)
+# Format: "dir:filename"
 EXPECTED_SCHEMAS=(
-  "experiential_intent.schema.yaml"
-  "voice-base.schema.yaml"
-  "voice-archetype.schema.yaml"
-  "voice-npc.schema.yaml"
-  "voice-pc.schema.yaml"
-  "session-events.schema.yaml"
-  "digest.schema.yaml"
+  "$CORE_SCHEMAS_DIR:experiential_intent.schema.yaml"
+  "$CORE_SCHEMAS_DIR:voice-base.schema.yaml"
+  "$CORE_SCHEMAS_DIR:session-events-base.schema.yaml"
+  "$CORE_SCHEMAS_DIR:digest-base.schema.yaml"
+  "$CORE_SCHEMAS_DIR:safety.schema.yaml"
+  "$TTRPG_SCHEMAS_DIR:voice-archetype.schema.yaml"
+  "$TTRPG_SCHEMAS_DIR:voice-npc.schema.yaml"
+  "$TTRPG_SCHEMAS_DIR:voice-pc.schema.yaml"
+  "$TTRPG_SCHEMAS_DIR:session-events-ttrpg.schema.yaml"
+  "$TTRPG_SCHEMAS_DIR:digest-ttrpg.schema.yaml"
 )
 
 FAIL=0
 
-for schema_file in "${EXPECTED_SCHEMAS[@]}"; do
-  path="$SCHEMAS_DIR/$schema_file"
+for entry in "${EXPECTED_SCHEMAS[@]}"; do
+  dir="${entry%%:*}"
+  schema_file="${entry#*:}"
+  path="$dir/$schema_file"
   if [ ! -f "$path" ]; then
     echo "FAIL: expected schema $path missing"
     FAIL=1
@@ -55,4 +68,4 @@ if [ $FAIL -eq 1 ]; then
   exit 1
 fi
 
-echo "OK: all 7 schemas parse and have required schema.name + schema.version."
+echo "OK: all 10 schemas parse and have required schema.name + schema.version (core: $CORE_SCHEMAS_DIR, ttrpg: $TTRPG_SCHEMAS_DIR)."

@@ -1,0 +1,14 @@
+# Minimal structured state for test domain extension story.
+state:
+  name: "Test Interview Context"
+  domain: test-domain
+  entities:
+    - id: subject-alpha
+      role: interview-subject
+      traits: [curious, cautious, articulate]
+    - id: topic-one
+      type: discussion-topic
+      content: "The nature of creative collaboration"
+  constraints:
+    - "Stay within the defined topic"
+    - "Respect the subject's stated boundaries"

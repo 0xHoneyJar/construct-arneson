@@ -1,0 +1,14 @@
+# Test domain session event extension — validates that session-events-base can be extended.
+schema:
+  name: session-events-test
+  version: 1
+  extends: session-events-base
+  description: "Minimal test domain event types for extension story validation."
+
+additional_event_types:
+  test_observation:
+    description: "A test-specific observation event."
+    fields:
+      observer: {type: string, required: true}
+      observation: {type: string, required: true}
+      category: {type: enum, values: [behavioral, structural, unexpected], required: true}
