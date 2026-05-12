@@ -76,6 +76,33 @@ Arneson's README and consumer-pattern guide (Sprint 6) MUST document:
 - When serialization is valid
 - How to invoke the workshop correctly
 
+## Engagement Tracking in Workshop Sessions
+
+During `/voice` workshop sessions, track engagement patterns as convergence data:
+
+1. **Per-prompt tracking**: For each prompt in the session, record:
+   - Topic classification (matched high_topics, low_topics, or neutral)
+   - Engagement result (full, minimal, silence)
+   - Whether the persona's response matched its engagement config
+
+2. **Session summary**: At workshop close, compute:
+   - Engagement distribution: N full / M minimal / K silent out of total prompts
+   - Per-topic breakdown: "risk: 5/5 full, data: 0/5 full 3/5 silent"
+   - Engagement drift: did the persona's engagement pattern change over the session?
+
+3. **Convergence signal**: Engagement patterns are convergence data:
+   - "Akane ghosted 3/10 data prompts" tells you her engagement config is working
+   - "Nemu responded fully to 8/10 prompts" tells you her threshold is too low
+   - Changes between sessions indicate the engagement model is converging (or drifting)
+
+4. **Workshop notes**: `convergence_notes` can reference engagement patterns:
+   - "Akane's engagement profile feels right - ghosts boring, fires on risk"
+   - "Nemu's threshold should be higher - she's talking too much"
+
+This data feeds into the digest's `engagement_patterns` section when `/distill` processes the workshop session.
+
+---
+
 ## Schema Integration
 
 The `workshop_state` field lives in `schemas/core/voice-base.schema.yaml`:

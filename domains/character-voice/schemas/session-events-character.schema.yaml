@@ -1,0 +1,35 @@
+# domains/character-voice/schemas/session-events-character.schema.yaml
+# Character-voice domain event extensions.
+
+schema:
+  name: session-events-character
+  version: 1
+  extends: session-events-base
+  description: "Character-voice workshop events extending the base session event types."
+
+additional_event_types:
+  voice_drift:
+    description: "Detected drift from canon voice anchors or discipline locks."
+    fields:
+      persona: {type: string, required: true}
+      drift_type: {type: enum, values: [register_shift, anchor_departure, discipline_violation, anti_pattern_hit], required: true}
+      expected: {type: string, required: true, description: "What the canon/discipline specifies."}
+      actual: {type: string, required: true, description: "What the persona actually produced."}
+      severity: {type: enum, values: [minor, moderate, major], required: true}
+
+  canon_match:
+    description: "Output closely matches a canon voice anchor. Positive signal."
+    fields:
+      persona: {type: string, required: true}
+      anchor_ref: {type: string, required: true, description: "Which canon line it matched."}
+      output_excerpt: {type: string, required: true}
+      match_quality: {type: enum, values: [exact, close, inspired], required: true}
+
+  engagement_decision:
+    description: "Record of the engagement evaluation for this turn."
+    fields:
+      persona: {type: string, required: true}
+      prompt_topic: {type: string, required: true}
+      topic_match: {type: enum, values: [high, neutral, low], required: true}
+      result_mode: {type: enum, values: [full, minimal, silence], required: true}
+      engagement_score: {type: float, required: false}

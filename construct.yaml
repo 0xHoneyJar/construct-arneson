@@ -9,7 +9,7 @@
 schema_version: 3
 slug: arneson
 name: construct-arneson
-version: 2.0.0
+version: 3.0.0
 type: skill-pack
 domain: creative-persona
 
@@ -47,6 +47,13 @@ domains:
       - domains/ttrpg/schemas/digest-ttrpg.schema.yaml
     resources:
       archetypes_fallback: domains/ttrpg/resources/archetypes-fallback/
+  character-voice:
+    description: "Character voice authoring for Discord personas, agent NPCs, and character development"
+    skills: []  # v3: uses core /voice. Domain-specific skills are v4.
+    schemas:
+      - domains/character-voice/schemas/voice-character.schema.yaml
+      - domains/character-voice/schemas/session-events-character.schema.yaml
+      - domains/character-voice/schemas/digest-character.schema.yaml
 
 composition:
   siblings:

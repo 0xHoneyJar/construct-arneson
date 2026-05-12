@@ -1,0 +1,49 @@
+# domains/character-voice/schemas/digest-character.schema.yaml
+# Character-voice domain digest extensions.
+
+schema:
+  name: digest-character
+  version: 1
+  extends: digest-base
+  description: "Character-voice workshop digest findings."
+
+character_findings:
+  voice_drift_events:
+    type: array
+    description: "All drift events from the session, grouped by type."
+    items:
+      type: object
+      fields:
+        drift_type: {type: string}
+        count: {type: integer}
+        examples: {type: array, items: {type: string}}
+
+  canon_match_rate:
+    type: object
+    description: "How well the persona matched its voice anchors."
+    fields:
+      total_outputs: {type: integer}
+      exact_matches: {type: integer}
+      close_matches: {type: integer}
+      inspired_matches: {type: integer}
+      no_match: {type: integer}
+
+  engagement_profile:
+    type: object
+    description: "Engagement distribution snapshot from this workshop session."
+    fields:
+      full_count: {type: integer}
+      minimal_count: {type: integer}
+      silence_count: {type: integer}
+      high_topic_hits: {type: array, items: {type: string}}
+      low_topic_hits: {type: array, items: {type: string}}
+
+  anti_pattern_violations:
+    type: array
+    description: "Anti-patterns detected in persona output."
+    items:
+      type: object
+      fields:
+        pattern: {type: string}
+        count: {type: integer}
+        examples: {type: array, items: {type: string}}

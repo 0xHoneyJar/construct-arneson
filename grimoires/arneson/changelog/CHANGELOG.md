@@ -3,6 +3,27 @@
 All notable changes to this construct are documented here. Follows [Keep a Changelog](https://keepachangelog.com/).
 Versioning follows SemVer: MAJOR.MINOR.PATCH.
 
+## [3.0.0] — 2026-05-12 (v3 — Humanness Layer)
+
+### Added
+- **Anti-pattern protocol** (`protocols/anti-patterns.md`): Core-level LLM tell suppression. Emdash ban, assistant-mode leak detection, filler phrase prohibition. Enforced across all hosted personas.
+- **Engagement model** in voice-base: `engagement` block with `default_mode`, `threshold`, `high_topics`, `low_topics`, `minimal_vocabulary`. Pre-generation evaluation determines full/minimal/silence response.
+- **Silence instrumentation**: `chose_not_to_respond` event in session-events-base. The absence of response is data — captures what was asked, why engagement was low, engagement score.
+- **Minimal response mode**: Between full response and silence. Per-persona `minimal_vocabulary` (1-3 words, in-voice).
+- **Engagement patterns** in digest-base: Distribution data (full/minimal/silent counts + topic breakdown).
+- **Character tensions** in voice-base: `tensions` field for character-consistent contradictions. "She says she doesn't plan but clearly cases buildings."
+- **Character-voice domain vertical** (`domains/character-voice/`): Second non-TTRPG domain. Schemas for Discord personas, agent NPCs, character authoring. Three extension schemas (voice-character, session-events-character, digest-character).
+- **Akane reference fixture** (`domains/character-voice/resources/akane.yaml`): KIZUNA Fire caretaker. Full character-voice persona with engagement config, tensions, voice anchors, discipline locks, navigator pattern, yield map, decline patterns.
+- **Workshop engagement tracking**: Convergence data includes per-prompt engagement distribution.
+
+### Design Principles (new for v3)
+- **Emdash ban**: The `—` is the single biggest LLM tell. Banned at protocol level.
+- **Silence is data**: When a persona doesn't respond, the decision is captured and instrumented.
+- **Tensions make characters round**: Contradictions are voice instructions, not bugs to fix.
+- **Engagement before generation**: The persona decides whether to care before it speaks.
+
+---
+
 ## [2.0.0] — 2026-05-12 (v2 — Creative Persona Engine)
 
 ### Changed

@@ -1,0 +1,108 @@
+# domains/character-voice/schemas/voice-character.schema.yaml
+# Character voice persona definition for Discord bots, agent NPCs, and character authoring.
+# Extends schemas/core/voice-base with voice anchors, discipline locks, canon boundaries,
+# sibling relationships, decline patterns, and operational modes.
+
+schema:
+  name: voice-character
+  version: 1
+  extends: voice-base
+  description: >
+    Character voice persona. Used for Discord chat personas, agent NPCs, and any
+    persona that needs canon-grounded voice with behavioral constraints.
+
+additional_fields:
+  voice_anchors:
+    type: object
+    required: true
+    description: "Canon lines that define the voice signature. LLM stays close to this shape."
+    fields:
+      og_line:
+        type: string
+        required: true
+        description: "The single line that names this voice. First thing read."
+      win:
+        type: array
+        items: {type: string}
+        description: "Celebratory register lines."
+      lose:
+        type: array
+        items: {type: string}
+        description: "Consoling register lines."
+      draw:
+        type: array
+        items: {type: string}
+        description: "Neutral/observational register lines."
+      custom:
+        type: map
+        required: false
+        description: "Domain-specific anchor categories (key: category name, value: list of lines)."
+
+  discipline_locks:
+    type: array
+    required: false
+    description: "Non-negotiable behavioral rules for this voice."
+    items:
+      type: object
+      fields:
+        rule: {type: string, required: true, description: "The rule statement."}
+        severity: {type: enum, values: [non_negotiable, strong, soft], default: strong}
+        example: {type: string, required: false, description: "Example of correct behavior."}
+        anti_example: {type: string, required: false, description: "Example of violation."}
+
+  navigator_pattern:
+    type: object
+    required: false
+    description: "Player-side behavioral constraint. Common in game-adjacent personas."
+    fields:
+      player_side: {type: enum, values: [always, contextual], default: always}
+      narrate_opponents: {type: enum, values: [never, implied_only], default: never}
+      win_register: {type: string, description: "How this voice celebrates."}
+      lose_register: {type: string, description: "How this voice consoles."}
+      forbidden_phrases:
+        type: array
+        items: {type: string}
+        description: "Phrases that violate the Navigator pattern."
+
+  canon_boundary:
+    type: object
+    required: false
+    description: "What this persona knows and does not know. Hard boundary."
+    fields:
+      knows:
+        type: array
+        items: {type: string}
+      does_not_know:
+        type: array
+        items: {type: string}
+
+  yield_map:
+    type: map
+    required: false
+    description: >
+      Sibling yield patterns. Keys are topic/domain areas.
+      Values are objects with yield_to (sibling name) and attitude (how they yield).
+
+  decline_patterns:
+    type: map
+    required: false
+    description: >
+      In-voice refusals. Keys are topic categories (data, planning, finance, etc.).
+      Values are the persona's in-voice decline phrase.
+
+  modes:
+    type: array
+    required: false
+    description: "Operational modes the persona can enter (greeting, lore, siblings, etc.)."
+    items:
+      type: object
+      fields:
+        name: {type: string, required: true}
+        description: {type: string, required: true}
+        register_notes: {type: string, required: false}
+
+validation_rules:
+  - "voice_anchors.og_line must be present and non-empty"
+  - "If navigator_pattern is defined, forbidden_phrases must have at least 1 entry"
+  - "canon_boundary.knows and does_not_know should not overlap"
+  - "decline_patterns values must be in-voice (not assistant-mode)"

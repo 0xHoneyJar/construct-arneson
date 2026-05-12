@@ -15,6 +15,7 @@
 Before a persona can speak, the hosting skill MUST:
 
 1. **Read voice-base fields**: Load `voice_id`, `display_name`, `speech_patterns`, `reaction_tempo`, `emotional_register`, `memory_slots`, `known_facts` from the persona's YAML file.
+1.5. **Load anti-pattern and engagement config**: Merge protocol defaults (`protocols/anti-patterns.md`) with persona's `anti_patterns` field (if present) into the effective anti-pattern list. Load `tensions` field if present. Load `engagement` config if present (threshold, topic lists, minimal vocabulary). These inform voice consistency and engagement evaluation during the session.
 2. **Read domain extensions**: If the domain provides extension schemas (e.g., `voice-archetype`, `voice-npc`), load those fields on top of the base. Unknown extension fields are ignored gracefully.
 3. **Load memory window**: Read the most recent N sessions (configurable, default 3) from the persona's `memory_slots`. Memory beyond the window exists as record but does NOT shape voicing.
 4. **Read grounding state**: If `grounding_state_path` is set, load the structured state the persona grounds against. If the path doesn't exist, warn the practitioner: "Structured state not found at {path}. Proceeding ungrounded."
@@ -35,6 +36,8 @@ During a session, the persona's voice MUST remain consistent:
 - **Reaction tempo** is maintained (an `immediate` reactor does not become `deliberate` mid-session).
 - **Emotional register** shifts only in response to in-fiction stimuli, not drift.
 - **No narrator omniscience**: Inside a persona's turn, the voice is theirs. The hosting skill does not narrate from outside the persona's perception unless framing or closing a scene.
+- **Anti-pattern compliance**: Output MUST NOT contain any pattern from the effective anti-pattern list. This includes protocol defaults (emdash, filler, assistant-mode leaks) AND persona-specific additions. Register-aware: match the persona's declared vocabulary_register.
+- **Tension awareness**: If the persona has `tensions` defined, the voice should naturally reflect these contradictions. They are texture, not bugs. A persona who says "i don't plan" but clearly plans is being human, not inconsistent.
 
 ## 4. Persona Boundaries
 

@@ -117,6 +117,64 @@ fields:
     required: false
     description: "Path to the structured state this voice grounds against."
 
+  engagement:
+    type: object
+    required: false
+    description: >
+      Per-persona engagement model. Determines whether this persona responds
+      fully, minimally, or not at all. Evaluated BEFORE generation begins.
+      Personas without this field default to full engagement on every prompt.
+    fields:
+      default_mode:
+        type: enum
+        values: [full, minimal, silence]
+        default: full
+        description: "Default response mode when no topic match."
+      threshold:
+        type: float
+        range: [0.0, 1.0]
+        default: 0.5
+        description: >
+          How much prompting before this voice engages fully.
+          0.0 = engages on anything. 1.0 = almost never engages fully.
+      high_topics:
+        type: array
+        items: {type: string}
+        description: "Topics that pull engagement UP toward full."
+      low_topics:
+        type: array
+        items: {type: string}
+        description: "Topics that push engagement DOWN toward minimal/silence."
+      minimal_vocabulary:
+        type: array
+        items: {type: string}
+        description: "What this persona says in minimal mode (1-3 words each). Must be in-voice."
+
+  anti_patterns:
+    type: array
+    required: false
+    items: {type: string}
+    description: >
+      Persona-specific additions to the core anti-pattern list
+      (protocols/anti-patterns.md). These are ADDED to the protocol
+      defaults, never replace them. Use for domain-specific forbidden
+      vocabulary or register violations unique to this persona.
+
+  tensions:
+    type: array
+    required: false
+    description: >
+      Character-consistent contradictions that make a persona feel layered.
+      Humans contradict themselves. These are voice instructions, not runtime
+      state - they tell any system rendering this persona where the internal
+      friction lives. The contradiction IS the person.
+    items:
+      type: object
+      fields:
+        says: {type: string, description: "What the persona claims about themselves."}
+        does: {type: string, description: "What they actually do that contradicts it."}
+        context: {type: string, description: "When this tension surfaces."}
+
   created_at:
     type: string
     format: iso8601-date

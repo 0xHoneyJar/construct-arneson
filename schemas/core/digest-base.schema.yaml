@@ -91,6 +91,24 @@ findings:
         trigger_type: {type: string}
         count: {type: integer}
 
+  engagement_patterns:
+    type: object
+    required: false
+    description: "Engagement distribution from the session. Tells you what the persona cares about."
+    fields:
+      total_prompts: {type: integer}
+      full_responses: {type: integer}
+      minimal_responses: {type: integer}
+      silent_responses: {type: integer}
+      topic_breakdown:
+        type: array
+        items:
+          type: object
+          fields:
+            topic: {type: string}
+            engagement_mode: {type: enum, values: [full, minimal, silence]}
+            count: {type: integer}
+
 validation_rules:
   - "digest_preamble.source_session and source_sidecar must reference files that exist at digest creation time"
   - "digest_schema_version must be an integer"
