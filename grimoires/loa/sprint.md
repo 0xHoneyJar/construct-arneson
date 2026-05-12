@@ -1,61 +1,71 @@
-# Sprint Plan: construct-arneson v3.1
+# Sprint Plan: construct-arneson v3.2
 
-**Version:** 3.1
+**Version:** 3.2
 **Date:** 2026-05-12
-**PRD Reference:** `grimoires/loa/prd.md` (v3.1)
-**Source:** [0xHoneyJar/construct-arneson#5](https://github.com/0xHoneyJar/construct-arneson/issues/5)
+**PRD Reference:** `grimoires/loa/prd.md` (v3.2)
+**Source:** [0xHoneyJar/construct-arneson#7](https://github.com/0xHoneyJar/construct-arneson/issues/7)
 
-**Total Sprints:** 2
-**Starting Point:** v3 complete (humanness layer, anti-patterns, engagement, character-voice vertical)
-
----
-
-## Sprint 1: Meta-Interaction Protocol + Schema (M-1)
-
-**Scope:** SMALL (4 tasks)
-
-### Tasks
-
-- [ ] **1.1** Author `protocols/meta-interactions.md`: all 10 taxonomy types with principle, example prompts, bad defaults, correct human-reaction guidance [G-1]
-- [ ] **1.2** Add `meta_voice` field to `schemas/core/voice-base.schema.yaml`: object with 10 optional string sub-fields (one per taxonomy type), required false [G-1, G-2]
-- [ ] **1.3** Update `protocols/persona-hosting.md`: load meta-interaction config at step 1.5, add meta-interaction compliance to Section 3 voice consistency [G-1]
-- [ ] **1.4** Update `protocols/anti-patterns.md`: cross-reference meta-interactions protocol from the self-analysis entry [G-1]
-
-### Acceptance Criteria
-
-- [ ] `protocols/meta-interactions.md` exists with all 10 types + core principle
-- [ ] `voice-base.schema.yaml` has optional `meta_voice` field
-- [ ] `persona-hosting.md` references meta-interaction loading + compliance
-- [ ] `anti-patterns.md` self-analysis entry points to meta-interactions protocol
-- [ ] v3 CI green
+**Total Sprints:** 3
+**Starting Point:** v3.1 complete (meta-interaction protocol)
 
 ---
 
-## Sprint 2: Fixture + Release (M-2)
+## Sprint 1: Adapter Specification + Consumer Declaration
 
 **Scope:** SMALL (3 tasks)
 
 ### Tasks
 
-- [ ] **2.1** Update `domains/character-voice/resources/akane.yaml` with `meta_voice` field: at least 5 in-voice overrides in Akane's register [G-2]
-- [ ] **2.2** Validate all CI passes, construct.yaml version bump to 3.1.0, CHANGELOG entry [G-3]
-- [ ] **2.3** Close issue #5 reference in commit message [G-1]
+- [ ] **1.1** Author `domains/character-voice/adapters/freeside.yaml`: bidirectional mapping spec. Ingest rules (persona.md section -> voice-character field) for all 10+ mappings from issue #7. Emit rules (voice-character field -> persona.md section + system prompt template section). Declare loader contract. [FR-A1]
+- [ ] **1.2** Update `construct.yaml`: add `consumers` section under `domains.character-voice` with freeside-characters entry (adapter path, repo, persona path pattern, loader reference). [FR-A5]
+- [ ] **1.3** Update `domains/character-voice/domain.conventions.md`: document the consumer adapter pattern. How adapters work, why they exist, how to add one for a different substrate. [FR-A1]
 
 ### Acceptance Criteria
 
-- [ ] Akane has `meta_voice` with 5+ per-type overrides (sharp, dismissive, in-character)
-- [ ] All CI green
-- [ ] CHANGELOG documents v3.1
+- [ ] Adapter spec exists with complete ingest + emit mappings
+- [ ] construct.yaml declares freeside-characters consumer
+- [ ] domain.conventions.md documents adapter pattern
+- [ ] v3.1 CI green
 
 ---
 
-## Goal Traceability
+## Sprint 2: `/voice` Read/Write persona.md
 
-| Goal | Contributing Tasks | Validation |
-|------|-------------------|------------|
-| G-1 Meta handled in-character | 1.1, 1.2, 1.3, 1.4, 2.3 | Protocol + schema + wiring complete |
-| G-2 Per-persona customization | 1.2, 2.1 | Akane fixture demonstrates meta_voice |
-| G-3 v3 regression | 2.2 | CI green |
+**Scope:** MEDIUM (4 tasks)
+
+### Tasks
+
+- [ ] **2.1** Update `skills/voice/SKILL.md`: document `--source` flag for external persona files. Format detection logic (markdown with frontmatter vs YAML). Adapter selection based on detected format. [FR-A2]
+- [ ] **2.2** Document ingest flow in `skills/voice/SKILL.md`: when source is persona.md, parse sections per adapter ingest rules, construct voice-character state in memory, proceed with normal workshop. [FR-A2]
+- [ ] **2.3** Document emit flow in `skills/voice/SKILL.md`: on session close, serialize voice-character state back to persona.md. Two-layer atomic write: reference body sections AND system prompt template block updated together. [FR-A3]
+- [ ] **2.4** Document the two-layer sync contract: when a field changes (e.g., new decline pattern), list BOTH places it must appear (persona body section + system prompt section). The adapter spec's emit rules are the source of truth for this mapping. [FR-A3]
+
+### Acceptance Criteria
+
+- [ ] `/voice` SKILL.md documents `--source` flag and format detection
+- [ ] Ingest flow documented: persona.md -> voice-character state
+- [ ] Emit flow documented: voice-character state -> persona.md (both layers)
+- [ ] Two-layer sync contract is explicit (which fields map to which system prompt sections)
+- [ ] v3.1 CI green
+
+---
+
+## Sprint 3: `/distill` Integration + Release
+
+**Scope:** SMALL (3 tasks)
+
+### Tasks
+
+- [ ] **3.1** Update `skills/distill/SKILL.md`: when consumer format is `freeside-characters`, produce edit recommendations referencing specific persona.md sections. Voice drift -> DON'T section edits. Canon matches -> exemplar capture recommendations. [FR-A4]
+- [ ] **3.2** Version bump to 3.2.0, CHANGELOG entry, all CI green. [Regression]
+- [ ] **3.3** Close issue #7 reference in commit message.
+
+### Acceptance Criteria
+
+- [ ] `/distill` SKILL.md documents freeside consumer format
+- [ ] Edit recommendations reference specific persona.md sections
+- [ ] All CI green
+- [ ] CHANGELOG documents v3.2
 
 ---
 

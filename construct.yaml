@@ -9,7 +9,7 @@
 schema_version: 3
 slug: arneson
 name: construct-arneson
-version: 3.1.0
+version: 3.2.0
 type: skill-pack
 domain: creative-persona
 
@@ -54,6 +54,12 @@ domains:
       - domains/character-voice/schemas/voice-character.schema.yaml
       - domains/character-voice/schemas/session-events-character.schema.yaml
       - domains/character-voice/schemas/digest-character.schema.yaml
+    consumers:
+      - name: freeside-characters
+        adapter: domains/character-voice/adapters/freeside.yaml
+        repo: 0xHoneyJar/freeside-characters
+        persona_path_pattern: "apps/character-{id}/persona.md"
+        loader: "packages/persona-engine/src/persona/loader.ts:33"
 
 composition:
   siblings:

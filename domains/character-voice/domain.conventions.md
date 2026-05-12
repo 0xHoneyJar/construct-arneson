@@ -70,6 +70,46 @@ Future (v4): `/serialize-character` for generating consumer-ready system prompts
 
 ---
 
+## Consumer Adapters
+
+When Arneson workshops a persona that lives in an external system (Discord bot, agent framework, etc.), an **adapter** handles the bidirectional format translation.
+
+### How Adapters Work
+
+An adapter is a YAML file in `adapters/` that declares:
+- **Ingest rules**: How to read the consumer's format and extract voice-character fields
+- **Emit rules**: How to write voice-character state back to the consumer's format
+- **Sync contract**: Which fields must update multiple locations atomically
+
+### Available Adapters
+
+| Adapter | Consumer | Format | Path |
+|---------|----------|--------|------|
+| `freeside.yaml` | freeside-characters | markdown persona.md with system prompt template | `adapters/freeside.yaml` |
+
+### Adding an Adapter
+
+Create a YAML file in `adapters/` following the freeside adapter structure:
+
+```yaml
+adapter:
+  name: your-consumer
+  format: your-format
+  
+  ingest:
+    # consumer format -> voice-character fields
+    
+  emit:
+    # voice-character fields -> consumer format
+    
+  sync_contract:
+    # which fields must update multiple locations
+```
+
+Then register in `construct.yaml` under `domains.character-voice.consumers`.
+
+---
+
 ## Reference Fixture
 
 `resources/akane.yaml` - Akane (KIZUNA, Fire element, Naughty). Full character-voice persona with engagement config, tensions, voice anchors, discipline locks, navigator pattern, yield map, decline patterns, and canon boundary.

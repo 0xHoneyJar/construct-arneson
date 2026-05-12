@@ -1,0 +1,219 @@
+# Freeside-Characters Adapter
+# Bidirectional mapping between Arneson voice-character schema and freeside persona.md format.
+# Source: https://github.com/0xHoneyJar/construct-arneson/issues/7
+
+adapter:
+  name: freeside-characters
+  version: 1
+  format: markdown-with-frontmatter
+  file_extension: .md
+  repo: 0xHoneyJar/freeside-characters
+  persona_path_pattern: "apps/character-{id}/persona.md"
+  loader:
+    file: "packages/persona-engine/src/persona/loader.ts"
+    line: 33
+    contract: "## System prompt template -> 4-backtick fenced block"
+    markers:
+      input_payload: "INPUT PAYLOAD"
+      fragment_start: "<!-- @FRAGMENT: {type} -->"
+      fragment_end: "<!-- @/FRAGMENT -->"
+
+# ============================================================================
+# INGEST: persona.md -> voice-character schema
+# ============================================================================
+ingest:
+  voice_anchors:
+    og_line:
+      section: "## OG voice anchor"
+      extract: first_italic_line
+      description: "Extract the first *italic* line as the OG voice anchor."
+    win:
+      section: "## battle whispers"
+      subsection: "**win**"
+      extract: list_items
+      description: "Extract bullet-point lines under the **win** subsection."
+    lose:
+      section: "## battle whispers"
+      subsection: "**lose**"
+      extract: list_items
+    draw:
+      section: "## battle whispers"
+      subsection: "**draw**"
+      extract: list_items
+
+  speech_patterns:
+    section: "## voice discipline lock"
+    subsection: "### cadence"
+    extract: bullet_descriptions
+    mapping:
+      sentence_length: "infer from cadence description (short/varied/verbose)"
+      vocabulary_register: "infer from ### grammar subsection"
+      distinctive_markers: "extract bullet points as markers"
+
+  discipline_locks:
+    section: "## voice discipline lock"
+    subsection: "### the Navigator pattern"
+    extract: bullet_rules
+    description: "Each bullet becomes a discipline_lock entry."
+
+  navigator_pattern:
+    section: "## voice discipline lock"
+    subsection: "### the Navigator pattern"
+    extract: structured_fields
+    mapping:
+      player_side: "always (from 'player-side always')"
+      narrate_opponents: "never (from 'never narrates opponents')"
+      win_register: "from cadence/win description"
+      lose_register: "from cadence/lose description"
+      forbidden_phrases: "from explicit prohibitions in Navigator section"
+
+  decline_patterns:
+    section: "## moments + modes"
+    subsection: "### decline patterns"
+    extract: key_value_bullets
+    description: "Each bullet: topic -> in-voice decline phrase."
+
+  yield_map:
+    section: "## moments + modes"
+    subsection: "### yield patterns"
+    extract: key_value_bullets
+    description: "Each bullet: topic/domain -> yield_to sibling + attitude."
+
+  canon_boundary:
+    section: "## world presence"
+    mapping:
+      knows: { subsection: "### canon she carries", extract: bullet_items }
+      does_not_know: { subsection: "### canon she does NOT carry", extract: bullet_items }
+
+  modes:
+    section: "## moments + modes"
+    extract: subsection_list
+    description: "Each ### subsection (greeting mode, lore mode, etc.) becomes a mode entry."
+
+  anti_patterns:
+    section_in_system_prompt: "DON'T"
+    extract: bullet_items
+    description: "Extract from the system prompt template's DON'T section."
+
+  tensions:
+    section: "implicit in persona body"
+    extract: manual
+    description: "Not explicitly sectioned in persona.md. Curator adds during workshop."
+
+  engagement:
+    section: "implicit"
+    extract: manual
+    description: "Derived from decline patterns + mode behavior. Curator configures during workshop."
+
+  meta_voice:
+    section: "## moments + modes"
+    subsection: "various (meta-inquiry handling)"
+    extract: manual
+    description: "Extracted from mode descriptions where meta-inquiry handling is mentioned."
+
+  metadata:
+    source: frontmatter
+    fields:
+      - title
+      - date
+      - persona_name
+      - repo_name
+      - status
+      - distillation_sources
+      - related
+
+# ============================================================================
+# EMIT: voice-character schema -> persona.md
+# ============================================================================
+emit:
+  description: >
+    When /voice writes back to persona.md, it must update BOTH layers atomically:
+    the reference body (what gumi reads) AND the system prompt template (what the bot reads).
+
+  reference_body:
+    voice_anchors.og_line:
+      target_section: "## OG voice anchor"
+      format: "italic_line"
+    voice_anchors.win:
+      target_section: "## battle whispers"
+      target_subsection: "**win**"
+      format: "bullet_list"
+    voice_anchors.lose:
+      target_section: "## battle whispers"
+      target_subsection: "**lose**"
+      format: "bullet_list"
+    voice_anchors.draw:
+      target_section: "## battle whispers"
+      target_subsection: "**draw**"
+      format: "bullet_list"
+    decline_patterns:
+      target_section: "### decline patterns"
+      format: "key_value_bullets"
+    yield_map:
+      target_section: "### yield patterns"
+      format: "key_value_bullets"
+    canon_boundary.knows:
+      target_section: "### canon she carries"
+      format: "bullet_list"
+    canon_boundary.does_not_know:
+      target_section: "### canon she does NOT carry"
+      format: "bullet_list"
+
+  system_prompt_template:
+    description: >
+      The 4-backtick fenced block under ## System prompt template.
+      Contains structured sections delimited by triple-equals markers.
+
+    voice_anchors:
+      target_marker: "VOICE CANON"
+      format: "win/lose/draw grouped, dot-separated"
+      source_fields: [voice_anchors.win, voice_anchors.lose, voice_anchors.draw]
+
+    anti_patterns:
+      target_marker: "DON'T"
+      format: "bullet_list with dash prefix"
+      source_fields: [anti_patterns]
+      merge_with: "protocol defaults from protocols/anti-patterns.md"
+
+    canon_boundary:
+      target_marker: "CANON BOUNDARY"
+      format: "knows/doesn't-know prose block"
+      source_fields: [canon_boundary.knows, canon_boundary.does_not_know]
+
+    decline_patterns:
+      target_marker: "TOOL USE"
+      format: "inline decline phrases"
+      source_fields: [decline_patterns]
+
+  fragments:
+    reply:
+      target_marker: "<!-- @FRAGMENT: reply -->"
+      description: "Updated when mode definitions change."
+
+# ============================================================================
+# TWO-LAYER SYNC CONTRACT
+# ============================================================================
+sync_contract:
+  description: >
+    When a field changes, BOTH the reference body section AND the corresponding
+    system prompt template section must be updated in the same write operation.
+    This is the core invariant of the adapter.
+
+  field_to_dual_target:
+    decline_patterns:
+      body: "### decline patterns"
+      prompt: "TOOL USE"
+    anti_patterns:
+      body: null  # anti-patterns not in reference body (only in system prompt DON'T)
+      prompt: "DON'T"
+    voice_anchors:
+      body: "## battle whispers"
+      prompt: "VOICE CANON"
+    canon_boundary:
+      body: "## world presence"
+      prompt: "CANON BOUNDARY"
+
+  atomic_write: true
+  description_atomic: >
+    Compute the ENTIRE file content before writing. Never update one layer
+    without the other. If the write fails, the file should be unchanged.

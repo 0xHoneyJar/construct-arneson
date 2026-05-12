@@ -3,6 +3,23 @@
 All notable changes to this construct are documented here. Follows [Keep a Changelog](https://keepachangelog.com/).
 Versioning follows SemVer: MAJOR.MINOR.PATCH.
 
+## [3.2.0] — 2026-05-12 (v3.2 — Freeside-Characters Adapter)
+
+### Added
+- **Freeside adapter** (`domains/character-voice/adapters/freeside.yaml`): Bidirectional mapping between voice-character schema and freeside persona.md format. Ingest rules (persona.md -> schema) and emit rules (schema -> persona.md) with two-layer sync contract.
+- **`/voice --source` flag**: Read external persona files natively. Format detection (markdown vs YAML). Workshop against persona.md directly, write changes back to both layers atomically.
+- **`/distill` freeside consumer output**: Edit recommendations mapped to specific persona.md sections (voice drift -> DON'T edits, canon matches -> exemplar capture, engagement gaps -> decline pattern additions).
+- **Consumer declaration** in construct.yaml: `freeside-characters` registered under `domains.character-voice.consumers`.
+- **Consumer adapter pattern** documented in `domain.conventions.md`.
+
+### Design Principle (new for v3.2)
+- **Single source of truth**: persona.md is THE file. Arneson reads it, workshops against it, writes back to it. No parallel YAML copy that drifts.
+- **Two-layer atomic sync**: reference body + system prompt template updated together. Never one without the other.
+
+> Source: [#7](https://github.com/0xHoneyJar/construct-arneson/issues/7)
+
+---
+
 ## [3.1.0] — 2026-05-12 (v3.1 — Meta-Interaction Protocol)
 
 ### Added
