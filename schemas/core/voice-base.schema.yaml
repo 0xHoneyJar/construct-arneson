@@ -195,6 +195,22 @@ fields:
         does: {type: string, description: "What they actually do that contradicts it."}
         context: {type: string, description: "When this tension surfaces."}
 
+  exemplars:
+    type: array
+    required: false
+    description: >
+      Canon-quality exchanges captured during /voice workshops. These are
+      few-shot examples that anchor the voice at inference time. The model
+      pattern-matches off concrete exchanges far more reliably than it
+      follows rules. 3-5 is the sweet spot for system prompts.
+    items:
+      type: object
+      fields:
+        prompt: {type: string, description: "The user's message that triggered this exchange."}
+        response: {type: string, description: "The persona's response. The canon-quality output."}
+        context: {type: string, required: false, description: "Why this landed. Register notes."}
+        captured_at: {type: string, format: iso8601-date}
+
   created_at:
     type: string
     format: iso8601-date

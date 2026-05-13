@@ -57,8 +57,14 @@ Each turn:
 On `/break`:
 1. Exit character
 2. Display voice-state diff: what changed in this session
-3. Ask user to confirm, edit, or discard changes
-4. **Write back to source format:**
+3. **Exemplar capture**: Review the session's exchanges and ask: "Any of these
+   worth keeping as exemplars?" Show the strongest exchanges (persona stayed in
+   voice, matched canon, handled a tricky prompt well). Practitioner picks
+   favorites. Each becomes an exemplar entry (prompt + response + context note).
+   3-5 per persona is the sweet spot for system prompts. Reference body holds
+   unlimited.
+4. Ask user to confirm, edit, or discard changes (voice-state diff + exemplars)
+5. **Write back to source format:**
    - If source was YAML: write atomically to `grimoires/arneson/voices/npcs/{npc-id}.yaml`
    - If source was persona.md (via `--source`): write back to the SAME file using the
      consumer adapter's emit rules. **Both layers updated atomically** -- the reference

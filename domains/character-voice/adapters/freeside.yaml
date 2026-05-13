@@ -158,6 +158,12 @@ emit:
     canon_boundary.does_not_know:
       target_section: "### canon she does NOT carry"
       format: "bullet_list"
+    exemplars:
+      target_section: "## exemplars (canon-quality exchanges)"
+      format: "exchange_blocks"
+      description: >
+        Each exemplar becomes a subsection with prompt, response, and
+        context note. Unlimited in reference body.
 
   system_prompt_template:
     description: >
@@ -184,6 +190,16 @@ emit:
       target_marker: "TOOL USE"
       format: "inline decline phrases"
       source_fields: [decline_patterns]
+
+    exemplars:
+      target_marker: "EXEMPLARS"
+      format: "exchange_pairs"
+      source_fields: [exemplars]
+      placement: "after VOICE CANON, before CANON BOUNDARY"
+      budget: 5
+      description: >
+        Max 5 exemplars in system prompt (token budget). Each is a
+        Player/Persona exchange pair. The LLM pattern-matches off these.
 
   fragments:
     reply:
@@ -212,6 +228,9 @@ sync_contract:
     canon_boundary:
       body: "## world presence"
       prompt: "CANON BOUNDARY"
+    exemplars:
+      body: "## exemplars (canon-quality exchanges)"
+      prompt: "EXEMPLARS"
 
   atomic_write: true
   description_atomic: >
