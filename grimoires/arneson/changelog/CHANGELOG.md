@@ -3,6 +3,20 @@
 All notable changes to this construct are documented here. Follows [Keep a Changelog](https://keepachangelog.com/).
 Versioning follows SemVer: MAJOR.MINOR.PATCH.
 
+## [3.3.0] — 2026-05-12 (v3.3 — Exemplar Capture)
+
+### Added
+- **`exemplars` field** in voice-base: array of canon-quality exchanges (prompt + response + context). Few-shot examples that anchor voice at inference time. 3-5 is the sweet spot.
+- **Exemplar capture in `/voice` exit flow**: On `/break`, practitioner reviews session exchanges and picks the ones that landed. No mid-session command needed.
+- **Freeside adapter exemplar emit**: Exemplars written to BOTH `## exemplars` reference body section AND `EXEMPLARS` system prompt template section. Max 5 in system prompt (token budget). Unlimited in reference body.
+
+### Design Principle (new for v3.3)
+- **Few-shot over rules**: The model pattern-matches off concrete exchanges far more reliably than it follows instructions. Exemplars are the highest-leverage voice anchoring mechanism.
+
+> Source: [#9](https://github.com/0xHoneyJar/construct-arneson/issues/9) (simplified from 7 layers to 3)
+
+---
+
 ## [3.2.0] — 2026-05-12 (v3.2 — Freeside-Characters Adapter)
 
 ### Added
