@@ -110,6 +110,23 @@ Then register in `construct.yaml` under `domains.character-voice.consumers`.
 
 ---
 
-## Reference Fixture
+## Scripts
 
-`resources/akane.yaml` - Akane (KIZUNA, Fire element, Naughty). Full character-voice persona with engagement config, tensions, voice anchors, discipline locks, navigator pattern, yield map, decline patterns, and canon boundary.
+Adapter scripts handle deterministic parsing and serialization. The LLM workshop handles creative voice development — scripts are tools, not participants.
+
+| Script | Purpose | Interface |
+|--------|---------|-----------|
+| `scripts/ingest_persona.py` | persona.md -> voice-character YAML | `python3 ingest_persona.py <path>` (stdout: YAML) |
+| `scripts/emit_persona.py` | voice-character YAML -> persona.md | `python3 emit_persona.py --template <md> --state <yaml>` (stdout: md) |
+| `scripts/test-roundtrip.sh` | Validate ingest -> emit round-trip | `./test-roundtrip.sh` (exit 0/1) |
+
+**Dependencies:** Python 3.10+, standard library only (no pip installs).
+
+**Exit codes:** 0 success, 1 parse error, 2 sync contract violation.
+
+---
+
+## Reference Fixtures
+
+- `resources/akane.yaml` - Akane (KIZUNA, Fire element, Naughty). Full character-voice persona in YAML format.
+- `resources/fixtures/test-persona.md` - Compass (Guild Cartographer). Synthetic character in freeside persona.md format for round-trip testing.

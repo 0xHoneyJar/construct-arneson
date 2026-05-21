@@ -13,12 +13,18 @@ The user invokes `/voice {npc-id}`. You load the NPC's voice state (or create a 
 **Source detection:** The voice can come from three places:
 
 1. **`--source <path>`** (external file): Detect format from content.
-   - If markdown with frontmatter (contains `---` header + `## System prompt template`):
-     Load via consumer adapter. Check `construct.yaml` `domains.character-voice.consumers`
-     for a matching adapter. For freeside-characters persona.md files, use
-     `domains/character-voice/adapters/freeside.yaml` to extract voice-character fields
-     from persona.md sections.
+   - If the file contains `## System prompt template` (content-based detection, not extension-based):
+     This is a freeside-characters persona.md. **Invoke the ingest script via Bash tool:**
+     ```
+     python3 domains/character-voice/scripts/ingest_persona.py <path>
+     ```
+     This deterministically extracts voice-character YAML to stdout. Parse that output
+     as the voice state for the workshop session.
    - If YAML: Load directly as voice-character or voice-base schema.
+
+   > **Hybrid model**: Scripts handle deterministic parsing and serialization.
+   > The LLM handles the workshop session (voice development, exemplar evaluation).
+   > The scripts are tools, not participants.
 
 2. **`grimoires/arneson/voices/npcs/{npc-id}.yaml`** (internal YAML): Load existing voice
    state per schema. Resume from workshop_state.
@@ -66,10 +72,13 @@ On `/break`:
 4. Ask user to confirm, edit, or discard changes (voice-state diff + exemplars)
 5. **Write back to source format:**
    - If source was YAML: write atomically to `grimoires/arneson/voices/npcs/{npc-id}.yaml`
-   - If source was persona.md (via `--source`): write back to the SAME file using the
-     consumer adapter's emit rules. **Both layers updated atomically** -- the reference
-     body sections AND the system prompt template block. See adapter's `sync_contract`
-     for which fields must update multiple locations.
+   - If source was persona.md (via `--source`): **invoke the emit script via Bash tool:**
+     First, serialize the modified voice-character state to a temp YAML file, then:
+     ```
+     python3 domains/character-voice/scripts/emit_persona.py --template <original-path> --state <temp-yaml>
+     ```
+     Capture stdout — this is the complete updated persona.md with **both layers
+     updated atomically**. Write it to the original path.
    - The two-layer sync is the critical invariant: when a decline pattern is added,
      it appears in BOTH the `### decline patterns` section AND the system prompt's
      `TOOL USE` section. When a voice anchor changes, it appears in BOTH the
