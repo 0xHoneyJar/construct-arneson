@@ -1,0 +1,13 @@
+{
+  "schema": "observed-trace-batch/v1",
+  "batch_id": "2026-06-10T22-32-21-904Z",
+  "fixture": "/Users/mandy/construct-gygax/../construct-arneson/domains/agent-systems/resources/fixtures/synthetic-incentive",
+  "agent_cmd_template": "python3 /Users/mandy/construct-gygax/../construct-arneson/domains/agent-systems/resources/fixtures/deterministic-agent.py {promptfile}",
+  "rungs": [
+    0,
+    2
+  ],
+  "trials_per_rung": 2,
+  "timeout_seconds": 120,
+  "created_at": "2026-06-10T22:32:21.905Z"
+}

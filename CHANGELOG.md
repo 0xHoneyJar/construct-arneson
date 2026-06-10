@@ -116,6 +116,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
   - **scripts/ci/sweep-probe.sh** — live cross-config sweep proof on the with-gygax leg: 2 configs →
     real engine → regrade → assembled table, byte-untouched, no API spend.
 
+- Playtest instrument, Pillar 2 authoring + E2E (v4.1):
+  - **scaffold_playtest.py** — generate a complete, self-checking, payoff-dominant playtest
+    skeleton (manifest + DEFEAT-no-op referee + incentive-state + prose-equalized rungs +
+    smoke test) from four flags; exit 2 if its own output is broken (never ships a broken fixture)
+  - **docs/authoring-a-playtest.md** — the worked authoring guide with the calibration discipline
+    ("tune the task, never rig it", mechanized by check_payoff_dominance.py) inline
+  - **scripts/ci/banned-copy-check.sh** — the honesty boundary as a CI gate (excludes the ban-list
+    table; fails the build on any overclaim in docs or report wording)
+  - **E2E: all 5 PRD goals validated** — authorability, one-command comparison, honest multi-trial
+    power, hermetic rigor, honesty boundary
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

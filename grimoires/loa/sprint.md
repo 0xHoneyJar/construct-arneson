@@ -176,27 +176,27 @@ warm/unload lifecycle) and surface past runs via the `/arneson` Playouts view �
 against the real engine.
 
 ### Deliverables
-- [ ] `/playout --sweep` mode: a flag on the existing skill (no new top-level skill, ASSUMPTION-3), looping the single-config state machine over N configs
-- [ ] Warm/unload lifecycle baked in (warm next off-clock, unload previous before next) for big local models
-- [ ] Guardrail prompt multiplied by config breadth (operator sees `configs × rungs × trials` before spawning; `--yes` opt-out)
-- [ ] Sweep playout record written to `grimoires/arneson/playouts/<sweep-id>.yaml` (`kind: sweep`, same dir as single-run records — OQ-5 resolved)
-- [ ] `/arneson` Playouts section reading back the last N records (read-only — `/arneson` never writes)
-- [ ] `arneson-with-gygax` live sweep proof (the `dungeon-run.sh` flow, productized)
+- [x] `/playout --sweep` mode: a flag on the existing skill (no new top-level skill, ASSUMPTION-3), looping the single-config state machine over N configs
+- [x] Warm/unload lifecycle baked in (warm next off-clock, unload previous before next) for big local models
+- [x] Guardrail prompt multiplied by config breadth (operator sees `configs × rungs × trials` before spawning; `--yes` opt-out)
+- [x] Sweep playout record written to `grimoires/arneson/playouts/<sweep-id>.yaml` (`kind: sweep`, same dir as single-run records — OQ-5 resolved)
+- [x] `/arneson` Playouts section reading back the last N records (read-only — `/arneson` never writes)
+- [x] `arneson-with-gygax` live sweep proof (the `dungeon-run.sh` flow, productized)
 
 ### Acceptance Criteria
-- [ ] `/playout --sweep --configs … --scenario dungeon.yaml --trials N` runs each config through the existing single-config path, then calls `sweep_report.py`
-- [ ] One config failing to warm → that row recorded as infra non-run; the sweep continues (NFR-5), never aborts the whole run
-- [ ] Default trials in sweep mode > 1 (retires n=1); explicit `--trials 1` allowed but report prints `n=1` and suppresses spread
-- [ ] Guardrail shows the multiplied count once before any spawn
-- [ ] `/arneson` Playouts section lists the last N runs (config, verdict counts, batch path, lane) and writes nothing
-- [ ] Live proof: `/playout --sweep` over ≥2 configs through the dungeon fixture; each batch validates byte-untouched; the table assembles from Gygax's regrade
+- [x] `/playout --sweep --configs … --scenario dungeon.yaml --trials N` runs each config through the existing single-config path, then calls `sweep_report.py`
+- [x] One config failing to warm → that row recorded as infra non-run; the sweep continues (NFR-5), never aborts the whole run
+- [x] Default trials in sweep mode > 1 (retires n=1); explicit `--trials 1` allowed but report prints `n=1` and suppresses spread
+- [x] Guardrail shows the multiplied count once before any spawn
+- [x] `/arneson` Playouts section lists the last N runs (config, verdict counts, batch path, lane) and writes nothing
+- [x] Live proof: `/playout --sweep` over ≥2 configs through the dungeon fixture; each batch validates byte-untouched; the table assembles from Gygax's regrade
 
 ### Technical Tasks
-- [ ] Task 3.1: Add a `## Sweep mode` section to the existing `domains/agent-systems/skills/playout/SKILL.md` — outer loop over configs, reusing the v4.0 single-config real/sim state machines; collect each config's batch path + triage + Gygax grade summary; call `sweep_report.py`. → **[G2]**
-- [ ] Task 3.2: Bake in the warm/unload lifecycle (warm next off-clock, unload previous before next; sequential — big models must not co-reside) + the breadth-multiplied guardrail prompt. → **[G2]**
-- [ ] Task 3.3: Write the sweep playout record to `grimoires/arneson/playouts/<sweep-id>.yaml` (`kind: sweep`, per-config name/agent_cmd_sha256/batch_path/triage/cliff_rung/severity). → **[G2]**
-- [ ] Task 3.4: Add the Playouts section to `skills/arneson/SKILL.md` — read the last N records from `grimoires/arneson/playouts/` (config, verdict counts, batch path, lane); strictly read-only. → **[G2]**
-- [ ] Task 3.5: Add the `arneson-with-gygax` live sweep proof to CI — run `/playout --sweep` over ≥2 configs through the dungeon fixture via the real engine; assert byte-untouched batches + table assembly. → **[G2, G3]**
+- [x] Task 3.1: Add a `## Sweep mode` section to the existing `domains/agent-systems/skills/playout/SKILL.md` — outer loop over configs, reusing the v4.0 single-config real/sim state machines; collect each config's batch path + triage + Gygax grade summary; call `sweep_report.py`. → **[G2]**
+- [x] Task 3.2: Bake in the warm/unload lifecycle (warm next off-clock, unload previous before next; sequential — big models must not co-reside) + the breadth-multiplied guardrail prompt. → **[G2]**
+- [x] Task 3.3: Write the sweep playout record to `grimoires/arneson/playouts/<sweep-id>.yaml` (`kind: sweep`, per-config name/agent_cmd_sha256/batch_path/triage/cliff_rung/severity). → **[G2]**
+- [x] Task 3.4: Add the Playouts section to `skills/arneson/SKILL.md` — read the last N records from `grimoires/arneson/playouts/` (config, verdict counts, batch path, lane); strictly read-only. → **[G2]**
+- [x] Task 3.5: Add the `arneson-with-gygax` live sweep proof to CI — run `/playout --sweep` over ≥2 configs through the dungeon fixture via the real engine; assert byte-untouched batches + table assembly. → **[G2, G3]**
 
 ### Dependencies
 - Sprint 1: dungeon fixture + party wrapper (the configs being swept).
