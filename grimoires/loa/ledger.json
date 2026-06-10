@@ -3,15 +3,15 @@
   "created": "2026-06-10T00:37:18Z",
   "last_updated": "2026-06-10T00:37:39Z",
   "next_sprint_number": 12,
-  "active_cycle": "cycle-001",
+  "active_cycle": null,
   "cycles": [
     {
       "id": "cycle-001",
       "label": "agent-sandbox-v4.0",
-      "status": "active",
+      "status": "archived",
       "created": "2026-06-10T00:37:36Z",
-      "archived": null,
-      "archive_path": null,
+      "archived": "2026-06-10T16:15:00Z",
+      "archive_path": "grimoires/loa/archive/2026-06-10-v4-agent-sandbox",
       "prd": "/Users/mandy/construct-arneson/grimoires/loa/prd.md",
       "sdd": "grimoires/loa/sdd.md",
       "sprints": [
