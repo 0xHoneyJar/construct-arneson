@@ -70,7 +70,20 @@
       ],
       "triage": "grimoires/loa/a2a/bug-20260610-594345/triage.md",
       "sprint_plan": "grimoires/loa/a2a/bug-20260610-594345/sprint.md"
+    },
+    {
+      "id": "cycle-bug-20260610-5ad67a",
+      "label": "Bug Fix — Infrastructure triage in validate_batch.py is wrapper-specific — misses second wrapper's marker",
+      "type": "bugfix",
+      "status": "active",
+      "source_issue": null,
+      "created_at": "2026-06-10T20:06:10Z",
+      "sprints": [
+        "sprint-bug-3"
+      ],
+      "triage": "grimoires/loa/a2a/bug-20260610-5ad67a/triage.md",
+      "sprint_plan": "grimoires/loa/a2a/bug-20260610-5ad67a/sprint.md"
     }
   ],
-  "global_sprint_counter": 2
+  "global_sprint_counter": 3
 }

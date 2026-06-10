@@ -84,6 +84,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     marker is now load-bearing for triage (co-tested — change marker + validator together)
   - Empirical findings file: `grimoires/loa/discovery/sweep-observability-findings.md`
 
+- Infrastructure-marker convention (bugfix 20260610-5ad67a):
+  - `validate_batch.py` triage generalized from one wrapper's literal string to the documented
+    convention (`ERROR: [<tool>]`, tool ending `-agent`/`-wrapper`) — a second wrapper's
+    plumbing failures (observed: the dungeon party wrapper's marker passing untriaged) can no
+    longer masquerade as graded verdicts; false-positive guard keeps agent-printed
+    `ERROR: [x]` prose unflagged. Convention documented for wrapper authors in
+    domain.conventions.md; co-tested (3 new assertions, 95 total).
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

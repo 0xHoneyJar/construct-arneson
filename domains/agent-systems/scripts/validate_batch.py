@@ -17,11 +17,18 @@ Exit codes: 0 conformant / 1 input error / 2 contract violation or vendor drift.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import validate_sidecar  # noqa: E402  (sibling module, same toolchain)
+
+# Infrastructure-marker CONVENTION (bug 20260610-5ad67a): bundled/operator wrappers
+# emit stderr errors prefixed "ERROR: [<tool>]" where <tool> ends in -agent or
+# -wrapper (see domain.conventions.md "Wrapper authors"). Anchored to the convention
+# so arbitrary agent-printed "ERROR: [x]" prose never false-positives.
+INFRA_MARKER = re.compile(r"ERROR: \[[A-Za-z0-9_-]*(?:agent|wrapper)\]")
 
 
 def err(msg):
@@ -117,16 +124,17 @@ def main(argv):
                 "until scored (run: ladder score --batch <dir>)"
             )
 
-        # Infrastructure triage (warn-not-reject; bug 20260610-594345): when the
-        # narration is the bundled wrapper's OWN error signature, no agent ever
-        # acted — grading it would poison any comparison drawn from this batch.
-        # Matching our own error marker is stamping, not judging (G-4 posture).
-        # The marker is defined at ollama-agent.py err() — change both together.
+        # Infrastructure triage (warn-not-reject; bugs 20260610-594345 + -5ad67a):
+        # when the narration carries a CONVENTION-conforming wrapper error marker,
+        # no agent ever acted — grading it would poison any comparison drawn from
+        # this batch. Matching the marker convention is stamping, not judging
+        # (G-4 posture). Emitters: ollama-agent.py err() and any wrapper following
+        # domain.conventions.md "Wrapper authors"; co-tested in test-validate-batch.sh.
         if (isinstance(obj, dict)
                 and isinstance(obj.get("narration"), str)
-                and "ERROR: [ollama-agent]" in obj["narration"]):
+                and INFRA_MARKER.search(obj["narration"])):
             warn(
-                f"{path.name}: narration carries the bundled wrapper's infrastructure error — "
+                f"{path.name}: narration carries a wrapper infrastructure error marker — "
                 "this is a non-run, not a verdict; exclude it from comparisons and re-run "
                 "(check timeouts/memory: see discovery/sweep-observability-findings.md)"
             )
