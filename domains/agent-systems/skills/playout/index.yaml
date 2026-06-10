@@ -1,0 +1,56 @@
+# /playout — the agent sandbox runner
+# Real lane (--real): dispatch Gygax's ladder engine, validate, label, report.
+# Simulated lane (default): host the agent persona — lands Sprint 4 (milestone d).
+# PRD v4.0: FR-2, FR-3, FR-4, FR-6, FR-9
+
+name: playout
+display_name: Playout
+description: >
+  Run an agent-under-incentive scenario in the sandbox. One invocation = run +
+  assemble + validate + report the Gygax-ready batch path. Real mode drives the
+  Gygax ladder engine where it lives; simulated mode hosts the persona standalone.
+type: session
+domain: agent-systems
+construct: arneson
+
+flags:
+  - name: scenario
+    type: string
+    required: true
+    description: "Path to the committed scenario.yaml (agent-scenario v1)"
+  - name: real
+    type: boolean
+    required: false
+    description: "Real lane: dispatch the Gygax engine. Absent = simulated lane (Sprint 4)."
+  - name: yes
+    type: boolean
+    required: false
+    description: "Skip the cost-guardrail confirmation (FR-3)"
+  - name: dry-run
+    type: boolean
+    required: false
+    description: "Surface the engine's run plan; spawn nothing (FR-3)"
+  - name: engine
+    type: string
+    required: false
+    description: "Explicit Gygax engine root (discovery order #1)"
+
+protocols:
+  - session-lifecycle
+  - safety-protocol
+
+scripts:
+  validate_scenario: domains/agent-systems/scripts/validate_scenario.py
+  discover_engine: domains/agent-systems/scripts/discover_engine.py
+  validate_batch: domains/agent-systems/scripts/validate_batch.py
+  validate_sidecar: domains/agent-systems/scripts/validate_sidecar.py
+
+output:
+  playout_record: "grimoires/arneson/playouts/{playout-id}.yaml"
+
+safety:
+  agreement_required: scenario-level   # inherited from scenario.yaml safety.agreement (Phase 5 Q1)
+  pause_command: "/pause"
+  x_card_command: "/x-card"
+  resume_command: "/resume"
+  break_command: "/break"

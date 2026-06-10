@@ -60,6 +60,22 @@ domains:
         repo: 0xHoneyJar/freeside-characters
         persona_path_pattern: "apps/character-{id}/persona.md"
         loader: "packages/persona-engine/src/persona/loader.ts:33"
+  agent-systems:
+    description: "The agent sandbox — host agent-under-incentive scenarios (real agents via Gygax's ladder engine, simulated agents via the persona host) and emit observed-trace/v1 batches for Gygax to grade"
+    skills:
+      - playout       # dual-lane: --real dispatches the engine; default hosts the persona
+    schemas:
+      - domains/agent-systems/schemas/scenario.schema.yaml
+      - domains/agent-systems/schemas/session-events-agent.schema.yaml
+      - domains/agent-systems/schemas/agent-persona.schema.yaml
+    vendored_contracts:
+      - path: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
+        pin: domains/agent-systems/schemas/vendor/VENDOR.yaml
+      - path: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
+        pin: domains/agent-systems/schemas/vendor/VENDOR.yaml
+    resources:
+      personas: domains/agent-systems/resources/personas/
+      synthetic_fixture: domains/agent-systems/resources/fixtures/synthetic-incentive/
 
 composition:
   siblings:
@@ -91,6 +107,10 @@ schemas:
     - domains/ttrpg/schemas/voice-pc.schema.yaml
     - domains/ttrpg/schemas/session-events-ttrpg.schema.yaml
     - domains/ttrpg/schemas/digest-ttrpg.schema.yaml
+  agent-systems:
+    - domains/agent-systems/schemas/scenario.schema.yaml
+    - domains/agent-systems/schemas/session-events-agent.schema.yaml
+    - domains/agent-systems/schemas/agent-persona.schema.yaml
 
 protocols:
   - protocols/persona-hosting.md
@@ -110,6 +130,7 @@ output_paths:
   digests: grimoires/arneson/digests/
   safety_log: grimoires/arneson/safety-findings.md
   changelog: grimoires/arneson/changelog/
+  playouts: grimoires/arneson/playouts/
 
 examples:
   reference_fixture: examples/synthetic-fixture/

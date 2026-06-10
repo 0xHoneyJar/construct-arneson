@@ -1,0 +1,115 @@
+# domains/agent-systems/schemas/session-events-agent.schema.yaml
+# Native sidecar extension for the agent-systems domain (FR-8, FR-10; sdd.md §3.2).
+# Extends schemas/core/session-events-base.schema.yaml v2 — same extension pattern
+# as session-events-ttrpg / session-events-character.
+#
+# This is the FULL-FIDELITY record (observability layers 1-5). The exchange artifact
+# Gygax ingests is the deterministic projection (project_trace.py → observed-trace/v1);
+# nothing observable is lost to the narrower contract because this file keeps it all.
+
+schema:
+  name: session-events-agent
+  version: 1
+  extends: session-events-base
+  extends_version: 2
+  description: >
+    Append-only event log for a simulated agent playout. One file per playout
+    session; rung_start/trial_end events segment it into trials.
+
+preamble_extensions:
+  description: "Written once at session open, immutable. Extends the base preamble."
+  fields:
+    scenario_id:
+      type: string
+      required: true
+      description: "The committed scenario this run instantiates."
+    run_id:
+      type: string
+      required: true
+      description: "Unique per playout invocation — 'run 7 of scenario S'."
+    provenance:
+      type: block
+      required: true
+      description: "Observability layer 2 — what produced this session (FR-10)."
+      fields:
+        model_id: {type: string, required: true}
+        construct_git_sha: {type: string, required: true}
+        construct_version: {type: string, required: true}
+        skill: {type: string, required: true, description: "e.g. playout@<index.yaml version>"}
+        schema_versions: {type: block, required: true, description: "name: version map of schemas in play"}
+        protocols_loaded: {type: "list[string]", required: true}
+    context_manifest:
+      type: "list[block]"
+      required: true
+      description: "EXACTLY what entered the persona's context: refs + hashes. Makes the rung's visibility claim verifiable (FR-10; sandbox-particulars §2)."
+      item_fields:
+        ref: {type: string, required: true}
+        sha256: {type: string, required: true}
+    visibility_rung:
+      type: int
+      required: true
+      description: "Which rung's mask was applied for this session segment."
+    memory_policy:
+      type: enum
+      values: [fresh, continuing]
+      required: true
+      description: "Stamped from the scenario — a reader knows which kind of run this is."
+
+event_envelope_extensions:
+  description: "REQUIRED on every event in this extension (closes observability layer 3/4 gap for this domain)."
+  fields:
+    seq:
+      type: int
+      required: true
+      description: "Monotonic per-session sequence id. Makes individual events citable (anchors, digest provenance)."
+    at:
+      type: string
+      format: iso8601-datetime
+      required: true
+      description: "Base invariant ('Every event MUST include a timestamp') promoted into the enforced envelope."
+
+event_types:
+  rung_start:
+    description: "A (rung × trial) segment opens."
+    fields:
+      rung: {type: int, required: true}
+      rung_name: {type: enum, values: [blind, reward-aware, adversarial], required: true}
+      trial: {type: int, required: true}
+
+  agent_turn:
+    description: "The hosted persona acts (observability layer 3: turn/decision)."
+    fields:
+      narrated_action: {type: string, required: true}
+      why: {type: string, required: true}
+      grounding_refs:
+        type: "list[string]"
+        required: false
+        description: "References into the fixture/context the action grounds against."
+
+  artifact_declare:
+    description: >
+      The persona narrates a file it would produce. materialize_artifacts.py
+      serializes this content VERBATIM into runs/rung-R/trial-T/ — serialize,
+      never execute (FR-11 bright line). This is what makes simulated runs
+      mechanically scoreable by the analyst's own scorer.
+    fields:
+      path: {type: string, required: true, description: "Relative to the run dir."}
+      content: {type: string, required: true, description: "Full file content, verbatim."}
+      content_sha256: {type: string, required: true}
+
+  trial_end:
+    description: "Bounded-run honesty: how the trial stopped."
+    fields:
+      status: {type: enum, values: [completed], required: true, description: "Simulated trials that stop early via pause/safety are recorded via base events; only completed trials project to the contract."}
+      turns_used: {type: int, required: true}
+      stop_reason: {type: enum, values: [task_declared_done, max_turns, operator_pause], required: true}
+
+  # Base event types (pause, safety_trigger, dialogue, signal, decision,
+  # state_reference, chose_not_to_respond, session_end ...) are inherited
+  # unchanged from session-events-base v2.
+
+validation_rules:
+  - "preamble.scenario_id MUST match the scenario file's scenario_id"
+  - "Every event MUST carry seq + at; seq strictly increasing within the file"
+  - "artifact_declare.content_sha256 MUST equal sha256(content) — checked at materialization"
+  - "Each (rung, trial) pair opened by rung_start MUST be closed by exactly one trial_end before the next rung_start"

@@ -1,0 +1,24 @@
+# Test/CI scenario fixture — real lane against the bundled synthetic fixture.
+scenario_id: synthetic-real-smoke
+fixture:
+  path: ../synthetic-incentive
+  manifest_sha256: b57d5d4fd534793112481a9a80e99febc44916fada2531dc741b2f55cda51398
+rungs: [0, 2]
+trials: 2
+stopping:
+  max_turns: 10
+  timeout_seconds: 60
+memory: fresh
+safety:
+  agreement:
+    agreed_at: "2026-06-09T21:00:00Z"
+    boundaries: []
+    x_card_active: true
+visibility:
+  - rung: 0
+    may_see: [task-template/, rungs/rung-0-blind.md]
+    must_not_see: [incentive-state/, rungs/rung-2-adversarial.md]
+  - rung: 2
+    may_see: [task-template/, rungs/rung-2-adversarial.md, incentive-state/]
+    must_not_see: []
+agent_cmd: "echo {prompt}"

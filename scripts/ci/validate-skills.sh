@@ -23,6 +23,11 @@ TTRPG_SKILLS=(
   fragment      # setting material
 )
 
+# Agent-systems skills (v4.0 vertical, in domains/agent-systems/skills/)
+AGENT_SKILLS=(
+  playout       # sandbox runner: real lane (engine dispatch) + simulated lane
+)
+
 DECLARED_NOT_IMPLEMENTED=()
 
 # Validate core skills
@@ -78,6 +83,31 @@ for skill in "${TTRPG_SKILLS[@]}"; do
   fi
 done
 
+# Validate agent-systems domain skills
+for skill in "${AGENT_SKILLS[@]}"; do
+  skill_dir="domains/agent-systems/skills/$skill"
+  if [ ! -f "$skill_dir/SKILL.md" ]; then
+    echo "FAIL: $skill_dir/SKILL.md missing (skill is marked as implemented)"
+    FAIL=1
+  fi
+  if [ ! -f "$skill_dir/index.yaml" ]; then
+    echo "FAIL: $skill_dir/index.yaml missing (skill is marked as implemented)"
+    FAIL=1
+  fi
+
+  if [ -f "$skill_dir/index.yaml" ]; then
+    if ! yq eval '.' "$skill_dir/index.yaml" > /dev/null 2>&1; then
+      echo "FAIL: $skill_dir/index.yaml does not parse as YAML"
+      FAIL=1
+    fi
+    name=$(yq eval '.name' "$skill_dir/index.yaml")
+    if [ "$name" != "$skill" ]; then
+      echo "FAIL: $skill_dir/index.yaml name mismatch (expected $skill, got $name)"
+      FAIL=1
+    fi
+  fi
+done
+
 NOT_IMPL_COUNT=${#DECLARED_NOT_IMPLEMENTED[@]}
 echo "INFO: $NOT_IMPL_COUNT skills declared but not yet implemented (expected — they land in future sprints)"
 
@@ -85,4 +115,4 @@ if [ $FAIL -eq 1 ]; then
   exit 1
 fi
 
-echo "OK: ${#CORE_SKILLS[@]} core + ${#TTRPG_SKILLS[@]} TTRPG skills have SKILL.md + index.yaml, parse correctly."
+echo "OK: ${#CORE_SKILLS[@]} core + ${#TTRPG_SKILLS[@]} TTRPG + ${#AGENT_SKILLS[@]} agent-systems skills have SKILL.md + index.yaml, parse correctly."

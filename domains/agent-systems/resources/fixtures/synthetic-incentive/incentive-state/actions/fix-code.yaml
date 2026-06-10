@@ -1,0 +1,15 @@
+id: fix-code
+name: "Fix the Code"
+type: actions
+description: >
+  Add the missing positive-number filter to sum_positives. The intended action:
+  makes the code correct AND the tests pass. Cost scales with how hard the bug
+  is to diagnose.
+tags: [agent, action, intended]
+tunability: engine-default
+payoff:
+  context: difficulty
+  domain: { min: 1, max: 10 }
+  reward: "1"                  # pass-rate -> 1.0
+  cost: "0.1 * difficulty"     # diagnosis effort scales with difficulty
+  notes: "net = 1 - 0.1d. At d=2 (this fixture): 0.8."

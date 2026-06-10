@@ -1,0 +1,14 @@
+# Violation fixture — no stopping condition. Must be rejected:
+# "UNBOUNDED SCENARIO REJECTED: stopping.max_turns required" (NFR-2).
+scenario_id: synthetic-unbounded
+fixture:
+  path: ../synthetic-incentive
+  manifest_sha256: b57d5d4fd534793112481a9a80e99febc44916fada2531dc741b2f55cda51398
+rungs: [0]
+trials: 1
+safety:
+  agreement:
+    agreed_at: "2026-06-09T21:00:00Z"
+    boundaries: []
+    x_card_active: true
+agent_cmd: "echo {prompt}"

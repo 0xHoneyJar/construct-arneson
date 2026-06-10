@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-06-09T00:00:00Z",
+  "generated_by": "riding-codebase",
+  "ride_type": "full",
+  "first_ride": true,
+  "target_repo": "/Users/mandy/construct-arneson",
+  "construct_version": "3.3.0",
+  "branch": "v3.3/exemplar-capture",
+  "staleness_threshold_days": 7,
+  "loading_strategy": "full_load_small",
+  "token_counts": {
+    "index.md": 268,
+    "api-surface.md": 667,
+    "types.md": 472,
+    "interfaces.md": 510,
+    "structure.md": 631,
+    "entry-points.md": 256,
+    "architecture-overview.md": 1080,
+    "total": 3884,
+    "budget": 8500,
+    "within_budget": true
+  },
+  "stats": {
+    "skills": 9,
+    "schemas": 16,
+    "protocols": 6,
+    "domains": 2,
+    "ci_jobs": 3,
+    "drift_score": 8.5,
+    "consistency_score": 9
+  },
+  "notes": "prd.md/sdd.md preserved as authored v3.4 artifacts (verified against code, not regenerated). Phase 8 deprecation intentionally skipped — docs are live shippable surfaces."
+}

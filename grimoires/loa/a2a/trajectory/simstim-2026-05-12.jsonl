@@ -1,0 +1,45 @@
+{
+  "type": "simstim",
+  "event": "flatline_readiness",
+  "timestamp": "2026-05-12T20:40:26Z",
+  "data": {
+    "status": "DISABLED",
+    "exit_code": 1
+  }
+}
+{
+  "type": "simstim",
+  "event": "workflow_started",
+  "timestamp": "2026-05-12T20:40:26Z",
+  "data": {
+    "simstim_id": "simstim-20260512-05bd2c9d",
+    "from_phase": null
+  }
+}
+{
+  "type": "simstim",
+  "event": "flatline_readiness",
+  "timestamp": "2026-05-12T20:40:54Z",
+  "data": {
+    "status": "DISABLED",
+    "exit_code": 1
+  }
+}
+{
+  "type": "simstim",
+  "event": "flatline_readiness",
+  "timestamp": "2026-05-12T20:48:09Z",
+  "data": {
+    "status": "DISABLED",
+    "exit_code": 1
+  }
+}
+{
+  "type": "simstim",
+  "event": "flatline_readiness",
+  "timestamp": "2026-05-12T20:48:13Z",
+  "data": {
+    "status": "DISABLED",
+    "exit_code": 1
+  }
+}

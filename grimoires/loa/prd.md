@@ -1,211 +1,225 @@
-# Product Requirements Document: construct-arneson v3.4
+# Product Requirements Document: construct-arneson v4.0 — The Agent Sandbox
 
-**Version:** 3.4
-**Date:** 2026-05-20
+**Version:** 4.0
+**Date:** 2026-06-09
 **Author:** PRD Architect Agent (/plan-and-analyze)
 **Status:** Draft
-**Predecessor:** PRD v3.2 (2026-05-12) — freeside-characters adapter specification
-**Source:** [0xHoneyJar/construct-arneson#7](https://github.com/0xHoneyJar/construct-arneson/issues/7)
+**Predecessor:** PRD v3.4 (2026-05-20) — freeside adapter implementation (shipped, verified by /ride 2026-06-09)
+**Source:** `grimoires/loa/context/agent-sandbox-direction.md` (incl. 2026-06-09 addendum) + discovery interview 2026-06-09 + `grimoires/loa/discovery/*.md`
 
 ---
 
 ## Executive Summary
 
-**construct-arneson v3.4** implements the freeside-characters adapter — closing four blocking gaps between the v3.2 spec and executable reality. The v3.2 cycle delivered the adapter specification, consumer declaration, and SKILL.md documentation. This cycle delivers the scripts, fixture, and skill wiring that make `/voice --source persona.md` actually work.
+**construct-arneson v4.0** makes Arneson the sandbox of the Gygax/Arneson workbench: the house
+where agent behavior happens — real agents and simulated ones — instrumented at every layer, with
+Gygax as the analyst that designs the tests, grades the results, and diffs them against its
+forecasts.
 
-> **Predecessor context:** v3.2 was a spec cycle. All YAML declarations and SKILL.md documentation exist and are committed. What's missing is deterministic parse/serialize tooling and a round-trip-testable fixture.
+> "Gygax forecasts where a system breaks. Arneson plays it out. Gygax measures the gap."
+> (agent-sandbox-direction.md:16)
+
+The cycle ships a new `domains/agent-systems/` vertical with one skill, `/playout`. **Real mode is
+the primary lane**: `/playout --real` drives Gygax's ladder engine (which names Arneson as its
+driver: "A sibling construct (Arneson's `/playout --real`) drives this engine where it lives" —
+construct-gygax/scripts/lib/ladder/README.md:6), collects runs into the pinned batch layout, and
+hands Gygax an ungraded, fully-labeled batch to grade on ingest. Simulated mode (Arneson hosts the
+agent persona itself) is a secondary milestone.
+
+This supersedes the "Arneson never runs real code" identity stance. Containment reframes from
+abstinence to isolation: agents run inside a locked room (isolated run dirs, time limits, full
+logging, labeled output). Operator decision, NOTES.md 2026-06-09: "feels like a blocker for
+growth."
 
 ---
 
 ## Problem Statement
 
-`/voice --source persona.md` is documented but cannot execute. The SKILL.md describes format detection, adapter-driven ingest, and atomic two-layer emit — but the LLM has no deterministic tooling to parse markdown sections into voice-character schema fields or reconstruct a valid persona.md from modified state. Without this, the adapter spec is aspirational.
+Designs that involve incentives (reward structures, payoff rules) need testing against agents that
+might exploit them. Gygax predicts where a design breaks and grades what happened — but a judge
+that also produces the evidence it judges can't be trusted, and until cycle-008 Gygax did both.
+There is no instrumented house where an experiment designer can feed in an agent (their own real
+one, or a stand-in), run it through a scenario, and get back a record that is observable at every
+layer and comparable against the prediction.
 
-> Sources: user-description.md:4-6, freeside.yaml:1-19, SKILL.md:16-22
+> Sources: agent-sandbox-direction.md:14-22 + addendum §2; observed-trace-batch.v1.md:10-13 ("the
+> trust rule: the judge never produces the evidence it judges"); Phase 1 interview (lane decision);
+> Phase 6 interview (house-for-real-agents decision)
 
 ---
 
 ## Goals
 
-| ID | Goal | Metric | Source |
-|----|------|--------|--------|
-| G-1 | Round-trip correctness | Ingest persona.md -> extract fields -> emit persona.md -> diff shows both layers updated correctly | Phase 2 confirmation |
-| G-2 | Deterministic parsing | Script-based extraction, not LLM inference, for all adapter ingest rules | Phase 1 (hybrid model) |
-| G-3 | Atomic two-layer writes | Reference body and system prompt template always updated together | freeside.yaml:235-238 |
-| G-4 | Testable fixture | Synthetic persona.md that exercises all mapped fields | Phase 1 (fixture decision) |
+| ID | Goal | Measure | Source |
+|----|------|---------|--------|
+| G-1 | **Real-lane loop closure** (the gate) | A real agent runs via `/playout --real` → batch conforming to `observed-trace-batch/v1`, ungraded sidecars + artifacts → Gygax grades on ingest and produces the predicted-vs-observed diff. Zero manual edits anywhere. | Phase 2 Q1 (option c), revised post-Phase 6 (NOTES.md 2026-06-09) |
+| G-2 | **Every layer observable** | The seven observability layers captured and machine-checkable; "a capture without a validator is a claim" | User directive ("every layer documented and observable"); discovery/observability-layers.md |
+| G-3 | **Stranger-operable** | Someone with both constructs installed runs the loop from the quick-start alone | Phase 3 Q1 |
+| G-4 | **Honest labeling** | Every record carries producer + `claim_strength`; banned-copy list enforced in docs (no "hard metrics", "zero hallucination", fidelity claims) | agent-sandbox-direction.md:90-104 |
+| G-5 | **The pairing compounds** | The gap-report → `/voice` workshop → better-simulation loop is documented as the canonical combined workflow | Phase 3 Q2 rider ("grow together"); memory: pairing-compounds |
+
+**Milestones:** (a) sidecar/batch conformance → (b) zero-edit ingestion by Gygax's trace CLI →
+(c) G-1 loop closure. Simulated lane follows as milestone (d). Timeline: quality-driven, no fixed
+date (Phase 2 Q2).
 
 ---
 
 ## Users & Stakeholders
 
-| Persona | Role | Interaction |
-|---------|------|-------------|
-| **Persona curator** (gumi) | Authors/iterates character voices via `/voice` workshops | Invokes `/voice --source persona.md`, workshops the character, expects changes written back correctly |
-| **Freeside bot** (machine consumer) | Loads persona.md at inference time via loader.ts | Reads system prompt template block; must remain valid after Arneson edits |
-| **Future adapters** | Other consumers adopting the adapter pattern | Observe this implementation as the reference for new adapters |
+| Who | Role | Needs |
+|-----|------|-------|
+| Experiment designer (primary) | Authors scenarios, feeds in agents, reads Gygax's diffs | One-command runs, low manual lifting, trustworthy labels |
+| Stranger operator | Same, but no context beyond the docs | Quick-start, clear errors, hermetic demo fixture |
+| Gygax (machine consumer) | Grades and diffs batches | Strict conformance to `observed-trace/v1` + `observed-trace-batch/v1` |
+| Unaffected | freeside-characters, TTRPG vertical users | No surface changes this cycle |
 
-> Sources: construct.yaml:57-62, v3.2-freeside-adapter.md:12-13
+> Sources: Phase 3 Q1-Q2; agent-sandbox-direction.md:81-84
 
 ---
 
 ## Functional Requirements
 
-### FR-1: Persona.md Ingest Script
+### The vertical
 
-**Priority:** Must Have
+- **FR-1 — `domains/agent-systems/` vertical.** New files only, under the five-part extension
+  contract; zero core changes (the extension-story CI proof must keep passing).
+  > Sources: agent-sandbox-direction.md:67-70; CONTRIBUTING.md module rule; reality/structure.md:36
 
-**Description:** Python script at `domains/character-voice/scripts/ingest_persona.py` that reads a persona.md file and extracts voice-character schema fields per the adapter spec's ingest rules.
+### The skill
 
-**Acceptance Criteria:**
-- [ ] Reads persona.md from stdin or file path argument
-- [ ] Extracts YAML frontmatter (metadata fields per freeside.yaml:114-123)
-- [ ] Extracts voice_anchors.og_line via `first_italic_line` from `## OG voice anchor`
-- [ ] Extracts voice_anchors.win/lose/draw via `list_items` from `## battle whispers` subsections
-- [ ] Extracts speech_patterns via `bullet_descriptions` from `## voice discipline lock` > `### cadence`
-- [ ] Extracts discipline_locks via `bullet_rules` from `### the Navigator pattern`
-- [ ] Extracts navigator_pattern via `structured_fields` from `### the Navigator pattern`
-- [ ] Extracts decline_patterns via `key_value_bullets` from `### decline patterns`
-- [ ] Extracts yield_map via `key_value_bullets` from `### yield patterns`
-- [ ] Extracts canon_boundary.knows/does_not_know via `bullet_items` from `## world presence` subsections
-- [ ] Extracts modes via `subsection_list` from `## moments + modes`
-- [ ] Extracts anti_patterns via `bullet_items` from system prompt template `DON'T` section
-- [ ] Extracts exemplars from `## exemplars (canon-quality exchanges)` if present
-- [ ] Outputs valid voice-character YAML to stdout
-- [ ] Exits non-zero with diagnostic on malformed input
+- **FR-2 — `/playout --real` (primary lane).** Dispatches Gygax's ladder engine via its documented
+  CLI (`npx tsx scripts/lib/ladder/index.ts run --fixture … --rungs … --trials … --agent-cmd …`),
+  collects results into an `observed-trace-batch/v1` directory (batch.json manifest, `sidecars/`,
+  `runs/` artifact trees), and reports the batch path. One invocation does run + assemble +
+  validate (NFR-1).
+  > Sources: construct-gygax/scripts/lib/ladder/README.md:1-25; construct-gygax/schemas/observed-trace-batch.v1.md:16-30; Phase 6 interview
+- **FR-3 — Cost guardrail.** Before spawning real agents, `/playout --real` states the spend shape
+  ("this will spawn N real agent runs") and asks for confirmation; `--yes` skips the prompt;
+  engine `--dry-run` is surfaced as the no-spend preview.
+  > Sources: Phase 7 Q1 (user: "lil guardrail")
+- **FR-4 — `/playout` simulated mode (secondary milestone).** Arneson hosts the agent persona and
+  plays the scenario out autonomously (no required human turn; `/pause` and safety commands live),
+  producing the same batch shape with `producer.kind: simulation`. Works standalone — no Gygax
+  install required.
+  > Sources: Phase 4 Q1 (interaction model); post-Phase-6 demotion decision (NOTES.md 2026-06-09); observed-trace.v1.schema.json producer.kind enum
+- **FR-5 — Agent import.** A documented path from a real agent's spec (system prompt / behavioral
+  spec) to a hostable persona file, so simulated mode can stand in for *your* agent, not only the
+  bundled one.
+  > Sources: Phase 6 interview ("feed in other AI agents"); identity/ARNESON.md:9 (personas grounded in "a behavioral spec")
+- **FR-6 — Graceful absence.** Real mode without a reachable Gygax engine fails immediately with a
+  message naming the missing dependency and pointing at simulated mode. Engine discovery: sibling
+  checkout probe (same pattern as game-state composition), overridable via config.
+  > Sources: Phase 7 Q4; reality/architecture-overview.md:39 (probe pattern); pre-generation assumption 3 (confirmed)
 
-> Sources: freeside.yaml:22-123
+### The scenario artifact
 
-### FR-2: Persona.md Emit Script
+- **FR-7 — `scenario.yaml` is first-class and required.** Fields: fixture/state ref + checksum;
+  rungs to run; trials; persona ref + checksum (simulated lane); `agent_cmd` (real lane);
+  stopping condition (REQUIRED — bounded runs); memory policy (`fresh` default | `continuing`);
+  scenario-level safety agreement block (inherited by every trial — no per-trial re-prompting);
+  visibility-mask declaration per rung. The sidecar `experiment`/`run` blocks are populated from
+  it. One variable per scenario family (rung varies inside; temperament/persona varies across) —
+  enforced by convention and documented.
+  > Sources: discovery/sandbox-particulars.md §1-2, §4; Phase 4 Q2; Phase 5 Q1 (scenario-level safety, "limit the manual lifting"); Phase 5 Q2.3 (bounded); observed-trace.v1.schema.json experiment/run required fields
 
-**Priority:** Must Have
+### Emission & validation
 
-**Description:** Python script at `domains/character-voice/scripts/emit_persona.py` that takes voice-character YAML state and a persona.md template, and produces an updated persona.md with both layers in sync.
+- **FR-8 — Dual emission (simulated lane).** Every simulated playout writes (1) the full-fidelity
+  native sidecar (session-events-base extension with agent-systems event types) and (2) a
+  deterministic script projection into `observed-trace/v1` with the playout prose as `narration`.
+  No LLM serialization on the projection path. Real lane: the engine emits sidecars; Arneson
+  assembles and labels the batch.
+  > Sources: Phase 4 Q1 discussion; v3.4 deterministic-tooling precedent (reality/architecture-overview.md:46); observed-trace.v1.schema.json narration field
+- **FR-9 — Self-validation before handoff.** Every emitted sidecar validates against a **vendored**
+  copy of `observed-trace.v1.schema.json` (upstream version recorded); the batch layout validates
+  against `observed-trace-batch/v1`. Nonconformance is a `/playout` failure, not Gygax's problem.
+  Arneson NEVER fills the `observation` block — grading is the analyst's (the trust rule).
+  > Sources: Phase 5 Q2.1; observed-trace-batch.v1.md:10-13; Phase 7 Q1 (drift guard)
+- **FR-10 — Provenance + context manifest.** Simulated-lane preamble records model id, construct
+  version (git sha), skill/schema versions, protocols loaded; the context manifest records exactly
+  what entered the hosted persona's context (refs + hashes) so the rung's visibility claim is
+  verifiable. Real lane: producer block per contract.
+  > Sources: discovery/observability-layers.md layers 1-2; discovery/sandbox-particulars.md §2; observed-trace.v1.schema.json producer block
 
-**Acceptance Criteria:**
-- [ ] Reads voice-character YAML from stdin or file path argument
-- [ ] Reads original persona.md as template (preserves structure, comments, non-mapped sections)
-- [ ] Updates reference body sections per emit.reference_body rules (freeside.yaml:133-166)
-- [ ] Updates system prompt template sections per emit.system_prompt_template rules (freeside.yaml:168-207)
-- [ ] Enforces sync contract: all 5 dual-target fields updated in both layers (freeside.yaml:218-234)
-- [ ] Exemplars: unlimited in reference body, max 5 in system prompt (freeside.yaml:199)
-- [ ] Computes entire file content before writing (atomic — freeside.yaml:236-238)
-- [ ] Writes to stdout (caller handles file I/O) or to specified output path
-- [ ] Preserves sections not mapped by the adapter (passthrough)
-- [ ] Exits non-zero if sync contract would be violated (e.g., field present in one layer but not the other)
+### Identity & resources
 
-> Sources: freeside.yaml:127-238
+- **FR-11 — Containment reframe (identity change).** `identity/refusals.yaml` + ARNESON.md update:
+  drop never-executes; adopt locked-room containment — the persona-host engine itself never
+  executes; real agents execute only inside the engine's isolated run dirs with time limits; no
+  secrets enter run rooms; every output labeled. The "judge never produces the evidence it judges"
+  and "forecast-without-playing is never a sidecar claim" invariants are stated explicitly.
+  > Sources: Phase 6 operator decision (NOTES.md 2026-06-09 MAJOR); observed-trace.v1.schema.json claim_strength description
+- **FR-12 — Bundled resources.** One neutral agent-under-incentive persona parameterized by rung
+  (temperament axis stays user-pluggable via `scenario.yaml` persona ref — no temperament library
+  this cycle) and one synthetic incentive fixture for hermetic standalone/CI use. The canonical
+  demo runs Gygax's real `evals/awareness-ladder` fixture.
+  > Sources: Phase 4 Q2 + temperament follow-up; Phase 3 Q2 + amendment (shared-fixture demo); pre-generation assumption 2 (confirmed)
 
-### FR-3: Format Detection in /voice SKILL.md
+### Docs & CI
 
-**Priority:** Must Have
-
-**Description:** Update SKILL.md to instruct the LLM to call ingest/emit scripts when `--source` points to a persona.md file, rather than attempting to parse/serialize via LLM inference.
-
-**Acceptance Criteria:**
-- [ ] SKILL.md Step 1 (Source detection) instructs: when `--source` file contains `## System prompt template`, invoke `domains/character-voice/scripts/ingest_persona.py <path>` via Bash tool
-- [ ] SKILL.md Step 5 (Exit/write-back) instructs: pipe modified YAML through `domains/character-voice/scripts/emit_persona.py --template <original-path>` via Bash tool
-- [ ] Format detection is content-based (presence of `## System prompt template`), not extension-based
-- [ ] SKILL.md documents the hybrid model: scripts handle parse/serialize, LLM handles the workshop
-
-> Sources: SKILL.md:16-22, Phase 1 (hybrid model decision)
-
-### FR-4: Synthetic Persona.md Fixture
-
-**Priority:** Must Have
-
-**Description:** A synthetic character in persona.md format at `domains/character-voice/resources/fixtures/test-persona.md` that exercises all adapter-mapped fields.
-
-**Acceptance Criteria:**
-- [ ] Contains YAML frontmatter with all metadata fields
-- [ ] Contains all reference body sections: OG voice anchor, battle whispers (win/lose/draw), voice discipline lock (cadence, Navigator pattern), moments + modes (decline patterns, yield patterns, greeting mode, at least one other mode), world presence (knows/does_not_know), exemplars
-- [ ] Contains `## System prompt template` with 4-backtick fenced block including: VOICE CANON, DON'T, CANON BOUNDARY, TOOL USE, EXEMPLARS sections with appropriate markers
-- [ ] Character is original (not Akane, not from any private game)
-- [ ] Character exercises edge cases: at least one multi-line decline pattern, at least one yield with attitude qualifier, at least 2 exemplars
-- [ ] Passes round-trip: `ingest_persona.py fixture | emit_persona.py --template fixture > output && diff fixture output` produces no meaningful diff
-
-> Sources: Phase 1 (synthetic new decision), Phase 2 (round-trip correctness)
-
-### FR-5: Round-Trip Validation Script
-
-**Priority:** Should Have
-
-**Description:** Shell script at `domains/character-voice/scripts/test-roundtrip.sh` that validates the ingest -> emit round-trip.
-
-**Acceptance Criteria:**
-- [ ] Runs ingest on fixture, captures YAML output
-- [ ] Runs emit with captured YAML against original fixture as template
-- [ ] Diffs original and output, reports pass/fail
-- [ ] Validates all 5 sync contract fields appear in both layers
-- [ ] Exit 0 on pass, exit 1 on fail with diagnostic
-
-> Sources: G-1, FR-4 acceptance criteria
+- **FR-13 — Documentation set.** Stranger-grade quick start (install → scenario → `/playout --real`
+  → Gygax grade/diff); the walls-of-the-room doc (what isolation does and does not stop);
+  one-variable-per-scenario discipline; the pairing-compounds workflow (gap report → `/voice`
+  workshop → next playout); banned-copy list.
+  > Sources: Phase 3 Q1; Phase 7 Q2, Q5; G-5
+- **FR-14 — CI lands in the same change.** Jobs: agent-systems schema validation; projection
+  round-trip against the vendored contract; batch-layout conformance; hermetic playout against the
+  synthetic fixture. Explicitly avoids repeating the character-voice zero-coverage gap.
+  > Sources: Phase 5 Q2.2; drift-report finding #3 (ride 2026-06-09)
 
 ---
 
-## Technical & Non-Functional Requirements
+## Non-Functional Requirements
 
-### NF-1: Python Dependencies
-- Standard library only (no pip installs). `yaml` module via PyYAML is acceptable if already available; otherwise use regex-based YAML frontmatter extraction.
-- [ASSUMPTION] PyYAML is available in the development environment. If not, frontmatter extraction falls back to regex.
-
-### NF-2: Script Interface Convention
-- Scripts follow Unix convention: read from stdin or file arg, write to stdout, diagnostics to stderr.
-- Exit codes: 0 success, 1 parse error, 2 sync contract violation.
-
-### NF-3: Passthrough Preservation
-- Sections in persona.md not mapped by the adapter must survive round-trip unchanged. The emit script is a **section-level editor**, not a full rewrite.
-
-### NF-4: Loader Contract Pinning
-- Adapter spec is pinned to freeside loader contract as documented in freeside.yaml:12-19. Version drift is a known risk, detected by round-trip test failure.
-
-> Sources: Phase 1 (pin to spec decision), freeside.yaml:12-19
+| ID | Requirement | Source |
+|----|-------------|--------|
+| NFR-1 | **Low manual lifting**: one `/playout` invocation = run + assemble + validate + report the Gygax-ready batch path | Phase 5 Q1 rider |
+| NFR-2 | **Bounded**: required stopping condition + engine timeout; no unbounded runs; no token ceiling beyond that | Phase 5 Q2.3 + user confirmation |
+| NFR-3 | **Untrusted-input posture**: fixtures, incentive specs, agent specs, and `narration` are descriptive grounding — never instructions to the host; never executed or interpreted | Phase 5 Q2.4; observed-trace.v1.schema.json narration |
+| NFR-4 | **No secrets in run rooms**: nothing credential-bearing is passed into agent run dirs or `agent_cmd` environments by Arneson | Phase 7 Q2 |
+| NFR-5 | **Stack**: Python 3 stdlib for Arneson-side tooling; the node engine is driven, not depended on at build time | Phase 5 Q2.5 |
+| NFR-6 | **Fail fast, labeled**: schema-version mismatch, missing engine, and validation failures produce loud, specific errors | Phase 7 Q1, Q4 |
 
 ---
 
-## Scope & Prioritization
+## Out of Scope (inherited by future cycles, with rationale)
 
-### In Scope (v3.4)
-- Ingest script (FR-1)
-- Emit script (FR-2)
-- SKILL.md wiring (FR-3)
-- Synthetic fixture (FR-4)
-- Round-trip test (FR-5)
-
-### Out of Scope (explicit)
-- Real freeside persona testing (requires access to 0xHoneyJar/freeside-characters repo)
-- `/distill` integration with freeside consumer format
-- Exemplar ranking/scoring heuristics (workshop captures manually)
-- `meta_voice` mapping to persona.md (manual/workshop-driven for now)
-- CI integration of round-trip test (can be added later)
-- Migration tooling for existing freeside personas
+| Item | Why deferred | Source |
+|------|--------------|--------|
+| TTRPG seam (`/distill` → Gygax) | No Gygax consumer exists (`/cabal --from-session` unbuilt); consumer pins contract first | Phase 1; agent-sandbox-direction.md addendum §1 |
+| TTRPG-lane observability backlog: transcript↔sidecar anchors, `validate-session.sh`, `improvised` event type, digest provenance chain | Producing to an unpinned contract | Phase 2 Q3; discovery/observability-layers.md |
+| Temperament persona library | Axis ships via persona ref; library is speculative | Phase 4 Q2 follow-up |
+| `/distill`, character-voice, freeside changes | Untouched lanes | Phase 4 Q3 |
+| Runner relocation into Arneson | Engine is driven where it lives; revisit only if it chafes | gygax-changes-brief.md item 2 |
+| Forecast-without-playing | Lives at Gygax's report layer, never a sidecar claim | observed-trace.v1.schema.json claim_strength |
 
 ---
 
-## Risks & Dependencies
+## Risks & Mitigations
 
-| ID | Risk | Likelihood | Impact | Mitigation |
-|----|------|------------|--------|------------|
-| R-1 | Freeside loader contract has drifted since adapter spec was written | Low | High — emit produces invalid persona.md | Round-trip test (FR-5) detects this; fix adapter spec if drift found |
-| R-2 | Markdown section parsing is fragile against real-world persona.md variations | Medium | Medium — ingest fails on edge cases | Fixture (FR-4) exercises edge cases; script reports parse errors clearly |
-| R-3 | System prompt template reconstruction loses formatting | Medium | High — bot behavior changes | Emit preserves non-mapped content via passthrough (NF-3) |
-| R-4 | PyYAML not available in all environments | Low | Low — fall back to regex frontmatter extraction | NF-1 fallback strategy |
-| R-5 | LLM inconsistently invokes scripts despite SKILL.md instructions | Medium | Medium — partial hybrid, unreliable parse | SKILL.md uses explicit Bash tool invocation syntax, not suggestive language |
-
-> Sources: Phase 1 (pin to spec), user-description.md:10-12
+| # | Risk | Mitigation | Source |
+|---|------|-----------|--------|
+| R-1 | Cross-repo format drift | Vendored schema + recorded upstream version; fail-fast on mismatch; CI round-trip | Phase 7 Q1 (confirmed) |
+| R-2 | Locked room has limits | Isolation is engine-owned (run dirs + timeouts); Arneson never hands secrets in; walls-of-the-room doc states what is NOT stopped | Phase 7 Q2 (confirmed) |
+| R-3 | Real-run cost | FR-3 guardrail (confirm-or-`--yes`), `--dry-run` surfaced, required stopping conditions | Phase 7 Q3 (confirmed) |
+| R-4 | Gygax absent | FR-6 graceful absence; simulated lane standalone | Phase 7 Q4 (confirmed) |
+| R-5 | Overclaim poisons trust | Producer-bound `claim_strength`; banned-copy list; pretend-is-preview/real-is-proof framing in all docs | Phase 7 Q5 (confirmed); agent-sandbox-direction.md:90-104 |
 
 ---
 
-## Dependencies
+## Dependencies (verified present, 2026-06-09)
 
-| Dependency | Status | Notes |
-|------------|--------|-------|
-| Adapter spec (freeside.yaml) | Complete | v3.2 cycle deliverable |
-| Voice-character schema | Complete | v3.2 cycle deliverable |
-| Consumer declaration (construct.yaml) | Complete | v3.2 cycle deliverable |
-| SKILL.md documentation | Complete | v3.2/v3.3 cycle deliverable |
-| Python 3.x runtime | [ASSUMPTION] Available | Standard in dev environments |
+- `construct-gygax/schemas/observed-trace.v1.schema.json` — record contract (pinned)
+- `construct-gygax/schemas/observed-trace-batch.v1.md` — batch layout contract (pinned, cycle-008)
+- `construct-gygax/scripts/lib/ladder/` — drivable run engine with documented CLI (cycle-008 PR #18)
+- `construct-gygax/scripts/lib/trace/grade.ts` — grade-on-ingest + `--regrade` trust-rule enforcement
+- `construct-gygax/evals/awareness-ladder/` — canonical shared fixture, sibling-readable
 
 ---
 
-*Generated by PRD Architect Agent, 2026-05-20*
-*Discovery: 7 context files ingested, 5 interview questions across 4 phases, 0 assumptions unresolved*
+## Decision Log Pointers
+
+Authoritative interview decisions live in `grimoires/loa/NOTES.md` (entries dated 2026-06-09):
+lane choice, loop-closure goal, house-for-real-agents reframe, real-lane-as-gate revision, and the
+five confirmed risk mitigations. Cross-repo brief: `grimoires/loa/discovery/gygax-changes-brief.md`.
+Flow diagram: `grimoires/loa/discovery/pairing-flow.md` / `.pdf`.
