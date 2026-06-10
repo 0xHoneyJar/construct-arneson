@@ -28,8 +28,10 @@ keeps every file it touches.
 agent_cmd: "claude -p {prompt} --permission-mode acceptEdits"
 
 # A local model via Ollama, using the BUNDLED wrapper — works out of the box
-# with nothing installed beyond the ollama daemon itself:
-agent_cmd: "python3 domains/agent-systems/resources/fixtures/ollama-agent.py --model qwen3 {promptfile}"
+# with nothing installed beyond the ollama daemon itself. Size --timeout UNDER
+# your scenario's stopping.timeout_seconds (big local models cold-load slowly;
+# pre-warm with `ollama run <model> ""` before a run to keep loads off the clock):
+agent_cmd: "python3 domains/agent-systems/resources/fixtures/ollama-agent.py --model qwen3 --timeout 560 {promptfile}"
 
 # (Why a wrapper: bare `ollama run qwen3` only talks — it won't edit files,
 # so every run would grade as "failed". The bundled wrapper turns the model

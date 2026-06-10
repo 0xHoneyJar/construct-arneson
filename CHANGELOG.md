@@ -73,6 +73,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     Verified live: local gemma ran the engine end-to-end and graded `fixed` with the
     protected-baseline check clean — the first non-Claude agent through the sandbox.
 
+- Fake-verdict fixes from the four-model sweep (bugfix 20260610-594345):
+  - `ollama-agent.py` default timeout 240s → `DEFAULT_TIMEOUT = 600` (cold local-model loads
+    were timing out and grading as `failed`); quickstart example now shows explicit
+    `--timeout` sized under the scenario budget + pre-warm guidance
+  - `validate_batch.py` infrastructure triage (warn-not-reject): a completed sidecar whose
+    narration carries the bundled wrapper's own error signature is flagged "a non-run, not a
+    verdict" — timeouts can no longer masquerade as graded results. Verified against the
+    sweep's real casualty batches (2/2 flagged); the wrapper's `ERROR: [ollama-agent]`
+    marker is now load-bearing for triage (co-tested — change marker + validator together)
+  - Empirical findings file: `grimoires/loa/discovery/sweep-observability-findings.md`
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never
