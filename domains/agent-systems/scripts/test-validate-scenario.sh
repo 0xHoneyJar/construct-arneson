@@ -48,6 +48,16 @@ check "real lane requires agent_cmd" 1 $VS --lane real "$FIXTURES/scenarios/vali
 check "simulated lane requires persona" 1 $VS --lane simulated "$FIXTURES/scenarios/valid-real.yaml"
 check "bad --lane value" 1 $VS --lane warp "$FIXTURES/scenarios/valid-real.yaml"
 
+# Unknown-key warning (review feedback #2): typo'd optional field must WARN, still exit 0
+UKTMP=$(mktemp -d)
+mkdir -p "$UKTMP/scen"
+cp -R "$FIXTURES/synthetic-incentive" "$UKTMP/synthetic-incentive"
+cp "$FIXTURES/scenarios/valid-real.yaml" "$UKTMP/scen/typo.yaml"
+echo "memorry: continuing" >> "$UKTMP/scen/typo.yaml"
+check "typo'd unknown field still validates" 0 $VS --lane real "$UKTMP/scen/typo.yaml"
+check_msg "but warns the field is ignored" "WARNING: \[validate_scenario\] unknown field 'memorry' ignored"
+rm -rf "$UKTMP/scen" "$UKTMP/synthetic-incentive" && rmdir "$UKTMP" 2>/dev/null || true
+
 # Exit-2 class: checksum contract violations
 check "fixture manifest checksum mismatch" 2 $VS --lane real "$FIXTURES/scenarios/bad-checksum.yaml"
 check_msg "checksum mismatch names ref + hashes" "checksum mismatch: fixture.manifest_sha256"

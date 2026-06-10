@@ -38,6 +38,16 @@ def info(msg):
     print(f"INFO: [validate_scenario] {msg}", file=sys.stderr)
 
 
+def warn(msg):
+    print(f"WARNING: [validate_scenario] {msg}", file=sys.stderr)
+
+
+KNOWN_TOP_KEYS = {
+    "scenario_id", "fixture", "rungs", "trials", "stopping",
+    "memory", "safety", "visibility", "agent_cmd", "persona",
+}
+
+
 class ParseError(Exception):
     pass
 
@@ -239,6 +249,12 @@ def main(argv):
     doc = load_scenario(scenario_path)
     base = Path(scenario_path).resolve().parent
     problems = []
+
+    # WARN (not reject) on unknown fields: a typo'd optional key would otherwise be
+    # silently dropped and the run would proceed against the operator's intent.
+    # Warn-not-reject keeps additive schema evolution possible.
+    for key in sorted(set(doc.keys()) - KNOWN_TOP_KEYS):
+        warn(f"unknown field '{key}' ignored — known fields: {', '.join(sorted(KNOWN_TOP_KEYS))}")
 
     scenario_id = _require(doc, "scenario_id", str, problems)
     fixture_path = _require(doc, "fixture.path", str, problems)

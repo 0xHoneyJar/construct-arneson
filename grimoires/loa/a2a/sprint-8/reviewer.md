@@ -89,6 +89,26 @@ machine-checked before any agent ever runs.
 4. **construct.yaml `vendored_contracts` key** is a new, undeclared-by-schema manifest stanza —
    validate-construct.sh accepts it (no strict schema); flagging for reviewer judgment.
 
+## Feedback Addressed (cycle 2)
+
+All three CHANGES_REQUIRED items from engineer-feedback.md resolved:
+
+1. **"No CHANGELOG.md in the construct repo"** → Created `CHANGELOG.md` with
+   `[Unreleased] — 4.0.0-dev` section covering every Sprint 1 deliverable, plus a 3.3.0
+   pointer stanza for the predecessor line.
+2. **"Unknown scenario keys are silently accepted"** → `validate_scenario.py` now diffs
+   top-level keys against `KNOWN_TOP_KEYS` and emits
+   `WARNING: unknown field 'X' ignored — known fields: …` (warn-not-reject, preserving additive
+   schema evolution as the feedback specified). Test added: typo'd `memorry:` field → exit 0 +
+   warning asserted (test-validate-scenario.sh, "typo'd unknown field" pair). Suite: 16/16.
+3. **"`validate_obj` is a 140-line function"** → Split into per-block helpers mirroring the
+   contract's structure: `_validate_top`, `_validate_producer`, `_validate_experiment`,
+   `_validate_run`, `_validate_observation`, `_validate_allof`; `validate_obj` is now a 15-line
+   orchestrator. All 14 sidecar-suite assertions pass unmodified (behavior identical).
+
+Re-verification after fixes: 42/42 assertions green across the three suites; committed batch
+exit 0; vendor drift guard green against the live sibling.
+
 ## Verification Steps
 
 ```bash
