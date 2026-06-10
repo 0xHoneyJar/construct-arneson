@@ -231,26 +231,26 @@ Make a *new* playtest cheap to stand up (scaffolder + authoring guide), enforce 
 boundary on the new surface (banned-copy grep), and validate all five PRD goals end-to-end.
 
 ### Deliverables
-- [ ] `scaffold_playtest.py` generating a working playtest skeleton (manifest + referee stub + incentive-state + prose-equalized rungs + passing smoke test) that validates and runs out of the box
-- [ ] `test-scaffold-playtest.sh`: generate into a temp dir, assert `validate_scenario.py` green + the generated smoke test passes
-- [ ] `docs/authoring-a-playtest.md` with calibration discipline inline and the dungeon as the worked reference
-- [ ] Banned-copy grep extended to cover `authoring-a-playtest.md` + the sweep report wording — clean
-- [ ] **Task 4.E2E**: all five PRD goals validated with documented evidence
+- [x] `scaffold_playtest.py` generating a working playtest skeleton (manifest + referee stub + incentive-state + prose-equalized rungs + passing smoke test) that validates and runs out of the box
+- [x] `test-scaffold-playtest.sh`: generate into a temp dir, assert `validate_scenario.py` green + the generated smoke test passes
+- [x] `docs/authoring-a-playtest.md` with calibration discipline inline and the dungeon as the worked reference
+- [x] Banned-copy grep extended to cover `authoring-a-playtest.md` + the sweep report wording — clean
+- [x] **Task 4.E2E**: all five PRD goals validated with documented evidence
 
 ### Acceptance Criteria
-- [ ] `scaffold_playtest.py --id … --task … --difficulty-range … --rungs N --out <dir>` emits a skeleton whose smoke test passes on first run (R-2: never a subtly-broken fixture); exit 2 if its self-check fails
-- [ ] Generated `referee.py` stub is an honest DEFEAT no-op (`--check` exit 1, `--state` emits `{}`, importable)
-- [ ] Generated skeleton validates against `validate_scenario.py` and `check_payoff_dominance.py` (hack stub is payoff-dominant once authored)
-- [ ] `authoring-a-playtest.md` documents fixture + referee + incentive-state + rungs + the FR-3 calibration rule with `check_payoff_dominance.py` as the mechanized check
-- [ ] Banned-copy grep clean over the new docs + report wording (no claim crosses sandbox-limits §A/B — NFR-7)
-- [ ] G1 stranger-author acceptance: a NEW playtest (not the dungeon) authored from guide + scaffolder alone, validates + runs (DEFEAT until authored)
+- [x] `scaffold_playtest.py --id … --task … --difficulty-range … --rungs N --out <dir>` emits a skeleton whose smoke test passes on first run (R-2: never a subtly-broken fixture); exit 2 if its self-check fails
+- [x] Generated `referee.py` stub is an honest DEFEAT no-op (`--check` exit 1, `--state` emits `{}`, importable)
+- [x] Generated skeleton validates against `validate_scenario.py` and `check_payoff_dominance.py` (hack stub is payoff-dominant once authored)
+- [x] `authoring-a-playtest.md` documents fixture + referee + incentive-state + rungs + the FR-3 calibration rule with `check_payoff_dominance.py` as the mechanized check
+- [x] Banned-copy grep clean over the new docs + report wording (no claim crosses sandbox-limits §A/B — NFR-7)
+- [x] G1 stranger-author acceptance: a NEW playtest (not the dungeon) authored from guide + scaffolder alone, validates + runs (DEFEAT until authored)
 
 ### Technical Tasks
-- [ ] Task 4.1: Implement `scaffold_playtest.py` (stdlib) — generate manifest, referee stub (DEFEAT), incentive-state (index + intended + payoff-dominant hack + reward), prose-equalized rung stubs, task-template, and a passing `test-referee.sh` smoke test; OQ-3 default `--archetype planning` (single param). Self-checks its own smoke test → exit 2 on failure. → **[G1]**
-- [ ] Task 4.2: Write `test-scaffold-playtest.sh` — generate into a temp dir, assert `validate_scenario.py` green + generated smoke test passes; assert exit 2 path on a deliberately-broken generation. Hermetic. → **[G1, G4]**
-- [ ] Task 4.3: Write `domains/agent-systems/docs/authoring-a-playtest.md` — fixture + referee + incentive-state + rungs, calibration discipline inline (FR-3 + `check_payoff_dominance.py`), dungeon as worked reference. → **[G1, G5]**
-- [ ] Task 4.4: Extend the banned-copy grep (`domain.conventions.md:56` metric) to `authoring-a-playtest.md` + the sweep report wording; assert clean. → **[G5]**
-- [ ] Task 4.E2E: End-to-End Goal Validation (see below). → **[G1, G2, G3, G4, G5]**
+- [x] Task 4.1: Implement `scaffold_playtest.py` (stdlib) — generate manifest, referee stub (DEFEAT), incentive-state (index + intended + payoff-dominant hack + reward), prose-equalized rung stubs, task-template, and a passing `test-referee.sh` smoke test; OQ-3 default `--archetype planning` (single param). Self-checks its own smoke test → exit 2 on failure. → **[G1]**
+- [x] Task 4.2: Write `test-scaffold-playtest.sh` — generate into a temp dir, assert `validate_scenario.py` green + generated smoke test passes; assert exit 2 path on a deliberately-broken generation. Hermetic. → **[G1, G4]**
+- [x] Task 4.3: Write `domains/agent-systems/docs/authoring-a-playtest.md` — fixture + referee + incentive-state + rungs, calibration discipline inline (FR-3 + `check_payoff_dominance.py`), dungeon as worked reference. → **[G1, G5]**
+- [x] Task 4.4: Extend the banned-copy grep (`domain.conventions.md:56` metric) to `authoring-a-playtest.md` + the sweep report wording; assert clean. → **[G5]**
+- [x] Task 4.E2E: End-to-End Goal Validation (see below). → **[G1, G2, G3, G4, G5]**
 
 ### Task 4.E2E: End-to-End Goal Validation
 
@@ -270,9 +270,9 @@ boundary on the new surface (banned-copy grep), and validate all five PRD goals 
 | G5 | Honesty boundary held | Grep new docs/reports against sandbox-limits §A/B; verify `check_payoff_dominance.py` enforces calibration | No new claim crosses the boundary; calibration discipline mechanized where checkable |
 
 **Acceptance Criteria:**
-- [ ] Each goal validated with documented evidence
-- [ ] Integration points verified (scaffold → validate → sweep → report → playouts → /arneson view, end-to-end)
-- [ ] No goal marked "not achieved" without explicit justification
+- [x] Each goal validated with documented evidence
+- [x] Integration points verified (scaffold → validate → sweep → report → playouts → /arneson view, end-to-end)
+- [x] No goal marked "not achieved" without explicit justification
 
 ### Dependencies
 - Sprint 2: `check_payoff_dominance.py` (the calibration check the guide documents + the scaffolder targets).
