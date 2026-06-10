@@ -54,6 +54,19 @@ Fragments: {N} (grimoires/arneson/fragments/)
 Digests: {N} (grimoires/arneson/digests/)
 ```
 
+### Playouts (agent-systems)
+Read the last N records from `grimoires/arneson/playouts/*.yaml` (most recent first).
+For each, surface: id, lane (real/simulated) or `kind: sweep`, scenario_id, and the
+verdict summary (single run: counts/validation; sweep: per-config triage counts +
+batch paths). Strictly read-only — never grade, never recompute, never write.
+```
+Playouts: {N} (grimoires/arneson/playouts/)
+  {sweep-id}        sweep  {C configs} — {label: F/H/X, …}
+  {playout-id}      real   {scenario}  — {counts}; {validation}
+  …
+```
+If the directory is empty, say so cleanly.
+
 ### Safety Findings
 ```
 Safety findings: {N entries in safety-findings.md}

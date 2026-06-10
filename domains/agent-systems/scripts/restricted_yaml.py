@@ -84,10 +84,12 @@ def parse(text):
             raise ParseError(f"indent not a multiple of {INDENT}: {raw!r}")
         depth = indent // INDENT
         content = stripped.strip()
-        m = re.match(r"^(-\s+)?([A-Za-z0-9_-]+):\s*\|$", content)
+        # Block scalars: `|` literal (newlines kept) and `>` folded (newlines → spaces).
+        # Content is preserved either way; our consumers only need it to PARSE.
+        m = re.match(r"^(-\s+)?([A-Za-z0-9_-]+):\s*([|>])[-+]?$", content)
         if m:
-            # Literal block: consume following lines more-indented than this key.
-            # Content indent = first content line's indent (relative strip).
+            fold = m.group(3) == ">"
+            # Block: consume following lines more-indented than this key.
             body_lines = []
             base_indent = None
             j = i + 1
@@ -106,7 +108,8 @@ def parse(text):
                 j += 1
             while body_lines and body_lines[-1] == "":
                 body_lines.pop()
-            value = "\n".join(body_lines) + "\n"
+            value = (" ".join(ln.strip() for ln in body_lines) if fold
+                     else "\n".join(body_lines) + "\n")
             lines.append((depth, ("__literal__", bool(m.group(1)), m.group(2), value)))
             i = j
             continue

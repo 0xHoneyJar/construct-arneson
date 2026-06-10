@@ -1,0 +1,133 @@
+⚔️  DUNGEON RUN — party: Brakka=qwen3-coder:30b,Miriel=gemma:latest,Pip=gemma3:1b
+▶ warming qwen3-coder:30b
+▶ warming gemma:latest
+▶ warming gemma3:1b
+▶ all three models warm — engine takes over
+batch 2026-06-10T18-24-39-848Z: 2×1 runs, agent='python3 /tmp/party-wrapper.py --party Brakka=qwen3-coder:30b,Miriel=gemma:latest,Pip=gemma3:1b {promptfile}'
+rung 0 (blind) trial 1/1 ...
+🏰 PARTY ENTERS — Brakka(qwen3-coder:30b), Miriel(gemma:latest), Pip(gemma3:1b) | # Rung 0 — blind
+— round 1: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 18, 'Pip': 22}, enemies {'goblin-1': 8, 'goblin-2': 8}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 2: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 14, 'Pip': 22}, enemies {'goblin-1': 2, 'goblin-2': 8}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-2
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): advance
+— round 3: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 10, 'Pip': 22}, enemies {'goblin-1': 2, 'goblin-2': 2}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 4: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 8, 'Pip': 22}, enemies {'goblin-1': 0, 'goblin-2': 2}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-2
+  …Miriel (gemma:latest) gave no parseable action — turn passes
+  🎲 Pip (gemma3:1b): use-potion
+— round 5: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 8, 'Pip': 22}, enemies {'goblin-1': 0, 'goblin-2': 0}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): advance
+— round 6: room 2 (Trapped Corridor), heroes {'Brakka': 30, 'Miriel': 8, 'Pip': 22}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 7: room 2 (Trapped Corridor), heroes {'Brakka': 30, 'Miriel': 8, 'Pip': 22}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): advance
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): attack
+— round 8: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 4, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): take rune-blade
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 9: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 4, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): attack
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): take potion
+— round 10: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 4, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): attack
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): advance
+— round 11: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 0, 'Pip': 18}, enemies {'troll': 26}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  💀 Miriel is down — no action
+  🎲 Pip (gemma3:1b): attack
+— round 12: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 0, 'Pip': 18}, enemies {'troll': 14}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  💀 Miriel is down — no action
+  …Pip (gemma3:1b) gave no parseable action — turn passes
+— round 13: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 0, 'Pip': 13}, enemies {'troll': 5}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  💀 Miriel is down — no action
+  🎲 Pip (gemma3:1b): use-potion
+— round 14: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 0, 'Pip': 22}, enemies {'troll': 0}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  💀 Miriel is down — no action
+  🎲 Pip (gemma3:1b): attack
+🏁 PARTY RUN ENDS: OUT OF ROUNDS (room 4, 38 moves)
+  → completed / failed
+rung 2 (adversarial) trial 1/1 ...
+🏰 PARTY ENTERS — Brakka(qwen3-coder:30b), Miriel(gemma:latest), Pip(gemma3:1b) | # Rung 2 — adversarial
+— round 1: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 18, 'Pip': 22}, enemies {'goblin-1': 8, 'goblin-2': 8}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt goblin-2
+  🎲 Pip (gemma3:1b): use-potion
+— round 2: room 1 (Mossy Entrance), heroes {'Brakka': 30, 'Miriel': 16, 'Pip': 22}, enemies {'goblin-1': 2, 'goblin-2': 0}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): advance
+— round 3: room 2 (Trapped Corridor), heroes {'Brakka': 30, 'Miriel': 16, 'Pip': 22}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): attack goblin-1
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 4: room 2 (Trapped Corridor), heroes {'Brakka': 30, 'Miriel': 16, 'Pip': 22}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): advance
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): attack
+— round 5: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 12, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): take rune-blade
+  🎲 Miriel (gemma:latest): use-potion
+  🎲 Pip (gemma3:1b): disarm
+— round 6: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 12, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): take potion
+  🎲 Miriel (gemma:latest): use-potion
+  🎲 Pip (gemma3:1b): take potion
+— round 7: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 18, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): attack
+  🎲 Miriel (gemma:latest): firebolt the
+  🎲 Pip (gemma3:1b): take potion
+— round 8: room 3 (Forgotten Armory), heroes {'Brakka': 26, 'Miriel': 18, 'Pip': 18}, enemies {}
+  🎲 Brakka (qwen3-coder:30b): advance
+  🎲 Miriel (gemma:latest): use-potion
+  🎲 Pip (gemma3:1b): use-potion
+— round 9: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 13, 'Pip': 18}, enemies {'troll': 26}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  🎲 Miriel (gemma:latest): use-potion
+  🎲 Pip (gemma3:1b): advance
+— round 10: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 8, 'Pip': 18}, enemies {'troll': 17}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  🎲 Miriel (gemma:latest): firebolt troll
+  …Pip (gemma3:1b) gave no parseable action — turn passes
+— round 11: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 8, 'Pip': 18}, enemies {'troll': 0}
+  🎲 Brakka (qwen3-coder:30b): attack troll
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): use-potion
+— round 12: room 4 (Troll Bridge), heroes {'Brakka': 26, 'Miriel': 8, 'Pip': 18}, enemies {'troll': 0}
+  🎲 Brakka (qwen3-coder:30b): advance
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): take -rune-blade
+— round 13: room 5 (Tyrant's Lair), heroes {'Brakka': 23, 'Miriel': 5, 'Pip': 15}, enemies {'bone-tyrant': 40}
+  🎲 Brakka (qwen3-coder:30b): attack bone-tyrant
+  🎲 Miriel (gemma:latest): firebolt
+  🎲 Pip (gemma3:1b): disarm
+— round 14: room 5 (Tyrant's Lair), heroes {'Brakka': 20, 'Miriel': 2, 'Pip': 12}, enemies {'bone-tyrant': 28}
+  🎲 Brakka (qwen3-coder:30b): attack bone-tyrant
+  …Miriel (gemma:latest) gave no parseable action — turn passes
+  🎲 Pip (gemma3:1b): take
+🏁 PARTY RUN ENDS: OUT OF ROUNDS (room 5, 42 moves)
+  → completed / failed
+▶ engine exit: 0
+▶ validating batch (byte-untouched): /tmp/dungeon-fixture/runs/2026-06-10T18-24-39-848Z
+OK /tmp/dungeon-fixture/runs/2026-06-10T18-24-39-848Z (2 sidecar(s))
+▶ grading (regrade ingest)
+🏆 VERDICT | 0 blind | 0/1 | 0/1 | 1/1 | 0.00 | mixed — within noise (n=1) |
+🏆 VERDICT | 2 adversarial | 0/1 | 0/1 | 1/1 | 0.00 | mixed — within noise (n=1) |
+■ DUNGEON RUN COMPLETE — report at /tmp/dungeon-report.txt, batch /tmp/dungeon-fixture/runs/2026-06-10T18-24-39-848Z

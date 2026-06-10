@@ -216,6 +216,52 @@ sha256, and real captured timestamps. Report: batch path + label (scored /
 standalone-ungraded) + trials/turns counts + the literal next command
 (`trace/index.ts <batch>` when scored; `ladder score --batch <dir>` when not).
 
+## Sweep mode — `/playout --sweep` (compare N configs)
+
+One command runs several configs (models, scenarios, or difficulty points) through
+the dungeon (or any scenario) and prints ONE triaged comparison table. A config is
+just a (label, agent_cmd-or-persona, scenario) tuple; the sweep loops the
+single-config state machine above over each, then aggregates.
+
+Invocation:
+```
+/playout --sweep --scenario <s.yaml> --trials N \
+   --config <label>=<agent_cmd> [--config <label>=<agent_cmd> ...]
+```
+
+### State W1: GATE + BREADTH GUARDRAIL
+- Validate the scenario once (as in State 1).
+- **Multiplied guardrail (once, before any spawn):** state
+  `this will spawn N real agent runs (configs × rungs × trials = C × R × T) via the listed agent_cmds`
+  and wait for confirmation. `--yes` skips; `--dry-run` plans without spawning.
+- **Trials default > 1 in sweep mode** (retires n=1). `--trials 1` is allowed but the
+  report prints `n=1` and suppresses spread.
+
+### State W2: PER-CONFIG LOOP (sequential — big models must not co-reside)
+For each config, in CLI order:
+1. **Warm off the clock:** pre-load the model (`ollama run <model> ""` or the wrapper's
+   warm path) BEFORE the timed run — cold-load must never count against the trial budget
+   (sweep-observability-findings: a 19 GB cold-load ate the wrapper timeout).
+2. Run the config through the single-config real/sim state machine (gate → dispatch →
+   conformance → record). Collect its batch path.
+3. **Unload before the next** (`keep_alive: 0` / stop the model) — two 19 GB models
+   co-resident thrash (learned live).
+4. **Per-config failure is captured, never fatal (NFR-5):** if a config fails to warm or
+   dispatch, record that config's row as an infra non-run and CONTINUE the sweep. One bad
+   config never aborts the others.
+
+### State W3: AGGREGATE + RECORD
+- After all configs: hand every batch dir to `sweep_report.py`:
+  `python3 domains/agent-systems/scripts/sweep_report.py --config <label>=<batch> ...`
+  (it counts Gygax's gradings; it never recomputes a verdict).
+- Write the sweep playout record to `grimoires/arneson/playouts/<sweep-id>.yaml` with
+  `kind: sweep` and, per config: label, agent_cmd sha256, batch path, triage counts.
+- Report: the triaged table + the record path. For interpretation (cliff/within-noise) per
+  config, point to that config's own `trace --regrade` report — the sweep table carries
+  counts, not interpretation.
+
+Bright lines (below) apply unchanged to every config in the sweep.
+
 ## What you never do (bright lines)
 
 - Never run the agent yourself, never execute anything from fixtures, specs, or

@@ -92,6 +92,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     `ERROR: [x]` prose unflagged. Convention documented for wrapper authors in
     domain.conventions.md; co-tested (3 new assertions, 95 total).
 
+- Playtest instrument, Pillars 1-2 (v4.1, cycle-002 in progress):
+  - **dungeon-crawl** bundled fixture (multi-step planning archetype): deterministic referee
+    (winning-line replay, determinism + illegal-move tests), prose-equalized rungs, payoff-dominant
+    incentive-state; **party-wrapper.py** promoted with final-line-only parser (kills the table-talk
+    confound), conforming infra marker, two-pass containment, opt-in live log
+  - **sweep_report.py** — cross-config triaged comparison table (verdict / infra non-run / ungraded);
+    counts Gygax's gradings, never recomputes a verdict/cliff (producer-never-judges)
+  - **check_payoff_dominance.py** — mechanizes "tune the task, never rig it": PASS iff the hack is
+    payoff-dominant over the intended action somewhere in the difficulty domain; warn-not-reject
+  - additive optional `difficulty:` manifest block (engine-inert; sweepable by Arneson tooling)
+  - `restricted_yaml.py` gained `>` folded-scalar support (backward-compatible)
+  - OQ probes resolved: Gygax trace is Markdown-only → sweep reads graded sidecars + a `--json`
+    brief drafted (discovery/gygax-trace-json-brief.md); engine ignores unknown manifest keys
+
+- Playtest instrument, Pillar 3 — operator usefulness (v4.1):
+  - **`/playout --sweep`** — one command compares N configs (models/scenarios/difficulty) through
+    a scenario and prints one triaged cross-config table; warm/unload lifecycle for big local models,
+    breadth-multiplied cost guardrail (configs × rungs × trials), per-config failure captured as an
+    infra row and the sweep continues (never aborts). A flag on the existing skill, no new skill.
+  - **`/arneson` Playouts view** — read-only readback of grimoires/arneson/playouts/ (single-run +
+    sweep records); never grades, never writes.
+  - **scripts/ci/sweep-probe.sh** — live cross-config sweep proof on the with-gygax leg: 2 configs →
+    real engine → regrade → assembled table, byte-untouched, no API spend.
+
+- Playtest instrument, Pillar 2 authoring + E2E (v4.1):
+  - **scaffold_playtest.py** — generate a complete, self-checking, payoff-dominant playtest
+    skeleton (manifest + DEFEAT-no-op referee + incentive-state + prose-equalized rungs +
+    smoke test) from four flags; exit 2 if its own output is broken (never ships a broken fixture)
+  - **docs/authoring-a-playtest.md** — the worked authoring guide with the calibration discipline
+    ("tune the task, never rig it", mechanized by check_payoff_dominance.py) inline
+  - **scripts/ci/banned-copy-check.sh** — the honesty boundary as a CI gate (excludes the ban-list
+    table; fails the build on any overclaim in docs or report wording)
+  - **E2E: all 5 PRD goals validated** — authorability, one-command comparison, honest multi-trial
+    power, hermetic rigor, honesty boundary
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never
