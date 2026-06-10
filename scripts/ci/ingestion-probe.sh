@@ -6,9 +6,8 @@
 #
 # Acceptance is the contract's own: "a batch produced entirely outside Gygax …
 # is graded and diffed with zero manual edits" (observed-trace-batch.v1.md:107-109).
-# Probe fixture: the engine's own evals/awareness-ladder until upstream Bug 1
-# (runner.ts:66 containment default) allows external fixtures — see
-# grimoires/loa/discovery/gygax-seam-bugs-cycle008.md.
+# Probe fixture: Arneson's bundled synthetic-incentive fixture — ours, format-true,
+# decoupled from upstream fixture churn.
 #
 # Requires: node + npx in PATH, a real Gygax checkout (ARNESON_GYGAX_ROOT or sibling).
 
@@ -20,9 +19,11 @@ AGENT="$REPO_ROOT/domains/agent-systems/resources/fixtures/deterministic-agent.p
 ENGINE_ROOT=$(python3 "$REPO_ROOT/domains/agent-systems/scripts/discover_engine.py")
 echo "== engine: $ENGINE_ROOT"
 
+FIXTURE="$REPO_ROOT/domains/agent-systems/resources/fixtures/synthetic-incentive"
+
 echo "== engine run (deterministic agent, rungs 0,2 × 1 trial — no API spend) =="
 RESULT=$(cd "$ENGINE_ROOT" && npx tsx scripts/lib/ladder/index.ts run \
-  --fixture evals/awareness-ladder \
+  --fixture "$FIXTURE" \
   --rungs 0,2 --trials 1 \
   --agent-cmd "python3 $AGENT {promptfile}" \
   --timeout 60 --json)

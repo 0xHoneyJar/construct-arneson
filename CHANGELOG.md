@@ -25,6 +25,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     (`validate-agent-systems.sh`, arneson-alone leg), real-sibling vendor drift guard
     (`vendor-drift-guard.sh`, arneson-with-gygax leg)
 - `output_paths.playouts: grimoires/arneson/playouts/` (construct.yaml)
+- `/playout` skill — real lane (Sprint 2, milestone b — zero-edit ingestion):
+  - 7-state machine: scenario gate → engine discovery → cost guardrail (`--yes`, `--dry-run`)
+    → argv-array engine dispatch → byte-untouched conformance gate → playout record →
+    report with the literal `--regrade` ingest command
+  - `discover_engine.py`: `--engine` flag → `ARNESON_GYGAX_ROOT` → sibling probe, FR-6
+    graceful-absence message pointing at simulated mode
+  - Zero-edit ingestion probe in CI (engine run with a deterministic no-spend agent →
+    Arneson validation → Gygax `--regrade` → gap-report assertions)
+  - Two upstream seam bugs found while integrating (engine containment vs external fixtures;
+    missing batch.json `schema` stamp), reported with repro, fixed in construct-gygax PR #19
+  - Synthetic incentive-state rewritten format-true (index/actions/reward + intended-action
+    intent) — the bundled fixture now produces a full forecast-vs-observed gap report
+
+### Changed
+- Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
+  isolation; persona host serializes, never executes), `authoring_grades` (the producer never
+  judges), `claim_laundering` (labels never altered; forecast is never a sidecar claim);
+  `ARNESON.md` gains "The locked room" section stating both trust invariants
 
 ### Changed
 - construct.yaml: registered the `agent-systems` domain (skills: `playout` — lands Sprint 2),

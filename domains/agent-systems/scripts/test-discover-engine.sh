@@ -38,8 +38,8 @@ touch "$FAKE/engine/scripts/lib/ladder/index.ts"
 check "--engine flag resolves" 0 $DE --engine "$FAKE/engine"
 check_out "flag path printed to stdout" "engine" /tmp/de-out.$$
 
-# 2. --engine flag pointing at a hollow dir: authoritative, NO fallback
-ARNESON_GYGAX_ROOT="$FAKE/engine" check "--engine hollow dir fails (no silent fallback to env)" 1 \
+# 2. --engine flag pointing at a hollow dir: authoritative, NO fallback (env set valid on purpose)
+check "--engine hollow dir fails (no silent fallback to env)" 1 \
   env ARNESON_GYGAX_ROOT="$FAKE/engine" python3 "$SCRIPT_DIR/discover_engine.py" --engine "$FAKE/hollow"
 check_out "FR-6 message names the dependency" "MISSING DEPENDENCY: construct-gygax engine not found" /tmp/de-err.$$
 check_out "FR-6 message points at simulated mode" "Simulated mode works standalone" /tmp/de-err.$$

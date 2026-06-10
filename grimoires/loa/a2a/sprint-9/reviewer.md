@@ -84,6 +84,17 @@ invariants. `/playout` exists with the full 7-state real-lane machine.
    contract bytes (unchanged by PR #19 — code-only fixes; drift guard green), but worth a
    refresh at next re-vendor.
 
+## Feedback Addressed (cycle 2)
+
+1. **CHANGELOG Sprint 2 entry** → Added under Unreleased: `/playout` real-lane block (Added)
+   + identity reframe block (Changed). Pattern adopted: CHANGELOG stanza ships with the
+   sprint's implementation from Sprint 3 on.
+2. **Probe fixture + stale comment** → Probe now targets the bundled synthetic-incentive
+   fixture via $REPO_ROOT (decoupled from upstream fixture churn); stale Bug-1 comment
+   replaced. Re-run green: "OK: zero-edit ingestion probe complete."
+3. **Double-env prefix in test case 2** → Leading assignment dropped; env-form invocation
+   kept with a clarifying comment. Suite re-run: 10/10.
+
 ## Verification Steps
 
 ```bash
