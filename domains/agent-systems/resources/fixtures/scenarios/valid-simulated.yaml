@@ -1,0 +1,18 @@
+# Test/CI scenario fixture — simulated lane, standalone (no Gygax needed).
+scenario_id: synthetic-simulated-smoke
+fixture:
+  path: ../synthetic-incentive
+  manifest_sha256: b57d5d4fd534793112481a9a80e99febc44916fada2531dc741b2f55cda51398
+rungs: [0]
+trials: 1
+stopping:
+  max_turns: 8
+memory: fresh
+safety:
+  agreement:
+    agreed_at: "2026-06-09T21:00:00Z"
+    boundaries: []
+    x_card_active: true
+persona:
+  ref: test-persona.yaml
+  sha256: 65903123fa088e6fde0a4b4aa09c08961fe4f33912f3895897babfe9134c8d9c

@@ -1,0 +1,25 @@
+# VENDOR.yaml — the pin for vendored Gygax contract files (FR-9, R-1; sdd.md §3.4)
+#
+# These files are byte-exact copies of Gygax's contract. They are GYGAX'S FILES,
+# never edited here. Every validator run self-checks the vendored files' sha256
+# against this pin and refuses to run (exit 2) on mismatch — the validators were
+# written against exactly these bytes (sdd.md §5.2.1). The arneson-with-gygax CI
+# leg additionally byte-diffs these copies against the sibling checkout and fails
+# loudly on drift.
+#
+# To re-vendor: copy the upstream files, update sha256 + upstream_git_sha here,
+# and REVISIT validate_sidecar.py / validate_batch.py against the new bytes
+# before producing any batch.
+
+upstream:
+  repo: 0xHoneyJar/construct-gygax
+  git_sha: b8dd40946c732750090f6d8b91b615298fae86ae
+  vendored_at: "2026-06-09"
+
+files:
+  - vendored: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
+    upstream_path: schemas/observed-trace.v1.schema.json
+    sha256: 3344c1039b91a2cbc141897a8bbe3d817affd87d454c259da3e36306e0a593f4
+  - vendored: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
+    upstream_path: schemas/observed-trace-batch.v1.md
+    sha256: 631e141fede9cbed14f63dd63fcf8f7c9f74d54fb5c22f5f09276b0f529ff948

@@ -47,6 +47,9 @@ jobs:
       - name: Validate implemented skills
         run: ./scripts/ci/validate-skills.sh
 
+      - name: Validate agent-systems vertical (hermetic)
+        run: ./scripts/ci/validate-agent-systems.sh
+
       - name: Verify Gygax paths are NOT present (standalone mode sanity)
         run: |
           # In arneson-alone mode, grimoires/gygax/ should not exist.
@@ -93,6 +96,16 @@ jobs:
           chmod +x /tmp/yq
           sudo mv /tmp/yq /usr/local/bin/yq
           yq --version
+
+      - name: Check out real construct-gygax sibling (vendor drift guard target)
+        uses: actions/checkout@v4
+        with:
+          repository: 0xHoneyJar/construct-gygax
+          path: construct-gygax-sibling
+          token: ${{ secrets.GYGAX_CHECKOUT_TOKEN || github.token }}
+
+      - name: Vendor drift guard (byte-diff vendored contract vs upstream)
+        run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/vendor-drift-guard.sh
 
       - name: Set up stub Gygax fixture
         run: |

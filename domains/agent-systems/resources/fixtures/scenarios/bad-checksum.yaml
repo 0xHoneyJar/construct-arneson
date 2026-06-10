@@ -1,0 +1,15 @@
+# Violation fixture — fixture pin does not match the manifest. Exit 2.
+scenario_id: synthetic-bad-checksum
+fixture:
+  path: ../synthetic-incentive
+  manifest_sha256: "0000000000000000000000000000000000000000000000000000000000000000"
+rungs: [0]
+trials: 1
+stopping:
+  max_turns: 5
+safety:
+  agreement:
+    agreed_at: "2026-06-09T21:00:00Z"
+    boundaries: []
+    x_card_active: true
+agent_cmd: "echo {prompt}"

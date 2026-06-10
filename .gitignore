@@ -34,3 +34,6 @@ grimoires/loa/analytics/
 .claude/checksums.json
 .loa-state/
 .claude.backup.*
+
+# Python bytecode (validator scripts)
+__pycache__/

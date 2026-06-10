@@ -1,0 +1,105 @@
+# domains/agent-systems/schemas/scenario.schema.yaml
+# The first-class, re-runnable experiment artifact (FR-7; sdd.md §3.1).
+# A scenario pins everything a run needs so "we played it once" becomes
+# "run 7 of scenario S against fixture v2". Validated by validate_scenario.py
+# (Python stdlib, restricted-subset YAML — keep shapes flat and simple).
+#
+# One variable per scenario family is documented convention, NOT validator-enforced:
+# rung varies INSIDE a scenario; temperament/persona/agent_cmd varies ACROSS scenarios
+# (domain.conventions.md). validate_scenario.py emits an INFO note when sibling
+# scenarios differ in more than one of {fixture, persona, agent_cmd}.
+
+schema:
+  name: agent-scenario
+  version: 1
+  description: >
+    Committed run setup for an agent-systems playout. Both lanes share the
+    fixture/rungs/trials/stopping/memory/safety/visibility core; the real lane
+    adds agent_cmd, the simulated lane adds persona ref+sha256.
+
+fields:
+  scenario_id:
+    type: string
+    required: true
+    description: "Stable id; cited by every sidecar preamble and playout record."
+
+  fixture:
+    type: block
+    required: true
+    fields:
+      path:
+        type: string
+        required: true
+        description: "Fixture dir (Gygax's evals/awareness-ladder or the bundled synthetic). Relative paths resolve from the scenario file's directory."
+      manifest_sha256:
+        type: string
+        required: true
+        description: "sha256 of <fixture.path>/manifest.yaml — replay-grade pin; mismatch is exit 2."
+
+  rungs:
+    type: "list[int]"
+    required: true
+    description: "Which awareness rungs to run. 0=blind, 1=reward-aware, 2=adversarial (contract enum)."
+
+  trials:
+    type: int
+    required: true
+    description: "Trials per rung. Guardrail N = rungs × trials (FR-3)."
+
+  stopping:
+    type: block
+    required: true
+    description: "REQUIRED — bounded runs (NFR-2). An unbounded scenario is rejected."
+    fields:
+      max_turns:
+        type: int
+        required: true
+        description: "Simulated-lane per-trial turn bound."
+      timeout_seconds:
+        type: int
+        required: false
+        description: "Real lane: forwarded to the engine's --timeout. Absent = fixture manifest default."
+
+  memory:
+    type: enum
+    values: [fresh, continuing]
+    default: fresh
+    description: "Per-run memory policy, stamped in the sidecar preamble. fresh = trials are independent (forecast default)."
+
+  safety:
+    type: block
+    required: true
+    description: "Scenario-level safety agreement, inherited by every trial — no per-trial re-prompting (Phase 5 Q1)."
+    fields:
+      agreement:
+        type: block
+        required: true
+
+  visibility:
+    type: "list[block]"
+    required: false
+    description: "Per-rung mask. What the persona context MAY include and MUST NOT include (evaluation-awareness hygiene — sandbox-particulars §2)."
+    item_fields:
+      rung: {type: int, required: true}
+      may_see: {type: "list[string]", required: false}
+      must_not_see: {type: "list[string]", required: false}
+
+  # real lane only (validate_scenario.py --lane real)
+  agent_cmd:
+    type: string
+    required_if: lane=real
+    description: "Agent command TEMPLATE with {prompt} or {promptfile} token. Passed verbatim to the engine; never expanded by Arneson (NFR-4). Any agentic CLI works — claude, aider/opencode against a local Ollama model, or a wrapper script."
+
+  # simulated lane only (validate_scenario.py --lane simulated)
+  persona:
+    type: block
+    required_if: lane=simulated
+    fields:
+      ref:
+        type: string
+        required: true
+        description: "Path to an agent-persona file (agent-persona.schema.yaml)."
+      sha256:
+        type: string
+        required: true
+        description: "sha256 of the persona file — temperament axis pinned per scenario."

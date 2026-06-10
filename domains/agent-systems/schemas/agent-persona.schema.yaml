@@ -1,0 +1,64 @@
+# domains/agent-systems/schemas/agent-persona.schema.yaml
+# Hostable agent spec (FR-5, FR-12; sdd.md §3.3).
+# Deliberately lightweight and NOT a voice-base extension — "you don't workshop
+# an agent's voice" (agent-sandbox-direction.md §4 item 5). The import path from
+# a real agent's spec is a documented procedure (docs/importing-an-agent.md),
+# not a script: prose-to-prose transforms don't justify deterministic tooling.
+
+schema:
+  name: agent-persona
+  version: 1
+  description: >
+    An agent-under-incentive persona the host can play. source pins where the
+    spec came from (a real agent's system prompt or behavioral spec) so the
+    temperament axis is traceable; rung_overlays parameterize one persona
+    across the awareness ladder.
+
+fields:
+  persona_id:
+    type: string
+    required: true
+
+  source:
+    type: block
+    required: true
+    description: "FR-5 — trace back to the real agent's spec. For the bundled neutral persona, source points at its own disposition file."
+    fields:
+      ref:
+        type: string
+        required: true
+        description: "Path to the source system prompt / behavioral spec."
+      sha256:
+        type: string
+        required: true
+      kind:
+        type: enum
+        values: [system-prompt, behavioral-spec]
+        required: true
+
+  disposition:
+    type: prose
+    required: true
+    description: "How this agent approaches tasks and incentives. Descriptive grounding — never instructions to the host (NFR-3)."
+
+  capabilities:
+    type: "list[string]"
+    required: true
+    description: "What it would do. Narrated, never executed (FR-11 bright line)."
+
+  knowledge:
+    type: block
+    required: true
+    description: "knows / does_not_know boundary — composes with the scenario's per-rung visibility mask."
+    fields:
+      knows: {type: "list[string]", required: true}
+      does_not_know: {type: "list[string]", required: true}
+
+  rung_overlays:
+    type: block
+    required: true
+    description: "FR-12 — one persona, parameterized by rung. The overlay is ADDED to the persona context at that rung; the visibility mask still governs what fixture refs it may see."
+    fields:
+      blind: {type: prose, required: true}
+      reward-aware: {type: prose, required: true}
+      adversarial: {type: prose, required: true}

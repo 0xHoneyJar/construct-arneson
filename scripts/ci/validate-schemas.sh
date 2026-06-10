@@ -6,6 +6,7 @@ set -euo pipefail
 
 CORE_SCHEMAS_DIR="schemas/core"
 TTRPG_SCHEMAS_DIR="domains/ttrpg/schemas"
+AGENT_SCHEMAS_DIR="domains/agent-systems/schemas"
 
 if [ ! -d "$CORE_SCHEMAS_DIR" ]; then
   echo "FAIL: $CORE_SCHEMAS_DIR directory missing"
@@ -14,6 +15,11 @@ fi
 
 if [ ! -d "$TTRPG_SCHEMAS_DIR" ]; then
   echo "FAIL: $TTRPG_SCHEMAS_DIR directory missing"
+  exit 1
+fi
+
+if [ ! -d "$AGENT_SCHEMAS_DIR" ]; then
+  echo "FAIL: $AGENT_SCHEMAS_DIR directory missing"
   exit 1
 fi
 
@@ -30,6 +36,9 @@ EXPECTED_SCHEMAS=(
   "$TTRPG_SCHEMAS_DIR:voice-pc.schema.yaml"
   "$TTRPG_SCHEMAS_DIR:session-events-ttrpg.schema.yaml"
   "$TTRPG_SCHEMAS_DIR:digest-ttrpg.schema.yaml"
+  "$AGENT_SCHEMAS_DIR:scenario.schema.yaml"
+  "$AGENT_SCHEMAS_DIR:session-events-agent.schema.yaml"
+  "$AGENT_SCHEMAS_DIR:agent-persona.schema.yaml"
 )
 
 FAIL=0
@@ -68,4 +77,4 @@ if [ $FAIL -eq 1 ]; then
   exit 1
 fi
 
-echo "OK: all 10 schemas parse and have required schema.name + schema.version (core: $CORE_SCHEMAS_DIR, ttrpg: $TTRPG_SCHEMAS_DIR)."
+echo "OK: all 13 schemas parse and have required schema.name + schema.version (core: $CORE_SCHEMAS_DIR, ttrpg: $TTRPG_SCHEMAS_DIR, agent-systems: $AGENT_SCHEMAS_DIR)."
