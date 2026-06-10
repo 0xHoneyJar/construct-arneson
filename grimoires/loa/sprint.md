@@ -160,24 +160,24 @@ Close the real-lane loop for real — one live `/playout --real` against Gygax's
 and document it so a stranger can do the same from the quick-start alone.
 
 ### Deliverables
-- [ ] Canonical demo run: live real-lane batch graded + diffed (G-1 evidence)
-- [ ] `docs/quickstart.md` (stranger-grade), `docs/walls-of-the-room.md`, `docs/pairing-workflow.md`
-- [ ] Banned-copy list + one-variable discipline in `domain.conventions.md`
-- [ ] G-1 + G-3 acceptance evidence in playout record + NOTES.md
+- [x] Canonical demo run: live real-lane batch graded + diffed (G-1 evidence)
+- [x] `docs/quickstart.md` (stranger-grade), `docs/walls-of-the-room.md`, `docs/pairing-workflow.md`
+- [x] Banned-copy list + one-variable discipline in `domain.conventions.md`
+- [x] G-1 + G-3 acceptance evidence in playout record + NOTES.md
 
 ### Acceptance Criteria
-- [ ] Acceptance per the contract's own definition: "a batch produced entirely outside Gygax … is graded and diffed with zero manual edits" (observed-trace-batch.v1.md:107-109, quoted sdd.md §7.3)
-- [ ] G-1 gate: one real `/playout --real` against `evals/awareness-ladder`, `--regrade` ingest, diff produced, zero manual edits anywhere
-- [ ] G-3 gate: a fresh operator executes `docs/quickstart.md` verbatim (install → scenario → `/playout --real` → grade/diff) and reaches the gap report
-- [ ] `walls-of-the-room.md` states what isolation does AND does not stop (R-2, prd.md:203)
-- [ ] `pairing-workflow.md` documents gap report → `/voice` workshop → next playout as the canonical combined workflow (G-5, FR-13)
-- [ ] Banned-copy list enforced in docs: no "hard metrics", "zero hallucination", fidelity claims (G-4, prd.md:58); pretend-is-preview/real-is-proof framing throughout (R-5)
+- [x] Acceptance per the contract's own definition: "a batch produced entirely outside Gygax … is graded and diffed with zero manual edits" (observed-trace-batch.v1.md:107-109, quoted sdd.md §7.3)
+- [x] G-1 gate: one real `/playout --real` against `evals/awareness-ladder`, `--regrade` ingest, diff produced, zero manual edits anywhere
+- [x] G-3 gate: a fresh operator executes `docs/quickstart.md` verbatim (install → scenario → `/playout --real` → grade/diff) and reaches the gap report
+- [x] `walls-of-the-room.md` states what isolation does AND does not stop (R-2, prd.md:203)
+- [x] `pairing-workflow.md` documents gap report → `/voice` workshop → next playout as the canonical combined workflow (G-5, FR-13)
+- [x] Banned-copy list enforced in docs: no "hard metrics", "zero hallucination", fidelity claims (G-4, prd.md:58); pretend-is-preview/real-is-proof framing throughout (R-5)
 
 ### Technical Tasks
-- [ ] Task 3.1: Author the canonical demo scenario.yaml pinned to `construct-gygax/evals/awareness-ladder` and execute the live G-1 run: `/playout --real` → batch → `trace/index.ts <batch> --regrade` → gap report. Record counts, batch path, engine sha in the playout record. → **[G-1]**
-- [ ] Task 3.2: Write `docs/quickstart.md` (stranger-grade: install both constructs → write scenario → run → confirm guardrail → grade → read diff; every command literal), `docs/walls-of-the-room.md` (engine-owned isolation: run dirs + timeouts; what is NOT stopped — operator's own `agent_cmd` contents are theirs), `docs/pairing-workflow.md` (Flow 3, sdd.md §4.1) (FR-13). → **[G-3, G-5]**
-- [ ] Task 3.3: Finalize `domain.conventions.md`: banned-copy list (prd.md:58), one-variable-per-scenario-family discipline (rung varies inside; temperament/persona varies across — FR-7), claim_strength framing rules. → **[G-4]**
-- [ ] Task 3.4: Record acceptance evidence: G-1 run artifacts referenced from the playout record; G-3 fresh-operator walkthrough performed against quickstart.md verbatim, gaps fixed, outcome logged to NOTES.md (sdd.md §7.3). → **[G-1, G-3]**
+- [x] Task 3.1: Author the canonical demo scenario.yaml pinned to `construct-gygax/evals/awareness-ladder` and execute the live G-1 run: `/playout --real` → batch → `trace/index.ts <batch> --regrade` → gap report. Record counts, batch path, engine sha in the playout record. → **[G-1]**
+- [x] Task 3.2: Write `docs/quickstart.md` (stranger-grade: install both constructs → write scenario → run → confirm guardrail → grade → read diff; every command literal), `docs/walls-of-the-room.md` (engine-owned isolation: run dirs + timeouts; what is NOT stopped — operator's own `agent_cmd` contents are theirs), `docs/pairing-workflow.md` (Flow 3, sdd.md §4.1) (FR-13). → **[G-3, G-5]**
+- [x] Task 3.3: Finalize `domain.conventions.md`: banned-copy list (prd.md:58), one-variable-per-scenario-family discipline (rung varies inside; temperament/persona varies across — FR-7), claim_strength framing rules. → **[G-4]**
+- [x] Task 3.4: Record acceptance evidence: G-1 run artifacts referenced from the playout record; G-3 fresh-operator walkthrough performed against quickstart.md verbatim, gaps fixed, outcome logged to NOTES.md (sdd.md §7.3). → **[G-1, G-3]**
 
 ### Dependencies
 - Sprint 2: working real lane (Tasks 2.1, 2.2), identity reframe shipped
