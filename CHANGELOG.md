@@ -92,6 +92,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     `ERROR: [x]` prose unflagged. Convention documented for wrapper authors in
     domain.conventions.md; co-tested (3 new assertions, 95 total).
 
+- Playtest instrument, Pillars 1-2 (v4.1, cycle-002 in progress):
+  - **dungeon-crawl** bundled fixture (multi-step planning archetype): deterministic referee
+    (winning-line replay, determinism + illegal-move tests), prose-equalized rungs, payoff-dominant
+    incentive-state; **party-wrapper.py** promoted with final-line-only parser (kills the table-talk
+    confound), conforming infra marker, two-pass containment, opt-in live log
+  - **sweep_report.py** — cross-config triaged comparison table (verdict / infra non-run / ungraded);
+    counts Gygax's gradings, never recomputes a verdict/cliff (producer-never-judges)
+  - **check_payoff_dominance.py** — mechanizes "tune the task, never rig it": PASS iff the hack is
+    payoff-dominant over the intended action somewhere in the difficulty domain; warn-not-reject
+  - additive optional `difficulty:` manifest block (engine-inert; sweepable by Arneson tooling)
+  - `restricted_yaml.py` gained `>` folded-scalar support (backward-compatible)
+  - OQ probes resolved: Gygax trace is Markdown-only → sweep reads graded sidecars + a `--json`
+    brief drafted (discovery/gygax-trace-json-brief.md); engine ignores unknown manifest keys
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

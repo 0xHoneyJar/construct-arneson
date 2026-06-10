@@ -59,31 +59,31 @@ Graduate the committed dungeon prototype into a bundled, test-backed fixture and
 wrapper to a hardened resource — the vehicle every later sprint proves against.
 
 ### Deliverables
-- [ ] `domains/agent-systems/resources/fixtures/dungeon-crawl/` exists as a bundled fixture with prose-equalized rungs and a payoff-dominant incentive-state
-- [ ] `referee.py` with a deterministic referee test suite passing all four classes (winning-line, defeat, determinism, illegal-move)
-- [ ] `party-wrapper.py` bundled beside `ollama-agent.py` with final-line-only parser, conforming infrastructure marker, and containment refusal
-- [ ] `test-party-wrapper.sh` (mock-daemon, no Ollama in CI) green
-- [ ] A committed dungeon sample batch passing `validate_batch.py` conformance
-- [ ] All new tests wired into `scripts/ci/validate-agent-systems.sh`; existing 95 assertions still green
+- [x] `domains/agent-systems/resources/fixtures/dungeon-crawl/` exists as a bundled fixture with prose-equalized rungs and a payoff-dominant incentive-state
+- [x] `referee.py` with a deterministic referee test suite passing all four classes (winning-line, defeat, determinism, illegal-move)
+- [x] `party-wrapper.py` bundled beside `ollama-agent.py` with final-line-only parser, conforming infrastructure marker, and containment refusal
+- [x] `test-party-wrapper.sh` (mock-daemon, no Ollama in CI) green
+- [x] A committed dungeon sample batch passing `validate_batch.py` conformance
+- [x] All new tests wired into `scripts/ci/validate-agent-systems.sh`; existing 95 assertions still green
 
 ### Acceptance Criteria
-- [ ] `referee.py --check` replays the winning line → exit 0; party-wipe and boss-alive cases → DEFEAT
-- [ ] Determinism: same `moves.json` run twice → byte-identical `--state` output (NFR-3)
-- [ ] Illegal move (unknown verb) wastes a turn, never crashes (no traceback, exit stays defined)
-- [ ] Party wrapper parses the action from **only the final line**; verbs in table-talk ("firebolt the…", "take -rune-blade") are NOT matched
-- [ ] Daemon-unreachable run emits `ERROR: [party-wrapper] …` (marker convention, `domain.conventions.md:59`); `validate_batch.py` classes it as infra non-run, not a verdict
-- [ ] Model-suggested write path escaping `cwd` → all writes refused, exit 2 (containment, SDD §1.9)
-- [ ] CI: `validate-agent-systems.sh` green incl. all new suites; the 95 prior assertions unchanged
+- [x] `referee.py --check` replays the winning line → exit 0; party-wipe and boss-alive cases → DEFEAT
+- [x] Determinism: same `moves.json` run twice → byte-identical `--state` output (NFR-3)
+- [x] Illegal move (unknown verb) wastes a turn, never crashes (no traceback, exit stays defined)
+- [x] Party wrapper parses the action from **only the final line**; verbs in table-talk ("firebolt the…", "take -rune-blade") are NOT matched
+- [x] Daemon-unreachable run emits `ERROR: [party-wrapper] …` (marker convention, `domain.conventions.md:59`); `validate_batch.py` classes it as infra non-run, not a verdict
+- [x] Model-suggested write path escaping `cwd` → all writes refused, exit 2 (containment, SDD §1.9)
+- [x] CI: `validate-agent-systems.sh` green incl. all new suites; the 95 prior assertions unchanged
 
 ### Technical Tasks
-- [ ] Task 1.1: Copy + adapt the prototype fixture (`grimoires/loa/prototypes/dungeon-demo/fixture/`) into `domains/agent-systems/resources/fixtures/dungeon-crawl/` — manifest, incentive-state (index + actions `edit-world`/`fight-through` + reward), rungs 0/1/2, task-template (`dungeon.json`, `moves.json`, `referee.py`). → **[G3, G4]**
-- [ ] Task 1.2: Prose-equalize rung-0/1/2 prompts for matched length + register (dungeon-party-findings confound); the awareness axis is the only variable. → **[G3]**
-- [ ] Task 1.3: Confirm the incentive-state encodes payoff-dominance (`edit-world` net `0.95` const ≥ `fight-through` net `1 − 0.12·d`) — this feeds Sprint 2's `check_payoff_dominance.py`. → **[G3]**
-- [ ] Task 1.4: Write `referee.py` deterministic test suite (`test-dungeon-referee.sh`): winning-line→exit 0, defeat cases, **determinism twice→identical state**, illegal-move semantics — hermetic, in this change. → **[G3, G4]**
-- [ ] Task 1.5: Promote `party-wrapper.py` (from `grimoires/loa/prototypes/dungeon-demo/party-wrapper.py`) into `domains/agent-systems/resources/fixtures/` with a **final-line-only** action parser (the `ollama-agent.py` discipline). → **[G3, G4]**
-- [ ] Task 1.6: Add the conforming infrastructure marker (`ERROR: [party-wrapper] …` on stderr) + keep the v4.0 file-block containment refusal (escape `cwd` → exit 2). → **[G3, G4]**
-- [ ] Task 1.7: Write `test-party-wrapper.sh` against a mock Ollama responder (no daemon): final-line parser units, file-block containment refusal, mock round trip, marker-on-unreachable. → **[G4]**
-- [ ] Task 1.8: Commit a dungeon sample batch + conformance test (`validate_batch.py`); wire all new suites into `scripts/ci/validate-agent-systems.sh` and confirm the existing 95 assertions stay green. → **[G4]**
+- [x] Task 1.1: Copy + adapt the prototype fixture (`grimoires/loa/prototypes/dungeon-demo/fixture/`) into `domains/agent-systems/resources/fixtures/dungeon-crawl/` — manifest, incentive-state (index + actions `edit-world`/`fight-through` + reward), rungs 0/1/2, task-template (`dungeon.json`, `moves.json`, `referee.py`). → **[G3, G4]**
+- [x] Task 1.2: Prose-equalize rung-0/1/2 prompts for matched length + register (dungeon-party-findings confound); the awareness axis is the only variable. → **[G3]**
+- [x] Task 1.3: Confirm the incentive-state encodes payoff-dominance (`edit-world` net `0.95` const ≥ `fight-through` net `1 − 0.12·d`) — this feeds Sprint 2's `check_payoff_dominance.py`. → **[G3]**
+- [x] Task 1.4: Write `referee.py` deterministic test suite (`test-dungeon-referee.sh`): winning-line→exit 0, defeat cases, **determinism twice→identical state**, illegal-move semantics — hermetic, in this change. → **[G3, G4]**
+- [x] Task 1.5: Promote `party-wrapper.py` (from `grimoires/loa/prototypes/dungeon-demo/party-wrapper.py`) into `domains/agent-systems/resources/fixtures/` with a **final-line-only** action parser (the `ollama-agent.py` discipline). → **[G3, G4]**
+- [x] Task 1.6: Add the conforming infrastructure marker (`ERROR: [party-wrapper] …` on stderr) + keep the v4.0 file-block containment refusal (escape `cwd` → exit 2). → **[G3, G4]**
+- [x] Task 1.7: Write `test-party-wrapper.sh` against a mock Ollama responder (no daemon): final-line parser units, file-block containment refusal, mock round trip, marker-on-unreachable. → **[G4]**
+- [x] Task 1.8: Commit a dungeon sample batch + conformance test (`validate_batch.py`); wire all new suites into `scripts/ci/validate-agent-systems.sh` and confirm the existing 95 assertions stay green. → **[G4]**
 
 ### Dependencies
 - None (first sprint). Source material is the **committed prototype** at `grimoires/loa/prototypes/dungeon-demo/` (NOT the SDD's stale `/tmp/dungeon-fixture/` refs).

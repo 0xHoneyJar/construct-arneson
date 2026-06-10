@@ -26,6 +26,10 @@ echo "== agent-systems: dungeon fixture — referee determinism + party wrapper 
 "$DOMAIN/scripts/test-dungeon-referee.sh"
 "$DOMAIN/scripts/test-party-wrapper.sh"
 
+echo "== agent-systems: rigor — cross-config sweep report + payoff-dominance (v4.1) =="
+"$DOMAIN/scripts/test-sweep-report.sh"
+"$DOMAIN/scripts/test-check-payoff-dominance.sh"
+
 echo "== agent-systems: committed fixture batch conformance =="
 python3 "$DOMAIN/scripts/validate_batch.py" "$DOMAIN/resources/fixtures/batches/valid-batch"
 python3 "$DOMAIN/scripts/validate_batch.py" "$DOMAIN/resources/fixtures/batches/dungeon-sample"
