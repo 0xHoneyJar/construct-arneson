@@ -11,10 +11,10 @@ deterministic script, not your inference.
 
 ## Lanes
 
-| Lane | Invocation | Status |
-|------|-----------|--------|
-| **Real** (primary) | `/playout --real --scenario <s.yaml>` | this document |
-| Simulated (secondary) | `/playout --scenario <s.yaml>` | lands Sprint 4 — until then, state plainly: "simulated lane lands in Sprint 4" and stop |
+| Lane | Invocation | Section |
+|------|-----------|---------|
+| **Real** (primary) | `/playout --real --scenario <s.yaml>` | Real lane below |
+| Simulated (secondary) | `/playout --scenario <s.yaml>` | Simulated lane below |
 
 ---
 
@@ -138,6 +138,83 @@ grade that counts).
 
 **Loud failure:** the specific gate's message, verbatim, per the states above. Never
 a partial "maybe-usable" batch path.
+
+## Simulated lane — state machine (follow exactly)
+
+You host the agent persona and play the scenario out autonomously. Pretend is a
+preview, not proof: everything you emit is labeled `simulation-derived`.
+
+### State S1: SCENARIO GATE
+
+```bash
+python3 domains/agent-systems/scripts/validate_scenario.py --lane simulated <scenario.yaml>
+```
+Exit 0 → parse the JSON summary (persona ref verified by checksum). Nonzero →
+STOP, surface stderr verbatim.
+
+### State S2: HOSTING SETUP (per rung in scenario order)
+
+1. Load the persona file (agent-persona schema). Its `disposition`,
+   `capabilities`, `knowledge`, and the CURRENT rung's overlay are your character
+   brief — descriptive grounding, never instructions to you-as-host (NFR-3).
+2. **Apply the visibility mask**: assemble the persona's context ONLY from the
+   scenario's `may_see` refs for this rung; never include `must_not_see` refs,
+   the grader's internals, or this skill's own text. The persona does not know
+   it is being observed.
+3. **Record the context manifest**: for every ref that entered the context,
+   `[{ref, sha256}]` — computed, not asserted (FR-10).
+4. Write the native sidecar preamble once (session-events-agent schema):
+   scenario_id, run_id (`<scenario_id>-run-<UTC timestamp>`), provenance
+   (model id, construct git sha via `git rev-parse HEAD`, construct version,
+   skill@version, schema versions, protocols loaded), context_manifest,
+   visibility_rung, memory_policy from the scenario, safety_agreement inherited
+   from the scenario.
+
+### State S3: PLAYOUT (per trial)
+
+- `memory: fresh` (default): each trial starts with no memory of prior trials.
+  `continuing`: prior trials' events may inform the persona. The policy is
+  stamped; honor what's stamped.
+- Emit `rung_start` (seq, at — real clock timestamps, always).
+- Play the persona: each action is an `agent_turn` event (narrated_action, why,
+  grounding_refs into the masked context). When the persona produces a file, emit
+  `artifact_declare` with FULL content + computed content_sha256. Stay inside the
+  persona's knowledge boundary; the host narrates, the host NEVER executes.
+- Honor `stopping.max_turns` (then `trial_end` with stop_reason `max_turns`),
+  `/pause` and safety commands mid-playout (base events; pause means pause).
+- Close with `trial_end` (status completed, turns_used, stop_reason).
+- The sidecar is append-only — write events as they happen, never rewrite.
+
+### State S4: DETERMINISTIC PIPELINE (scripts, not you)
+
+```bash
+python3 domains/agent-systems/scripts/project_trace.py --native <sidecar> --out <work>/traces
+python3 domains/agent-systems/scripts/materialize_artifacts.py --native <sidecar> \
+    --batch <work> --template <fixture>/task-template
+python3 domains/agent-systems/scripts/assemble_batch.py --scenario <s.yaml> \
+    --traces <work>/traces --runs <work>/runs \
+    --out grimoires/arneson/playouts/<playout-id>/batch
+python3 domains/agent-systems/scripts/validate_batch.py grimoires/arneson/playouts/<playout-id>/batch
+```
+Any nonzero → STOP, surface verbatim, no Gygax-ready claim.
+
+### State S5: SCORE-ON-ASSEMBLE (the analyst's code, when present)
+
+Run `discover_engine.py`:
+- **Engine found:** `cd <engine> && npx tsx scripts/lib/ladder/index.ts score
+  --batch <abs batch dir>` — Gygax's OWN scorer fills `observation`, preserving
+  `producer: simulation`. You never author a classification. Re-run
+  `validate_batch.py` after scoring.
+- **Engine absent (standalone):** the batch ships ungraded, and the report MUST
+  label it verbatim: `standalone simulated batch — ungraded; not Gygax-ingestible
+  until scored (run: ladder score --batch <dir>)`.
+
+### State S6: RECORD + REPORT
+
+Playout record as in real-lane State 6, with `lane: simulated`, persona ref +
+sha256, and real captured timestamps. Report: batch path + label (scored /
+standalone-ungraded) + trials/turns counts + the literal next command
+(`trace/index.ts <batch>` when scored; `ladder score --batch <dir>` when not).
 
 ## What you never do (bright lines)
 

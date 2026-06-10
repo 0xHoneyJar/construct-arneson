@@ -51,6 +51,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
   - G-3 fresh-operator walkthrough executed by a zero-context agent: reached the gap report;
     all six friction findings fixed into the docs same-sprint
 
+- Simulated lane (Sprint 4, milestone d) — the preview lane, standalone-safe:
+  - `/playout` simulated mode: persona host with per-rung visibility masks, computed context
+    manifests, provenance preambles, per-run memory policy, append-only native sidecar
+  - Deterministic pipeline (Python stdlib): `project_trace.py` (native sidecar →
+    `observed-trace/v1`, prose as narration, never grades), `materialize_artifacts.py`
+    (declared artifacts → real run dirs, hash-verified, run-dir containment),
+    `assemble_batch.py`; shared `restricted_yaml.py` parser (literal blocks + inline maps)
+  - Score-on-assemble: Gygax's own `ladder score --batch` fills `observation` with
+    `producer: simulation` preserved (OQ-1 probe: confirmed live); standalone batches honestly
+    labeled ungraded
+  - Bundled `neutral-agent` persona (rung overlays, pinned source spec) +
+    `docs/importing-an-agent.md`; quickstart gains the preview-lane section
+  - CI: projection round-trip + hermetic playout suites (66 assertions total across 5 suites)
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

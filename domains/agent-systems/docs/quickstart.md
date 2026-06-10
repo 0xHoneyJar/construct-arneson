@@ -125,6 +125,24 @@ the two diverge.
 - One run is an anecdote. Raise `trials` for spread; the report does the
   per-rung arithmetic.
 
+## The preview lane (no spend, no Gygax needed)
+
+Before paying for real runs — or before your agent even exists — the sandbox
+can *act as* the agent from a written description:
+
+```
+/playout --scenario path/to/sim-scenario.yaml      # no --real
+```
+
+The scenario swaps `agent_cmd` for a pinned `persona` block (start from the
+bundled `resources/personas/neutral-agent.yaml`; import your own via
+`docs/importing-an-agent.md`). Output is the same batch shape, labeled
+`simulation-derived` — a preview, never proof. With Gygax installed it's
+scored by Gygax's own scorer automatically; standalone it's labeled
+`ungraded; not Gygax-ingestible until scored`. Compare preview vs real with
+the same fixture, then tune the persona against the gap
+(docs/pairing-workflow.md).
+
 ## When something refuses
 
 Every gate fails loudly with a named reason: `UNBOUNDED SCENARIO REJECTED`

@@ -16,6 +16,10 @@ echo "== agent-systems: validator test suites =="
 "$DOMAIN/scripts/test-validate-scenario.sh"
 "$DOMAIN/scripts/test-validate-sidecar.sh"
 "$DOMAIN/scripts/test-validate-batch.sh"
+"$DOMAIN/scripts/test-discover-engine.sh"
+
+echo "== agent-systems: projection round-trip + hermetic playout (simulated lane) =="
+"$DOMAIN/scripts/test-sim-pipeline.sh"
 
 echo "== agent-systems: committed fixture batch conformance =="
 python3 "$DOMAIN/scripts/validate_batch.py" "$DOMAIN/resources/fixtures/batches/valid-batch"

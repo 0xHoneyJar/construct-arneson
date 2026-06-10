@@ -23,11 +23,11 @@ Exit codes: 0 ok / 1 input error / 2 checksum-contract violation.
 
 import hashlib
 import json
-import re
 import sys
 from pathlib import Path
 
-INDENT = 2
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from restricted_yaml import ParseError, parse as parse_restricted_yaml  # noqa: E402
 
 
 def err(msg):
@@ -46,110 +46,6 @@ KNOWN_TOP_KEYS = {
     "scenario_id", "fixture", "rungs", "trials", "stopping",
     "memory", "safety", "visibility", "agent_cmd", "persona",
 }
-
-
-class ParseError(Exception):
-    pass
-
-
-def _scalar(tok):
-    tok = tok.strip()
-    if tok.startswith("[") and tok.endswith("]"):
-        inner = tok[1:-1].strip()
-        return [] if not inner else [_scalar(t) for t in inner.split(",")]
-    if (tok.startswith('"') and tok.endswith('"')) or (tok.startswith("'") and tok.endswith("'")):
-        return tok[1:-1]
-    if re.fullmatch(r"-?\d+", tok):
-        return int(tok)
-    if tok in ("true", "false"):
-        return tok == "true"
-    if tok in ("null", "~", ""):
-        return None
-    return tok
-
-
-def _strip(line):
-    """Remove comments outside quotes (restricted: assumes no '#' inside quoted strings followed by quotes)."""
-    out, in_q = [], None
-    for ch in line:
-        if in_q:
-            out.append(ch)
-            if ch == in_q:
-                in_q = None
-        elif ch in "\"'":
-            in_q = ch
-            out.append(ch)
-        elif ch == "#":
-            break
-        else:
-            out.append(ch)
-    return "".join(out).rstrip()
-
-
-def parse_restricted_yaml(text):
-    lines = []
-    for raw in text.splitlines():
-        stripped = _strip(raw)
-        if stripped.strip():
-            indent = len(stripped) - len(stripped.lstrip(" "))
-            if indent % INDENT:
-                raise ParseError(f"indent not a multiple of {INDENT}: {raw!r}")
-            lines.append((indent // INDENT, stripped.strip()))
-
-    def parse_block(pos, depth):
-        node = None
-        while pos < len(lines):
-            d, content = lines[pos]
-            if d < depth:
-                break
-            if d > depth:
-                raise ParseError(f"unexpected indent at: {content!r}")
-            if content.startswith("- "):
-                if node is None:
-                    node = []
-                if not isinstance(node, list):
-                    raise ParseError(f"mixed list/map at: {content!r}")
-                item_text = content[2:].strip()
-                m = re.match(r"^([A-Za-z0-9_-]+):(.*)$", item_text)
-                if m:
-                    item = {}
-                    key, rest = m.group(1), m.group(2).strip()
-                    if rest:
-                        item[key] = _scalar(rest)
-                        pos += 1
-                    else:
-                        sub, pos = parse_block(pos + 1, depth + 2)
-                        item[key] = sub
-                    while pos < len(lines) and lines[pos][0] == depth + 1 and not lines[pos][1].startswith("- "):
-                        sub_map, pos = parse_block(pos, depth + 1)
-                        if not isinstance(sub_map, dict):
-                            raise ParseError("expected map continuation in list item")
-                        item.update(sub_map)
-                    node.append(item)
-                else:
-                    node.append(_scalar(item_text))
-                    pos += 1
-                continue
-            m = re.match(r"^([A-Za-z0-9_-]+):(.*)$", content)
-            if not m:
-                raise ParseError(f"unparseable line: {content!r}")
-            if node is None:
-                node = {}
-            if not isinstance(node, dict):
-                raise ParseError(f"mixed map/list at: {content!r}")
-            key, rest = m.group(1), m.group(2).strip()
-            if rest:
-                node[key] = _scalar(rest)
-                pos += 1
-            else:
-                child, pos = parse_block(pos + 1, depth + 1)
-                node[key] = child if child is not None else {}
-        return node, pos
-
-    tree, pos = parse_block(0, 0)
-    if pos != len(lines):
-        raise ParseError(f"trailing content at: {lines[pos][1]!r}")
-    return tree if tree is not None else {}
 
 
 def sha256_file(path):
