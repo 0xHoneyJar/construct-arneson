@@ -94,6 +94,27 @@ PYEOF
 check "ungraded simulation batch passes layout" 0 $VB "$TMP/sim-ungraded"
 check_msg "but warns it is not ingestible until scored" "not Gygax-ingestible until scored"
 
+# Infrastructure triage (bug 20260610-594345): a completed sidecar whose narration
+# carries the bundled wrapper's own error signature is a NON-RUN, not a verdict —
+# the validator must say so (warn-not-reject; exit stays 0).
+cp -R "$FIXTURES/batches/valid-batch" "$TMP/infra-casualty"
+python3 - "$TMP/infra-casualty/sidecars/rung-0-trial-1.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+o = json.load(open(p))
+o["narration"] = " [stderr] ERROR: [ollama-agent] cannot reach ollama at 127.0.0.1:11434 (timed out). Is the daemon running?"
+json.dump(o, open(p, "w"))
+PYEOF
+check "infrastructure-casualty batch still layout-valid (warn-not-reject)" 0 $VB "$TMP/infra-casualty"
+check_msg "but warns it is a non-run, not a verdict" "non-run, not a verdict"
+
+check "clean batch emits no infrastructure warning" 0 $VB "$FIXTURES/batches/valid-batch"
+if grep -q "non-run" /tmp/vb-err.$$; then
+  echo "FAIL: clean batch falsely flagged as infrastructure casualty"; FAIL=$((FAIL+1))
+else
+  echo "PASS: no false triage on clean narration"; PASS=$((PASS+1))
+fi
+
 # input errors
 check "nonexistent batch dir" 1 $VB "$TMP/never-was"
 

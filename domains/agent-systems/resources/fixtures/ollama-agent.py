@@ -29,6 +29,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# Sized for local-model reality: cold loads + big-model inference. Must stay
+# UNDER the engine's per-trial budget so the named error (exit 1) wins the race
+# against SIGKILL — size it from the scenario's stopping.timeout_seconds minus
+# margin (quickstart Step 1 shows --timeout explicitly for this reason).
+DEFAULT_TIMEOUT = 600
+
 MAX_CONTEXT_FILE_BYTES = 32_768
 CONTEXT_SUFFIXES = {".py", ".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".cfg"}
 FILE_BLOCK = re.compile(r"```file:([^\n`]+)\n(.*?)```", re.S)
@@ -45,6 +51,9 @@ SYSTEM_PROMPT = (
 
 
 def err(msg):
+    # The "ERROR: [ollama-agent]" prefix is LOAD-BEARING: validate_batch.py's
+    # infrastructure triage matches it in narrations. Change it there + in the
+    # tests together (co-tested in the same CI job).
     print(f"ERROR: [ollama-agent] {msg}", file=sys.stderr)
 
 
@@ -122,7 +131,7 @@ def write_files(content, cwd):
 
 def main(argv):
     args = list(argv[1:])
-    model, timeout = None, 240
+    model, timeout = None, DEFAULT_TIMEOUT
     if "--model" in args:
         i = args.index("--model")
         try:

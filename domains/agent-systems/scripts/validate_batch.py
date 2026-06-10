@@ -117,6 +117,20 @@ def main(argv):
                 "until scored (run: ladder score --batch <dir>)"
             )
 
+        # Infrastructure triage (warn-not-reject; bug 20260610-594345): when the
+        # narration is the bundled wrapper's OWN error signature, no agent ever
+        # acted — grading it would poison any comparison drawn from this batch.
+        # Matching our own error marker is stamping, not judging (G-4 posture).
+        # The marker is defined at ollama-agent.py err() — change both together.
+        if (isinstance(obj, dict)
+                and isinstance(obj.get("narration"), str)
+                and "ERROR: [ollama-agent]" in obj["narration"]):
+            warn(
+                f"{path.name}: narration carries the bundled wrapper's infrastructure error — "
+                "this is a non-run, not a verdict; exclude it from comparisons and re-run "
+                "(check timeouts/memory: see discovery/sweep-observability-findings.md)"
+            )
+
     if not fixture_in_manifest and not all_sidecars_carry_fixture:
         violations.append(
             "batch.json fixture missing AND not every sidecar carries experiment.fixture — "

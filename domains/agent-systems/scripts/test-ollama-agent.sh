@@ -56,6 +56,10 @@ class H(BaseHTTPRequestHandler):
         elif MODE == "escape":
             # legit block FIRST, escape second — nothing at all may be written
             content = "```file:solution.py\n# legit\n```\n```file:../evil.py\nprint('escaped')\n```\n"
+        elif MODE == "slow":
+            import time
+            time.sleep(5)
+            content = "too late"
         else:  # chatty: no file blocks at all
             content = "The bug is that negatives are summed. You should add a filter."
         body = json.dumps({"message": {"role": "assistant", "content": content}, "done": True}).encode()
@@ -125,6 +129,25 @@ check_msg "error names ollama and the host" "cannot reach ollama"
 # 5. Usage errors
 check "missing promptfile arg" 1 python3 "$WRAPPER" --model test-model
 check "nonexistent promptfile" 1 python3 "$WRAPPER" --model test-model /nope/prompt.md
+
+# 6. Timeout behavior (bug 20260610-594345): --timeout is respected against a slow
+# daemon, and the default is sized for local-model reality (600s), pinned as a constant.
+python3 "$W/mock.py" "$PORT" slow &
+MOCK_PID=$!
+sleep 0.4
+check "--timeout 1 against a slow daemon fails with the named error" 1 \
+  bash -c "cd '$W/room' && OLLAMA_HOST=127.0.0.1:$PORT python3 '$WRAPPER' --model test-model --timeout 1 '$W/prompt.md'"
+check_msg "slow-daemon error says timed out" "timed out"
+kill "$MOCK_PID" 2>/dev/null; wait "$MOCK_PID" 2>/dev/null
+MOCK_PID=""
+if python3 - "$WRAPPER" <<'PYEOF'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("oa", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+assert getattr(m, "DEFAULT_TIMEOUT", None) == 600, f"DEFAULT_TIMEOUT is {getattr(m, 'DEFAULT_TIMEOUT', None)!r}, expected 600"
+PYEOF
+then echo "PASS: DEFAULT_TIMEOUT constant is 600 (sized for cold local models)"; PASS=$((PASS+1))
+else echo "FAIL: DEFAULT_TIMEOUT constant missing or not 600"; FAIL=$((FAIL+1)); fi
 
 rm -f /tmp/oa-out.$$ /tmp/oa-err.$$
 echo "----"
