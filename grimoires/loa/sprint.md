@@ -49,30 +49,30 @@ schemas, and deterministic validators — so that anything claiming to be a batc
 machine-checked before any agent ever runs.
 
 ### Deliverables
-- [ ] `domains/agent-systems/` scaffold registered in construct.yaml, extension-story CI still green
-- [ ] Vendored `observed-trace.v1` contract with `VENDOR.yaml` sha256 pin
-- [ ] Three domain schemas: `scenario`, `session-events-agent`, `agent-persona`
-- [ ] Three validators (`validate_scenario.py`, `validate_sidecar.py`, `validate_batch.py`) with shell tests
-- [ ] Synthetic incentive fixture + committed fixture batch + fixture native sidecar
-- [ ] CI: schema validation + batch conformance (arneson-alone) + vendor drift guard (arneson-with-gygax)
+- [x] `domains/agent-systems/` scaffold registered in construct.yaml, extension-story CI still green
+- [x] Vendored `observed-trace.v1` contract with `VENDOR.yaml` sha256 pin
+- [x] Three domain schemas: `scenario`, `session-events-agent`, `agent-persona`
+- [x] Three validators (`validate_scenario.py`, `validate_sidecar.py`, `validate_batch.py`) with shell tests
+- [x] Synthetic incentive fixture + committed fixture batch + fixture native sidecar
+- [x] CI: schema validation + batch conformance (arneson-alone) + vendor drift guard (arneson-with-gygax)
 
 ### Acceptance Criteria
-- [ ] `extension-story` CI job passes with the new vertical present and **zero core diffs** — FR-1's proof (sdd.md §7.1)
-- [ ] `validate_sidecar.py` refuses to run (exit 2) when vendored schema sha256 ≠ `VENDOR.yaml` (sdd.md §5.2.1)
-- [ ] Each `allOf` conditional has a rejection fixture pair — e.g. `producer.kind: simulation` + `claim_strength: real-agent-observed` is rejected ("the laundering case the schema exists to stop" — sdd.md §7.2)
-- [ ] Scenario without `stopping.max_turns` rejected: `UNBOUNDED SCENARIO REJECTED` (NFR-2, sdd.md §6.1)
-- [ ] Committed fixture batch passes `validate_batch.py` exit 0
-- [ ] All validators are Python 3.10+ stdlib only — no PyYAML, no JSON-Schema library (NFR-5, sdd.md §2)
-- [ ] `domains/agent-systems/schemas/` covered by `scripts/ci/validate-schemas.sh` (closes the character-voice zero-coverage pattern for this domain — drift-report finding #3)
+- [x] `extension-story` CI job passes with the new vertical present and **zero core diffs** — FR-1's proof (sdd.md §7.1)
+- [x] `validate_sidecar.py` refuses to run (exit 2) when vendored schema sha256 ≠ `VENDOR.yaml` (sdd.md §5.2.1)
+- [x] Each `allOf` conditional has a rejection fixture pair — e.g. `producer.kind: simulation` + `claim_strength: real-agent-observed` is rejected ("the laundering case the schema exists to stop" — sdd.md §7.2)
+- [x] Scenario without `stopping.max_turns` rejected: `UNBOUNDED SCENARIO REJECTED` (NFR-2, sdd.md §6.1)
+- [x] Committed fixture batch passes `validate_batch.py` exit 0
+- [x] All validators are Python 3.10+ stdlib only — no PyYAML, no JSON-Schema library (NFR-5, sdd.md §2)
+- [x] `domains/agent-systems/schemas/` covered by `scripts/ci/validate-schemas.sh` (closes the character-voice zero-coverage pattern for this domain — drift-report finding #3)
 
 ### Technical Tasks
-- [ ] Task 1.1: Scaffold `domains/agent-systems/` (skills/, schemas/, scripts/, resources/, docs/) + `domain.conventions.md` stub under the five-part extension contract; register `domains.agent-systems` + `output_paths.playouts: grimoires/arneson/playouts/` in construct.yaml. New files only (FR-1). → **[G-1]**
-- [ ] Task 1.2: Vendor the contract: byte-exact copies of `construct-gygax/schemas/observed-trace.v1.schema.json` + `observed-trace-batch.v1.md` into `domains/agent-systems/schemas/vendor/` + `VENDOR.yaml` recording upstream repo, path, git sha, sha256 per file (FR-9, R-1, sdd.md §3.4). → **[G-1, G-4]**
-- [ ] Task 1.3: Author the three domain schemas: `scenario.schema.yaml` (fixture+checksum, rungs, trials, REQUIRED stopping, memory policy, safety agreement block, per-rung visibility mask, `agent_cmd`/persona per lane — FR-7, sdd.md §3.1), `session-events-agent.schema.yaml` (preamble: scenario_id, run_id, provenance, context_manifest, visibility_rung, memory_policy; events: rung_start, agent_turn, artifact_declare, trial_end; per-event seq+at required — FR-8, FR-10, sdd.md §3.2), `agent-persona.schema.yaml` (source ref+sha256+kind, disposition, capabilities, knowledge, rung_overlays — FR-5, FR-12, sdd.md §3.3). → **[G-2]**
-- [ ] Task 1.4: Implement `validate_scenario.py` (`--lane real|simulated`; checksum verification; stopping-condition gate; one-variable INFO note) + `test-validate-scenario.sh` covering happy path, each exit-1, each exit-2 (sdd.md §5.3, §7.2). → **[G-2]**
-- [ ] Task 1.5: Implement `validate_sidecar.py` (contract-specific: required keys, enums, additionalProperties rejection, three allOf conditionals, sha256 self-check against VENDOR.yaml) + `validate_batch.py` (batch.json fields, sidecars/ present, run_dir containment, per-sidecar delegation) + shell tests incl. drift-guard refusal and allOf fixture pairs (FR-9, sdd.md §5.2.1, §7.2). → **[G-1, G-4]**
-- [ ] Task 1.6: Author bundled synthetic incentive fixture (mirrors Gygax's fixture manifest shape — manifest.yaml + rungs + task-template) + committed fixture batch + committed fixture native sidecar for hermetic CI (FR-12, sdd.md §1.4). → **[G-2, G-3]**
-- [ ] Task 1.7: Wire CI: extend `scripts/ci/validate-schemas.sh` to `domains/agent-systems/schemas/`; add batch-layout conformance check (arneson-alone leg); add vendor drift guard byte-diffing `schemas/vendor/*` vs sibling checkout (arneson-with-gygax leg) (FR-14, sdd.md §7.1). → **[G-1, G-2]**
+- [x] Task 1.1: Scaffold `domains/agent-systems/` (skills/, schemas/, scripts/, resources/, docs/) + `domain.conventions.md` stub under the five-part extension contract; register `domains.agent-systems` + `output_paths.playouts: grimoires/arneson/playouts/` in construct.yaml. New files only (FR-1). → **[G-1]**
+- [x] Task 1.2: Vendor the contract: byte-exact copies of `construct-gygax/schemas/observed-trace.v1.schema.json` + `observed-trace-batch.v1.md` into `domains/agent-systems/schemas/vendor/` + `VENDOR.yaml` recording upstream repo, path, git sha, sha256 per file (FR-9, R-1, sdd.md §3.4). → **[G-1, G-4]**
+- [x] Task 1.3: Author the three domain schemas: `scenario.schema.yaml` (fixture+checksum, rungs, trials, REQUIRED stopping, memory policy, safety agreement block, per-rung visibility mask, `agent_cmd`/persona per lane — FR-7, sdd.md §3.1), `session-events-agent.schema.yaml` (preamble: scenario_id, run_id, provenance, context_manifest, visibility_rung, memory_policy; events: rung_start, agent_turn, artifact_declare, trial_end; per-event seq+at required — FR-8, FR-10, sdd.md §3.2), `agent-persona.schema.yaml` (source ref+sha256+kind, disposition, capabilities, knowledge, rung_overlays — FR-5, FR-12, sdd.md §3.3). → **[G-2]**
+- [x] Task 1.4: Implement `validate_scenario.py` (`--lane real|simulated`; checksum verification; stopping-condition gate; one-variable INFO note) + `test-validate-scenario.sh` covering happy path, each exit-1, each exit-2 (sdd.md §5.3, §7.2). → **[G-2]**
+- [x] Task 1.5: Implement `validate_sidecar.py` (contract-specific: required keys, enums, additionalProperties rejection, three allOf conditionals, sha256 self-check against VENDOR.yaml) + `validate_batch.py` (batch.json fields, sidecars/ present, run_dir containment, per-sidecar delegation) + shell tests incl. drift-guard refusal and allOf fixture pairs (FR-9, sdd.md §5.2.1, §7.2). → **[G-1, G-4]**
+- [x] Task 1.6: Author bundled synthetic incentive fixture (mirrors Gygax's fixture manifest shape — manifest.yaml + rungs + task-template) + committed fixture batch + committed fixture native sidecar for hermetic CI (FR-12, sdd.md §1.4). → **[G-2, G-3]**
+- [x] Task 1.7: Wire CI: extend `scripts/ci/validate-schemas.sh` to `domains/agent-systems/schemas/`; add batch-layout conformance check (arneson-alone leg); add vendor drift guard byte-diffing `schemas/vendor/*` vs sibling checkout (arneson-with-gygax leg) (FR-14, sdd.md §7.1). → **[G-1, G-2]**
 
 ### Dependencies
 - None (first sprint). Vendoring reads the sibling `construct-gygax` checkout once; the vendored copies make everything after that hermetic.

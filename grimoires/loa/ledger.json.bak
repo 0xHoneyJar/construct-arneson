@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "created": "2026-06-10T00:37:18Z",
+  "last_updated": "2026-06-10T00:37:39Z",
+  "next_sprint_number": 12,
+  "active_cycle": "cycle-001",
+  "cycles": [
+    {
+      "id": "cycle-001",
+      "label": "agent-sandbox-v4.0",
+      "status": "active",
+      "created": "2026-06-10T00:37:36Z",
+      "archived": null,
+      "archive_path": null,
+      "prd": "/Users/mandy/construct-arneson/grimoires/loa/prd.md",
+      "sdd": "grimoires/loa/sdd.md",
+      "sprints": [
+        {
+          "global_id": 8,
+          "local_label": "sprint-1",
+          "status": "planned",
+          "created": "2026-06-10T00:37:37Z",
+          "completed": null
+        },
+        {
+          "global_id": 9,
+          "local_label": "sprint-2",
+          "status": "planned",
+          "created": "2026-06-10T00:37:37Z",
+          "completed": null
+        },
+        {
+          "global_id": 10,
+          "local_label": "sprint-3",
+          "status": "planned",
+          "created": "2026-06-10T00:37:38Z",
+          "completed": null
+        }
+      ]
+    }
+  ]
+}
