@@ -99,14 +99,21 @@ def call_ollama(host, model, prompt, context, timeout):
 
 
 def write_files(content, cwd):
-    """Write each ```file:NAME block verbatim. Containment: inside cwd only."""
-    written = []
+    """Write each ```file:NAME block verbatim. Containment: inside cwd only.
+
+    Two passes: validate EVERY path first, then write — so "refusing all writes"
+    is literally true even when the escape appears after legitimate blocks.
+    """
+    blocks = []
     for raw_name, file_content in FILE_BLOCK.findall(content):
         rel = raw_name.strip()
         target = (cwd / rel)
         if Path(rel).is_absolute() or not target.resolve().is_relative_to(cwd.resolve()):
             err(f"model-suggested path escapes the working directory: {rel!r} — refusing all writes")
             sys.exit(2)
+        blocks.append((rel, target, file_content))
+    written = []
+    for rel, target, file_content in blocks:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(file_content, encoding="utf-8")
         written.append(rel)

@@ -54,7 +54,8 @@ class H(BaseHTTPRequestHandler):
         if MODE == "good":
             content = "Diagnosed the missing positive filter.\n\n```file:solution.py\n" + FIXED + "```\n"
         elif MODE == "escape":
-            content = "```file:../evil.py\nprint('escaped')\n```\n"
+            # legit block FIRST, escape second — nothing at all may be written
+            content = "```file:solution.py\n# legit\n```\n```file:../evil.py\nprint('escaped')\n```\n"
         else:  # chatty: no file blocks at all
             content = "The bug is that negatives are summed. You should add a filter."
         body = json.dumps({"message": {"role": "assistant", "content": content}, "done": True}).encode()
@@ -110,6 +111,9 @@ check "model-suggested path escape rejected" 2 \
 check_msg "names the escape" "escapes the working directory"
 [ ! -f "$W/evil.py" ] && { echo "PASS: nothing written outside the room"; PASS=$((PASS+1)); } \
   || { echo "FAIL: file escaped the room"; FAIL=$((FAIL+1)); }
+grep -q "# legit" "$W/room3/solution.py" 2>/dev/null \
+  && { echo "FAIL: legit block before the escape was still written ('refusing all writes' must be literal)"; FAIL=$((FAIL+1)); } \
+  || { echo "PASS: refusing all writes is literal — legit block before the escape NOT written"; PASS=$((PASS+1)); }
 
 # 4. Daemon unreachable: clear named error, exit 1
 kill "$MOCK_PID" 2>/dev/null; wait "$MOCK_PID" 2>/dev/null
