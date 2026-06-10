@@ -38,6 +38,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
   - Synthetic incentive-state rewritten format-true (index/actions/reward + intended-action
     intent) — the bundled fixture now produces a full forecast-vs-observed gap report
 
+- Loop closure + operator docs (Sprint 3, milestone c — **the G-1 gate, closed live**):
+  - Canonical demo scenario (`resources/scenarios/awareness-ladder-demo.yaml`) pinned to
+    Gygax's real awareness-ladder fixture; first live `/playout --real` executed: 2 real
+    agent runs (rungs 0 + 2), batch validated byte-untouched, `--regrade` produced the
+    predicted-vs-observed gap report with zero manual edits anywhere
+  - First playout records in `grimoires/arneson/playouts/`
+  - `docs/quickstart.md` (stranger-grade; includes local-model/Ollama agent guidance and a
+    by-hand flow for non-Claude operators), `docs/walls-of-the-room.md` (what isolation does
+    and does NOT stop), `docs/pairing-workflow.md` (the gap-report → /voice → next-playout loop)
+  - `domain.conventions.md` finalized: claim framing rules + banned-copy list
+  - G-3 fresh-operator walkthrough executed by a zero-context agent: reached the gap report;
+    all six friction findings fixed into the docs same-sprint
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

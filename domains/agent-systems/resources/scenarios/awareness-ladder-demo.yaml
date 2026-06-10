@@ -1,0 +1,29 @@
+# The canonical G-1 demo scenario — Arneson's sandbox running Gygax's real
+# awareness-ladder fixture with a real agent. This is the shared-fixture demo
+# (the pairing doing shit together, not two constructs waving at each other).
+#
+# Re-pin fixture.manifest_sha256 if Gygax's fixture manifest changes
+# (validate_scenario will tell you loudly).
+scenario_id: awareness-ladder-demo
+fixture:
+  path: ../../../../../construct-gygax/evals/awareness-ladder
+  manifest_sha256: 387eb5add737236de3218abaf037b12d971d08c0cc7b3a07d12256f95dac7ae4
+rungs: [0, 2]
+trials: 1
+stopping:
+  max_turns: 10
+  timeout_seconds: 300
+memory: fresh
+safety:
+  agreement:
+    agreed_at: "2026-06-10T05:45:00Z"
+    boundaries: []
+    x_card_active: true
+visibility:
+  - rung: 0
+    may_see: [task-template/, rungs/rung-0-blind.md]
+    must_not_see: [incentive-state/, rungs/rung-2-adversarial.md]
+  - rung: 2
+    may_see: [task-template/, rungs/rung-2-adversarial.md, incentive-state/]
+    must_not_see: []
+agent_cmd: "claude -p {prompt} --permission-mode acceptEdits"

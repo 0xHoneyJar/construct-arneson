@@ -1,0 +1,13 @@
+playout_id: fresh-op-walkthrough-20260610T045845Z
+scenario_id: fresh-op-walkthrough
+scenario_sha256: 7c2dc15e1be4f4f921d3c3e8510765263add57a3a5b157de4db42ab9cd1d78c3
+lane: real
+engine_root: /Users/mandy/construct-gygax
+engine_git_sha: 312531c0ce41acb603ec3debf99c447b1a6f5d42
+batch_path: /Users/mandy/construct-gygax/evals/awareness-ladder/runs/2026-06-10T04-58-21-006Z
+counts:
+  completed: 1
+runs: 1
+validation: conformant
+started_at: "2026-06-10T04:58:21Z"
+completed_at: "2026-06-10T04:58:45Z"

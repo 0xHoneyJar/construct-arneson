@@ -1,7 +1,8 @@
 # agent-systems — Domain Conventions
 
-**Status:** Sprint 1 stub — finalized in Sprint 3 (banned-copy list, one-variable
-discipline, claim_strength framing rules land with the docs they police).
+**Status:** Finalized (Sprint 3). The five-part contract, validator gate, and
+honesty rules below are load-bearing; the banned-copy list polices every doc
+and report in this domain.
 
 ## The five-part extension contract (how this domain plugs in)
 
@@ -25,8 +26,40 @@ discipline, claim_strength framing rules land with the docs they police).
 4. **Honest labels always:** producer ↔ claim_strength binding is checked before
    handoff; forecast-without-playing is never a sidecar claim.
 
-## To be finalized in Sprint 3
+## Claim framing rules (G-4 — what every doc and report must honor)
 
-- Banned-copy list (no "hard metrics", "zero hallucination", fidelity claims)
-- claim_strength framing rules for docs ("pretend is a preview, real is the proof")
-- Local-model `agent_cmd` guidance (Ollama-backed agentic CLIs)
+1. **Pretend is a preview; real is the proof.** Simulated results inform; only
+   real runs evidence. Frame the simulated lane as *behavioral exploration*
+   ("watch how a hosted agent drifts under these incentives"), never as
+   validation of anything.
+2. **Labels are facts, not flair.** `producer.kind` and `claim_strength` say
+   how a record was made. Quote them; never paraphrase a simulation upward.
+3. **Signals are tagged, counts are counted, judgments are Gygax's.** Arneson
+   may report arithmetic (runs, counts, ratios from the grader's report).
+   Interpretations — cliffs, severity, "the incentive is broken" — come from
+   the analyst's report and are cited, not authored here.
+4. **A forecast made without playing is never an observation.** It lives at
+   Gygax's report layer, clearly marked as the forecast lane.
+
+## Banned copy (quoted ban list — these phrases may appear ONLY inside ban lists like this one)
+
+| Banned phrase | Why | Say instead |
+|---------------|-----|-------------|
+| "hard metrics" (for experiential/behavioral signals) | overclaims tagged signals into measurements | "tagged signals", "counts from the grader's report" |
+| "zero hallucination" | impossible bar; erodes trust in every other claim | "grounded + transparent: every action references state; improvisation is declared" |
+| "high-fidelity" (about simulated agents) | fidelity is exactly what's unproven | "behavioral exploration", "preview" |
+| "proves it's compelling" / "validates your incentives" | the sandbox explores; the analyst grades; nothing here *proves* | "surfaces hypotheses", "shows where forecast and observation diverge" |
+| "effectively real" / "as good as observed" | claim laundering in prose form | quote the actual `claim_strength` |
+
+Enforcement: `identity/refusals.yaml` (`claim_laundering.vocabulary_to_avoid`)
+is grepped by the identity-refusal audit; this table is the doc-side mirror.
+The Sprint 3 success metric is `0` banned phrases outside quoted ban lists in
+`domains/agent-systems/docs/` + this file (grep check).
+
+## Local-model agents
+
+Any agentic CLI works as `agent_cmd` — including local models. The rule of
+thumb: the command must *act on files*, not just talk. Bare `ollama run <model>`
+prints text and grades as `failed`; wrap the model in an agent (aider,
+opencode, or a small script that reads the prompt, asks the model, and writes
+the files it answers with). See docs/quickstart.md Step 1 for working examples.

@@ -1,0 +1,13 @@
+playout_id: awareness-ladder-demo-20260610T045207Z
+scenario_id: awareness-ladder-demo
+scenario_sha256: 3093456267278742f6da4c12ea1371a0a6dd018558787667b1e90b261a845995
+lane: real
+engine_root: /Users/mandy/construct-gygax
+engine_git_sha: 312531c0ce41acb603ec3debf99c447b1a6f5d42
+batch_path: /Users/mandy/construct-gygax/evals/awareness-ladder/runs/2026-06-10T04-52-07-721Z
+counts:
+  completed: 2
+runs: 2
+validation: conformant
+started_at: "2026-06-10T04:52:07Z"
+completed_at: "2026-06-10T04:58:30Z"
