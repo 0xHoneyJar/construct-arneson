@@ -1,0 +1,131 @@
+================================================================================
+SECURITY AUDIT SUMMARY: Sprint 13 (v4.1 Sprint 2)
+================================================================================
+
+DATE: 2026-06-10
+BRANCH: feature/sprint-plan-v41-20260610
+COMMIT: 209482c
+
+VERDICT: APPROVED - LET'S FUCKING GO
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+1. ARITHMETIC EVALUATOR (check_payoff_dominance.py)
+   - Hand-rolled recursive-descent parser: NO eval()/exec()
+   - Tokenization: ReDoS-safe regex with token allowlist only
+   - Grammar: Bounded operator precedence, parentheses checked
+   - Tested injection attempts: ALL REJECTED at token boundary
+   - Division-by-zero: Caught and reported
+   STATUS: APPROVED (CRITICAL LOGIC VERIFIED)
+
+2. SWEEP AGGREGATOR (sweep_report.py)
+   - Untrusted JSON input: Type-guarded at every nested access
+   - Verdict counting: Never recomputes (NFR-6: producer-never-judges)
+   - Error handling: Malformed JSON silently skipped
+   - Test: Deterministic output, config order preserved
+   STATUS: APPROVED (TRUST BOUNDARY ENFORCED)
+
+3. YAML PARSER (restricted_yaml.py)
+   - Folded scalar support (`>`): Backward-compatible
+   - Regex change: Safe (no nested quantifiers, no ReDoS surface)
+   - Content handling: String operation, no new DoS vector
+   - Inline maps: Quote-naive but not exploitable (real fixtures use nested YAML)
+   STATUS: APPROVED (NO NEW SURFACE)
+
+================================================================================
+TEST RESULTS
+================================================================================
+
+check_payoff_dominance.sh:  7 passed, 0 failed
+test-sweep-report.sh:       10 passed, 0 failed
+TOTAL:                      17 passed, 0 failed
+
+All tests are hermetic (mktemp isolation), deterministic, and verify:
+- Real fixtures (dungeon incentive-state)
+- Synthetic controls (non-dominant payoffs)
+- Error cases (unparseable expressions, missing intent)
+- Determinism (byte-identical output across runs)
+- Trust boundary (no cliff/forecast recomputation)
+
+================================================================================
+FINDINGS BREAKDOWN
+================================================================================
+
+CRITICAL:  0
+HIGH:      0
+MEDIUM:    1 (Inline map quote-naive splitting — not exploitable)
+LOW:       1 (Folded scalar regex — safe)
+INFO:      6 (Control verifications, NFR compliance checks)
+
+================================================================================
+SECURITY CHECKLIST
+================================================================================
+
+[✓] No eval()/exec()
+[✓] No code injection (grammar bounds enforced)
+[✓] No ReDoS (regexes analyzed)
+[✓] No path traversal (explicit filenames)
+[✓] Type safety (guarded dict/list access)
+[✓] Division-by-zero (caught)
+[✓] Parentheses balanced (checked)
+[✓] Trailing tokens (validated)
+[✓] Untrusted JSON safe (type guards exhaustive)
+[✓] No config injection (keys not evaluated)
+[✓] NFR-5 (warn-not-reject discipline enforced)
+[✓] NFR-6 (producer-never-judges boundary maintained)
+
+================================================================================
+CONSTRAINTS VERIFIED
+================================================================================
+
+Stdlib-Only (NFR-2):       ✓ All imports are stdlib (re, sys, json, pathlib)
+Warn-Not-Reject (NFR-5):   ✓ Exit 0 on PASS/WARN, exit 1 only on unparseable
+Producer-Never-Judges:     ✓ Sweep aggregator counts only Gygax's verdicts
+Hermetic Tests:            ✓ mktemp isolation, no external state
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+Overall Risk Level: LOW
+
+Why:
+  1. Hand-rolled parsing with explicit grammar bounds
+  2. Type safety at every untrusted input boundary
+  3. Comprehensive unit tests (17 passing)
+  4. Behavioral discipline enforced at code level
+  5. No dynamic execution surface
+
+Remaining Attention Points (NOT blockers):
+  1. Negative literals not supported (only via subtraction) — fixtures don't use
+  2. Inline map comma-splitting naive (fixtures use nested YAML) — not exploitable
+  3. Folded scalar string-level expansion possible (no DoS observed in tests)
+
+================================================================================
+ARTIFACTS
+================================================================================
+
+SECURITY-AUDIT-REPORT.md       Main audit report (379 lines, detailed findings)
+findings.jsonl                 Structured JSONL output (10 records + summary)
+AUDIT-SUMMARY.txt              This summary (quick reference)
+
+Location: grimoires/loa/a2a/sprint-13/
+
+================================================================================
+CONCLUSION
+================================================================================
+
+All three critical security gates (evaluator, aggregator, parser) are
+mechanically sound and pass exhaustive testing.
+
+The hand-rolled expression parser is the audit's centerpiece. It is
+uncompromising: no shortcuts to execution, no grammar escape hatches.
+Every fixture author expression passes through this gate before sampling.
+
+Proceed to deployment. Test suite verifies hermetic behavior on feature branch.
+
+APPROVED - LET'S FUCKING GO
+
+================================================================================
