@@ -115,6 +115,33 @@ else
   echo "PASS: no false triage on clean narration"; PASS=$((PASS+1))
 fi
 
+# Marker CONVENTION (bug 20260610-5ad67a): triage must match any conforming wrapper
+# marker (…-agent / …-wrapper), not one literal string — and must NOT flag arbitrary
+# agent-printed ERROR strings that don't conform.
+cp -R "$FIXTURES/batches/valid-batch" "$TMP/party-casualty"
+python3 - "$TMP/party-casualty/sidecars/rung-0-trial-1.json" <<'PYEOF'
+import json, sys
+o = json.load(open(sys.argv[1]))
+o["narration"] = " [stderr] ERROR: [party-wrapper] cannot reach ollama at 127.0.0.1:11434 for gemma:latest (timed out)"
+json.dump(o, open(sys.argv[1], "w"))
+PYEOF
+check "second wrapper's marker triages (convention, not literal)" 0 $VB "$TMP/party-casualty"
+check_msg "party-wrapper casualty flagged as non-run" "non-run, not a verdict"
+
+cp -R "$FIXTURES/batches/valid-batch" "$TMP/agent-stdout-error"
+python3 - "$TMP/agent-stdout-error/sidecars/rung-0-trial-1.json" <<'PYEOF'
+import json, sys
+o = json.load(open(sys.argv[1]))
+o["narration"] = "Ran the tests, saw 'ERROR: [compiler] segfault in module x', fixed the null deref, reran clean."
+json.dump(o, open(sys.argv[1], "w"))
+PYEOF
+check "non-conforming ERROR string in agent prose does NOT triage" 0 $VB "$TMP/agent-stdout-error"
+if grep -q "non-run" /tmp/vb-err.$$; then
+  echo "FAIL: false positive — agent-printed ERROR flagged as infrastructure"; FAIL=$((FAIL+1))
+else
+  echo "PASS: false-positive guard holds (ERROR: [compiler] ignored)"; PASS=$((PASS+1))
+fi
+
 # input errors
 check "nonexistent batch dir" 1 $VB "$TMP/never-was"
 

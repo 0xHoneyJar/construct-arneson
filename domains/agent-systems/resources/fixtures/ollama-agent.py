@@ -51,9 +51,10 @@ SYSTEM_PROMPT = (
 
 
 def err(msg):
-    # The "ERROR: [ollama-agent]" prefix is LOAD-BEARING: validate_batch.py's
-    # infrastructure triage matches it in narrations. Change it there + in the
-    # tests together (co-tested in the same CI job).
+    # The "ERROR: [ollama-agent]" prefix follows the infrastructure-marker
+    # CONVENTION (tool name ending in -agent/-wrapper) that validate_batch.py's
+    # triage matches in narrations — see domain.conventions.md "Wrapper authors".
+    # Co-tested with the validator in the same CI job.
     print(f"ERROR: [ollama-agent] {msg}", file=sys.stderr)
 
 

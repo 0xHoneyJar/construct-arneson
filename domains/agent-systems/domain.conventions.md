@@ -56,6 +56,17 @@ is grepped by the identity-refusal audit; this table is the doc-side mirror.
 The Sprint 3 success metric is `0` banned phrases outside quoted ban lists in
 `domains/agent-systems/docs/` + this file (grep check).
 
+## Wrapper authors: the infrastructure-marker convention
+
+A wrapper (the operator-side tool that turns a model into a file-acting agent) MUST emit
+its own failures to stderr prefixed `ERROR: [<tool-name>]` where `<tool-name>` ends in
+`-agent` or `-wrapper` (e.g. `ERROR: [ollama-agent] cannot reach …`). `validate_batch.py`'s
+infrastructure triage matches exactly this convention in sidecar narrations to flag
+non-runs ("a non-run, not a verdict") — so a conforming marker is what keeps your wrapper's
+plumbing failures from masquerading as graded results. The suffix anchor exists so an
+AGENT's own printed errors (`ERROR: [compiler] …`) are never mistaken for infrastructure.
+Warn-not-reject; co-tested in `scripts/test-validate-batch.sh`.
+
 ## Local-model agents
 
 Any agentic CLI works as `agent_cmd` — including local models. The rule of
