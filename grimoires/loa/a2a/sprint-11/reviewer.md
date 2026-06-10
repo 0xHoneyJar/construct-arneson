@@ -85,3 +85,12 @@ python3 domains/agent-systems/scripts/project_trace.py \
   --native domains/agent-systems/resources/fixtures/native-sidecar.events.yaml --out /tmp/t
 python3 domains/agent-systems/scripts/validate_sidecar.py /tmp/t/rung-0-trial-1.json
 ```
+
+## Audit Feedback Addressed (cycle 2)
+
+Sprint-11 audit returned CHANGES_REQUIRED with two findings; both fixed + both demanded test cases added:
+
+1. **MEDIUM CWE-22 — unvalidated `state_path`** → project_trace.py now rejects absolute/`~` paths (exit 2) and resolves+containment-checks against the sidecar's own directory (`is_relative_to`); paths can no longer escape or inject. Tests: "escaping state_path rejected" + "absolute state_path rejected" + message assertion.
+2. **MEDIUM — uncaught timestamp ValueError** → `_iso_ms_delta` raises a named ValueError; the call site catches it and emits a catalog-style `ERROR: … invalid timestamp …` with exit 2, no traceback. Test: "malformed timestamp fails with named error" + message assertion.
+
+Suite after fixes: 19/19 (sim-pipeline), 71 assertions total across 5 suites; full hermetic check green.

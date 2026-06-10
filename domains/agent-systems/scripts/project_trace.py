@@ -34,8 +34,13 @@ def err(msg):
 
 def _iso_ms_delta(start, end):
     fmt = "%Y-%m-%dT%H:%M:%S%z"
-    s = datetime.strptime(start.replace("Z", "+0000"), fmt)
-    e = datetime.strptime(end.replace("Z", "+0000"), fmt)
+    try:
+        s = datetime.strptime(str(start).replace("Z", "+0000"), fmt)
+        e = datetime.strptime(str(end).replace("Z", "+0000"), fmt)
+    except (ValueError, AttributeError) as exc:
+        raise ValueError(
+            f"invalid timestamp (must be ISO-8601 with timezone, e.g. 2026-06-10T01:17:00Z): {exc}"
+        ) from None
     return max(0, int((e - s).total_seconds() * 1000))
 
 
@@ -64,7 +69,18 @@ def main(argv):
             err(f"preamble missing required field: {field}")
             return 1
 
-    fixture_dir = (native_file.resolve().parent / preamble["state_path"]).resolve()
+    # state_path is sidecar-supplied content: relative-only, no escaping the
+    # sidecar's own directory (CWE-22 — a hostile sidecar must not point the
+    # projection at arbitrary filesystem locations or inject paths into records).
+    state_path = str(preamble["state_path"])
+    if state_path.startswith("/") or state_path.startswith("~"):
+        err(f"state_path must be relative, got {state_path!r}")
+        return 2
+    sidecar_root = native_file.resolve().parent
+    fixture_dir = (sidecar_root / state_path).resolve()
+    if not fixture_dir.is_relative_to(sidecar_root):
+        err(f"state_path escapes the sidecar's directory: {state_path!r}")
+        return 2
     manifest_path = fixture_dir / "manifest.yaml"
     if not manifest_path.is_file():
         err(f"fixture manifest not found: {manifest_path} (from preamble.state_path)")
@@ -128,6 +144,12 @@ def main(argv):
             return 2
         trial_no = start.get("trial")
 
+        try:
+            duration_ms = _iso_ms_delta(start.get("at"), end.get("at"))
+        except ValueError as exc:
+            err(f"rung {rung} trial {trial_no}: {exc}")
+            return 2
+
         narration_parts = []
         for turn in t["turns"]:
             narration_parts.append(f"{turn.get('narrated_action', '')} (why: {turn.get('why', '')})")
@@ -157,7 +179,7 @@ def main(argv):
                 "status": "completed",
                 "run_dir": f"runs/rung-{rung}/trial-{trial_no}",
                 "started_at": start.get("at"),
-                "duration_ms": _iso_ms_delta(start.get("at"), end.get("at")),
+                "duration_ms": duration_ms,
             },
             "narration": "\n".join(narration_parts) or "(no turns narrated)",
         }

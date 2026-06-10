@@ -90,6 +90,25 @@ check "sidecar without trial_end does not project" 2 \
 check "missing native file is input error" 1 \
   python3 "$SCRIPT_DIR/project_trace.py" --native "$W/tampered/nope.yaml" --out "$W/tampered/traces"
 
+# Audit findings (sprint-11): hostile state_path + malformed timestamp
+sed 's|  state_path: synthetic-incentive|  state_path: ../../../../etc|' "$NATIVE" > "$W/tampered/evil-state.events.yaml"
+check "escaping state_path rejected (CWE-22)" 2 \
+  python3 "$SCRIPT_DIR/project_trace.py" --native "$W/tampered/evil-state.events.yaml" --out "$W/tampered/traces"
+check_msg "names the escape" "state_path escapes"
+
+sed 's|  state_path: synthetic-incentive|  state_path: /etc|' "$NATIVE" > "$W/tampered/abs-state.events.yaml"
+check "absolute state_path rejected" 2 \
+  python3 "$SCRIPT_DIR/project_trace.py" --native "$W/tampered/abs-state.events.yaml" --out "$W/tampered/traces"
+
+cp -R "$FIX/synthetic-incentive" "$W/tampered/synthetic-incentive" 2>/dev/null || true
+sed 's|    at: "2026-06-09T21:10:01Z"|    at: "yesterday-ish"|' "$NATIVE" > "$W/tampered/bad-ts.events.yaml"
+cp "$W/tampered/bad-ts.events.yaml" "$W/tampered/bad-ts2.events.yaml"
+mkdir -p "$W/tampered/syn-near" && cp -R "$FIX/synthetic-incentive/." "$W/tampered/syn-near/" 2>/dev/null
+sed 's|  state_path: synthetic-incentive|  state_path: syn-near|' "$W/tampered/bad-ts.events.yaml" > "$W/tampered/bad-ts-local.events.yaml"
+check "malformed timestamp fails with named error (no traceback)" 2 \
+  python3 "$SCRIPT_DIR/project_trace.py" --native "$W/tampered/bad-ts-local.events.yaml" --out "$W/tampered/traces"
+check_msg "clean catalog-style message" "invalid timestamp"
+
 rm -f /tmp/sim-out.$$ /tmp/sim-err.$$
 echo "----"
 echo "sim-pipeline: $PASS passed, $FAIL failed"

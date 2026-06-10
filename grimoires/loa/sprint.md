@@ -212,32 +212,32 @@ materialization, analyst-scored observation — producing the same batch shape w
 `producer.kind: simulation`, standalone-safe without Gygax.
 
 ### Deliverables
-- [ ] Persona host wiring: visibility mask, context manifest, provenance preamble, memory policy
-- [ ] Bundled agent-under-incentive persona (rung overlays) + `docs/importing-an-agent.md`
-- [ ] `project_trace.py`, `materialize_artifacts.py`, `assemble_batch.py` + shell tests
-- [ ] Score-on-assemble via `ladder score --batch` when engine present; honest standalone labeling
-- [ ] OQ-1 probe resolved (or escalated to the Gygax seam)
-- [ ] CI: projection round-trip + hermetic playout jobs
-- [ ] E2E validation of all 5 PRD goals
+- [x] Persona host wiring: visibility mask, context manifest, provenance preamble, memory policy
+- [x] Bundled agent-under-incentive persona (rung overlays) + `docs/importing-an-agent.md`
+- [x] `project_trace.py`, `materialize_artifacts.py`, `assemble_batch.py` + shell tests
+- [x] Score-on-assemble via `ladder score --batch` when engine present; honest standalone labeling
+- [x] OQ-1 probe resolved (or escalated to the Gygax seam)
+- [x] CI: projection round-trip + hermetic playout jobs
+- [x] E2E validation of all 5 PRD goals
 
 ### Acceptance Criteria
-- [ ] Simulated `/playout` works with zero Gygax install: playout, native sidecar, and projection all complete; report labels the batch `standalone simulated batch — ungraded; not Gygax-ingestible until scored` (FR-4, sdd.md §5.2.3)
-- [ ] Dual emission: native sidecar (full fidelity) + deterministic projection to `observed-trace/v1` with playout prose as `narration`; **no LLM on the projection path** (FR-8)
-- [ ] Preamble records provenance (model id, construct git sha, skill/schema versions, protocols loaded) + context manifest (`[{ref, sha256}]`) so the rung's visibility claim is verifiable (FR-10)
-- [ ] `artifact_declare` contents materialized verbatim into `runs/rung-R/trial-T/`, seeded from the fixture's `task-template/` so `protected_baseline` files are diffable (sdd.md §5.2.3 item 2)
-- [ ] When engine present: `observation` filled only by Gygax's `ladder score --batch`; `producer` preserved as `simulation`; Arneson logic never authors a classification (FR-9 trust rule)
-- [ ] Host serializes, never executes: no agent-narrated content is run by Arneson-side tooling (FR-11 bright line, NFR-3)
-- [ ] `/pause` + safety commands + stopping condition honored mid-playout (FR-4, NFR-2)
-- [ ] Projection round-trip + hermetic playout CI jobs green on the arneson-alone leg (FR-14)
+- [x] Simulated `/playout` works with zero Gygax install: playout, native sidecar, and projection all complete; report labels the batch `standalone simulated batch — ungraded; not Gygax-ingestible until scored` (FR-4, sdd.md §5.2.3)
+- [x] Dual emission: native sidecar (full fidelity) + deterministic projection to `observed-trace/v1` with playout prose as `narration`; **no LLM on the projection path** (FR-8)
+- [x] Preamble records provenance (model id, construct git sha, skill/schema versions, protocols loaded) + context manifest (`[{ref, sha256}]`) so the rung's visibility claim is verifiable (FR-10)
+- [x] `artifact_declare` contents materialized verbatim into `runs/rung-R/trial-T/`, seeded from the fixture's `task-template/` so `protected_baseline` files are diffable (sdd.md §5.2.3 item 2)
+- [x] When engine present: `observation` filled only by Gygax's `ladder score --batch`; `producer` preserved as `simulation`; Arneson logic never authors a classification (FR-9 trust rule)
+- [x] Host serializes, never executes: no agent-narrated content is run by Arneson-side tooling (FR-11 bright line, NFR-3)
+- [x] `/pause` + safety commands + stopping condition honored mid-playout (FR-4, NFR-2)
+- [x] Projection round-trip + hermetic playout CI jobs green on the arneson-alone leg (FR-14)
 
 ### Technical Tasks
-- [ ] Task 4.1: Wire the persona host (existing core engine, parameterized): apply per-rung visibility mask, record context manifest + provenance preamble + memory_policy stamp, emit append-only native sidecar per `session-events-agent`, honor stopping/`/pause`/safety (FR-4, FR-10, sdd.md §1.4). → **[G-2]**
-- [ ] Task 4.2: Author the bundled neutral agent-under-incentive persona with blind/reward-aware/adversarial rung overlays (FR-12) + `docs/importing-an-agent.md` documented procedure: source spec → schema fields → `source.ref` + `source.sha256` (FR-5, sdd.md §3.3). → **[G-2, G-3]**
-- [ ] Task 4.3: Implement `project_trace.py` (native sidecar → one `observed-trace/v1` JSON per trial, deterministic, prose as `narration`) + shell test (FR-8, sdd.md §5.3). → **[G-2, G-4]**
-- [ ] Task 4.4: Implement `materialize_artifacts.py` (seed run dirs from task-template, overlay `artifact_declare` contents verbatim, content_sha256 verified) + `assemble_batch.py` (batch.json + layout under `grimoires/arneson/playouts/<playout-id>/batch/`) + shell tests (sdd.md §5.3, §3.5). → **[G-2]**
-- [ ] Task 4.5: Wire simulated lane into `/playout` SKILL.md: host → project → materialize → assemble → validate → score-on-assemble via `ladder score --batch` when engine discoverable; honest ungraded labeling standalone; playout record (FR-4, sdd.md §1.5, §5.2.3). → **[G-1, G-4]**
-- [ ] Task 4.6: OQ-1 probe: run a materialized simulation batch through `ladder score --batch` + Gygax ingest end-to-end; verify `observation` filled with `producer` preserved (index.ts:204). If it fails: document, escalate to the Gygax seam, keep standalone labeling as the shipped behavior (sdd.md OQ-1). Add CI: projection round-trip + hermetic playout (FR-14, sdd.md §7.1 checks 2+4). → **[G-1, G-2]**
-- [ ] Task 4.E2E: End-to-End Goal Validation (P0, all goals) — see below. → **[G-1, G-2, G-3, G-4, G-5]**
+- [x] Task 4.1: Wire the persona host (existing core engine, parameterized): apply per-rung visibility mask, record context manifest + provenance preamble + memory_policy stamp, emit append-only native sidecar per `session-events-agent`, honor stopping/`/pause`/safety (FR-4, FR-10, sdd.md §1.4). → **[G-2]**
+- [x] Task 4.2: Author the bundled neutral agent-under-incentive persona with blind/reward-aware/adversarial rung overlays (FR-12) + `docs/importing-an-agent.md` documented procedure: source spec → schema fields → `source.ref` + `source.sha256` (FR-5, sdd.md §3.3). → **[G-2, G-3]**
+- [x] Task 4.3: Implement `project_trace.py` (native sidecar → one `observed-trace/v1` JSON per trial, deterministic, prose as `narration`) + shell test (FR-8, sdd.md §5.3). → **[G-2, G-4]**
+- [x] Task 4.4: Implement `materialize_artifacts.py` (seed run dirs from task-template, overlay `artifact_declare` contents verbatim, content_sha256 verified) + `assemble_batch.py` (batch.json + layout under `grimoires/arneson/playouts/<playout-id>/batch/`) + shell tests (sdd.md §5.3, §3.5). → **[G-2]**
+- [x] Task 4.5: Wire simulated lane into `/playout` SKILL.md: host → project → materialize → assemble → validate → score-on-assemble via `ladder score --batch` when engine discoverable; honest ungraded labeling standalone; playout record (FR-4, sdd.md §1.5, §5.2.3). → **[G-1, G-4]**
+- [x] Task 4.6: OQ-1 probe: run a materialized simulation batch through `ladder score --batch` + Gygax ingest end-to-end; verify `observation` filled with `producer` preserved (index.ts:204). If it fails: document, escalate to the Gygax seam, keep standalone labeling as the shipped behavior (sdd.md OQ-1). Add CI: projection round-trip + hermetic playout (FR-14, sdd.md §7.1 checks 2+4). → **[G-1, G-2]**
+- [x] Task 4.E2E: End-to-End Goal Validation (P0, all goals) — see below. → **[G-1, G-2, G-3, G-4, G-5]**
 
 ### Task 4.E2E: End-to-End Goal Validation
 
@@ -253,9 +253,9 @@ materialization, analyst-scored observation — producing the same batch shape w
 | G-5 | The pairing compounds | `docs/pairing-workflow.md` exists and names the gap-report → `/voice` → next-playout loop with literal commands | Canonical combined workflow documented |
 
 **Acceptance Criteria:**
-- [ ] Each goal validated with documented evidence (playout records, CI runs, walkthrough log in NOTES.md)
-- [ ] Integration points verified: real batch and simulated batch both pass `validate_batch.py` and both reach Gygax grading
-- [ ] No goal marked "not achieved" without explicit justification
+- [x] Each goal validated with documented evidence (playout records, CI runs, walkthrough log in NOTES.md)
+- [x] Integration points verified: real batch and simulated batch both pass `validate_batch.py` and both reach Gygax grading
+- [x] No goal marked "not achieved" without explicit justification
 
 ### Dependencies
 - Sprint 1: schemas + validators + synthetic fixture (hard dependency for Tasks 4.1–4.4)
