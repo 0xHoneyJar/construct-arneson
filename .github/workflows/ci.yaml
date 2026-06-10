@@ -118,6 +118,9 @@ jobs:
       - name: Zero-edit ingestion probe (milestone b — engine → validate → regrade → diff)
         run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/ingestion-probe.sh
 
+      - name: Live sweep proof (v4.1 — 2 configs → triaged cross-config table)
+        run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/sweep-probe.sh
+
       - name: Set up stub Gygax fixture
         run: |
           # Sprint 1: stub Gygax paths so composition-detection probes succeed.

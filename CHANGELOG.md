@@ -106,6 +106,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
   - OQ probes resolved: Gygax trace is Markdown-only → sweep reads graded sidecars + a `--json`
     brief drafted (discovery/gygax-trace-json-brief.md); engine ignores unknown manifest keys
 
+- Playtest instrument, Pillar 3 — operator usefulness (v4.1):
+  - **`/playout --sweep`** — one command compares N configs (models/scenarios/difficulty) through
+    a scenario and prints one triaged cross-config table; warm/unload lifecycle for big local models,
+    breadth-multiplied cost guardrail (configs × rungs × trials), per-config failure captured as an
+    infra row and the sweep continues (never aborts). A flag on the existing skill, no new skill.
+  - **`/arneson` Playouts view** — read-only readback of grimoires/arneson/playouts/ (single-run +
+    sweep records); never grades, never writes.
+  - **scripts/ci/sweep-probe.sh** — live cross-config sweep proof on the with-gygax leg: 2 configs →
+    real engine → regrade → assembled table, byte-untouched, no API spend.
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

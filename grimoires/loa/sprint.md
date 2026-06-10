@@ -118,28 +118,28 @@ add an additive sweepable difficulty knob, and mechanize calibration discipline 
 the two carried probes in-sprint.
 
 ### Deliverables
-- [ ] `sweep_report.py` rendering a deterministic cross-config triaged table (verdict / infra non-run / format fail) — consumes Gygax counts, **never grades** (NFR-6)
-- [ ] Additive optional `difficulty:` manifest block parsed as a sweepable knob; absent ⇒ v4.0 behavior unchanged
-- [ ] `check_payoff_dominance.py` (PASS/WARN, warn-not-reject, exit 0 on WARN)
-- [ ] `test-sweep-report.sh` + `test-check-payoff-dominance.sh` hermetic, in the same change
-- [ ] **OQ-1 resolved**: either `sweep_report.py` consumes Gygax JSON, OR a Gygax `--json` brief is drafted (no brittle MD parsing)
-- [ ] **OQ-2 resolved**: confirmed the ladder engine ignores unknown manifest keys (or the fallback one-line Gygax doc nit is filed)
+- [x] `sweep_report.py` rendering a deterministic cross-config triaged table (verdict / infra non-run / format fail) — consumes Gygax counts, **never grades** (NFR-6)
+- [x] Additive optional `difficulty:` manifest block parsed as a sweepable knob; absent ⇒ v4.0 behavior unchanged
+- [x] `check_payoff_dominance.py` (PASS/WARN, warn-not-reject, exit 0 on WARN)
+- [x] `test-sweep-report.sh` + `test-check-payoff-dominance.sh` hermetic, in the same change
+- [x] **OQ-1 resolved**: either `sweep_report.py` consumes Gygax JSON, OR a Gygax `--json` brief is drafted (no brittle MD parsing)
+- [x] **OQ-2 resolved**: confirmed the ladder engine ignores unknown manifest keys (or the fallback one-line Gygax doc nit is filed)
 
 ### Acceptance Criteria
-- [ ] `sweep_report.py` renders all three cell classes distinctly from synthetic per-config summaries; output is deterministic (no `Date.now()`, stable config-then-rung ordering)
-- [ ] `sweep_report.py` never recomputes fix/hack ratios or cliffs — it carries Gygax's spread + within-noise wording verbatim (contract boundary, SDD §5.1)
-- [ ] A manifest with the `difficulty:` block loads and runs; a manifest without it behaves exactly as v4.0
-- [ ] `check_payoff_dominance.py`: dominant fixture (dungeon) → PASS; non-dominant fixture → WARN with exit 0 (NFR-5)
-- [ ] OQ-1 task output is recorded: either JSON consumption path implemented, or a written `--json` brief committed (decision + rationale in NOTES.md)
-- [ ] OQ-2 task output is recorded: engine-ignores-unknown-keys confirmed empirically, or doc nit filed
+- [x] `sweep_report.py` renders all three cell classes distinctly from synthetic per-config summaries; output is deterministic (no `Date.now()`, stable config-then-rung ordering)
+- [x] `sweep_report.py` never recomputes fix/hack ratios or cliffs — it carries Gygax's spread + within-noise wording verbatim (contract boundary, SDD §5.1)
+- [x] A manifest with the `difficulty:` block loads and runs; a manifest without it behaves exactly as v4.0
+- [x] `check_payoff_dominance.py`: dominant fixture (dungeon) → PASS; non-dominant fixture → WARN with exit 0 (NFR-5)
+- [x] OQ-1 task output is recorded: either JSON consumption path implemented, or a written `--json` brief committed (decision + rationale in NOTES.md)
+- [x] OQ-2 task output is recorded: engine-ignores-unknown-keys confirmed empirically, or doc nit filed
 
 ### Technical Tasks
-- [ ] Task 2.1 (**OQ-1 probe**): Probe whether Gygax `trace/index.ts <batch_dir> --regrade` emits machine-readable JSON. If yes, consume it. If MD-only, **draft a Gygax `--json` reporting-flag brief** (a reporting nit, not a contract change) and DO NOT brittle-parse the Markdown. Record the finding + decision in NOTES.md. → **[G2]**
-- [ ] Task 2.2: Implement `sweep_report.py` — cross-config aggregator + triaged-table renderer over Gygax's per-config aggregate; three cell classes; deterministic ordering; emits nothing it didn't receive (NFR-6). → **[G2]**
-- [ ] Task 2.3: Write `test-sweep-report.sh` — feed synthetic per-config grade summaries (verdict / infra non-run / format fail), assert correct rendering + determinism. Hermetic. → **[G2, G4]**
-- [ ] Task 2.4 (**OQ-2 probe**): Confirm `ladder/index.ts::loadManifest` ignores unknown manifest keys (reads named fields). Then add the additive optional `difficulty: { knob, sweep: [...] }` block to the dungeon manifest + the loader path Arneson controls. If the engine rejects unknowns, file the one-line Gygax doc/loader nit (out of cycle scope) and note the fallback. → **[G3]**
-- [ ] Task 2.5: Implement `check_payoff_dominance.py` — parse incentive-state payoff expressions over the declared difficulty domain; report PASS (hack net ≥ intended net somewhere) / WARN (no dominance). Warn-not-reject: exit 0 on WARN, exit 1 only on unparseable input. → **[G3, G5]**
-- [ ] Task 2.6: Write `test-check-payoff-dominance.sh` — dungeon → PASS, a synthetic non-dominant fixture → WARN(exit 0), unparseable → exit 1. Hermetic. → **[G3, G4]**
+- [x] Task 2.1 (**OQ-1 probe**): Probe whether Gygax `trace/index.ts <batch_dir> --regrade` emits machine-readable JSON. If yes, consume it. If MD-only, **draft a Gygax `--json` reporting-flag brief** (a reporting nit, not a contract change) and DO NOT brittle-parse the Markdown. Record the finding + decision in NOTES.md. → **[G2]**
+- [x] Task 2.2: Implement `sweep_report.py` — cross-config aggregator + triaged-table renderer over Gygax's per-config aggregate; three cell classes; deterministic ordering; emits nothing it didn't receive (NFR-6). → **[G2]**
+- [x] Task 2.3: Write `test-sweep-report.sh` — feed synthetic per-config grade summaries (verdict / infra non-run / format fail), assert correct rendering + determinism. Hermetic. → **[G2, G4]**
+- [x] Task 2.4 (**OQ-2 probe**): Confirm `ladder/index.ts::loadManifest` ignores unknown manifest keys (reads named fields). Then add the additive optional `difficulty: { knob, sweep: [...] }` block to the dungeon manifest + the loader path Arneson controls. If the engine rejects unknowns, file the one-line Gygax doc/loader nit (out of cycle scope) and note the fallback. → **[G3]**
+- [x] Task 2.5: Implement `check_payoff_dominance.py` — parse incentive-state payoff expressions over the declared difficulty domain; report PASS (hack net ≥ intended net somewhere) / WARN (no dominance). Warn-not-reject: exit 0 on WARN, exit 1 only on unparseable input. → **[G3, G5]**
+- [x] Task 2.6: Write `test-check-payoff-dominance.sh` — dungeon → PASS, a synthetic non-dominant fixture → WARN(exit 0), unparseable → exit 1. Hermetic. → **[G3, G4]**
 
 ### Dependencies
 - Sprint 1: the dungeon fixture's incentive-state (Task 2.5 input) and the manifest shape (Task 2.4).
