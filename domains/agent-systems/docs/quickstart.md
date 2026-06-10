@@ -27,12 +27,19 @@ keeps every file it touches.
 # Claude:
 agent_cmd: "claude -p {prompt} --permission-mode acceptEdits"
 
-# A local model via Ollama needs an AGENT wrapper, not the bare model —
-# `ollama run qwen3` only talks; it won't edit files, so every run would
-# grade as "failed". Point agent_cmd at an agentic CLI with Ollama as its
-# brain, e.g. aider:
+# A local model via Ollama, using the BUNDLED wrapper — works out of the box
+# with nothing installed beyond the ollama daemon itself:
+agent_cmd: "python3 domains/agent-systems/resources/fixtures/ollama-agent.py --model qwen3 {promptfile}"
+
+# (Why a wrapper: bare `ollama run qwen3` only talks — it won't edit files,
+# so every run would grade as "failed". The bundled wrapper turns the model
+# into an agent: prompt + room files in, returned files written back,
+# containment-checked. Any other agentic CLI works too, e.g. aider:)
 agent_cmd: "aider --model ollama/qwen3 --yes --message-file {promptfile}"
 ```
+
+Paths in `agent_cmd` resolve from the engine's working directory — use an
+absolute path to the wrapper if your scenario lives outside this repo.
 
 Comparing two agents? One scenario file per agent, same fixture — that's the
 one-variable rule (see `domain.conventions.md`), and Gygax's reports will show
