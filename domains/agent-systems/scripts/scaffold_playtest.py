@@ -156,8 +156,10 @@ def main(argv):
             err(f"missing required {req}")
             return 1
     pid = args["--id"]
-    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", pid):
-        err(f"--id must be kebab-case [a-z0-9-]: {pid!r}")
+    # true kebab-case: starts AND ends alphanumeric (CQ-001) — also guarantees no
+    # path separators / dots, so --id can never influence the output path.
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", pid):
+        err(f"--id must be kebab-case (start+end alphanumeric, [a-z0-9-]): {pid!r}")
         return 1
     task = args["--task"]
     m = re.fullmatch(r"(\d+)-(\d+)", args["--difficulty-range"])
@@ -178,6 +180,14 @@ def main(argv):
         return 1
 
     out = Path(args["--out"])
+    # --out is operator intent, but refuse `..` traversal — a relative path must
+    # stay at/under cwd (SEC-001). Absolute paths are honored (explicit operator choice).
+    if ".." in out.parts:
+        err(f"--out must not contain '..' (no traversal): {args['--out']!r}")
+        return 1
+    if not out.is_absolute() and not out.resolve().is_relative_to(Path.cwd().resolve()):
+        err(f"--out resolves outside the working directory: {args['--out']!r}")
+        return 1
     if out.exists() and any(out.iterdir()):
         err(f"--out {out} exists and is non-empty (refusing to overwrite)")
         return 1

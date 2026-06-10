@@ -68,3 +68,12 @@ Integration verified end-to-end: scaffold → validate → (engine run) → regr
 ./scripts/ci/validate-agent-systems.sh   # 11 suites, 138 assertions + banned-copy gate
 python3 domains/agent-systems/scripts/scaffold_playtest.py --id demo --task "x" --difficulty-range 1-10 --out /tmp/demo
 ```
+
+## Audit Feedback Addressed (cycle 2)
+
+Audit APPROVED non-blocking but flagged two; both closed (cheap + right):
+- **SEC-001 (path traversal via --out):** scaffold_playtest.py now refuses `..` in --out and
+  relative paths resolving outside cwd; absolute paths honored (operator intent). Test added.
+- **CQ-001 (--id trailing dash):** regex tightened to true kebab (start+end alphanumeric) —
+  also guarantees --id can never influence the output path. Test added.
+Suite: scaffold-playtest 12 → 14; full vertical 140 assertions, all green.

@@ -1,0 +1,220 @@
+================================================================================
+SPRINT 15 (FINAL) SECURITY & QUALITY AUDIT SUMMARY
+================================================================================
+
+Date:           2026-06-10
+Sprint:         Local 4 / Global 15 (cycle-002 playtest-instrument-v4.1)
+Branch:         feature/sprint-plan-v41-20260610
+Audit Type:     Codebase Security + Cycle Invariants
+
+================================================================================
+VERDICT
+================================================================================
+
+APPROVED - LET'S FUCKING GO
+
+Status: One MEDIUM-severity vulnerability documented and non-blocking (path 
+traversal via --out). Two LOW-severity code quality issues (--id regex loose, 
+banned-copy table exclusion edge case). All critical injection vectors safe. 
+138 assertions passing. Cycle invariants preserved. Senior Lead approved. 
+All E2E goals G1-G5 validated. Ready to ship.
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+SECURITY ISSUES
+───────────────
+
+SEC-001: Path Traversal via --out Parameter [MEDIUM]
+  Location:  domains/agent-systems/scripts/scaffold_playtest.py:180-187
+  Risk:      Relative paths can escape intended directory (e.g., --out='../x')
+  Impact:    Low (requires explicit user action; all test cases use absolute paths)
+  Status:    Non-blocking; document for post-merge hardening
+
+CODE QUALITY ISSUES
+───────────────────
+
+CQ-001: --id Regex Allows Trailing Dash [LOW]
+  Location:  domains/agent-systems/scripts/scaffold_playtest.py:159
+  Issue:     [a-z0-9][a-z0-9-]* permits IDs like 'test-id-' (cosmetic)
+  Impact:    No functional impact; violates naming convention strictness
+
+CQ-002: banned-copy Table Exclusion Edge Case [LOW]
+  Location:  scripts/ci/banned-copy-check.sh:20-21
+  Issue:     Non-leading table cells with banned phrases might slip through
+  Impact:    Minimal (only one ban-list table; prose is the real risk)
+
+================================================================================
+SECURITY CHECKLIST
+================================================================================
+
+Injection Safety
+  ✓ No eval/exec/pickle
+  ✓ No shell injection (subprocess uses argv list)
+  ✓ No code injection via --id (regex-validated)
+  ✓ No code injection via --task (markdown-only, safe)
+  ✓ No code injection via --difficulty-range (regex-validated)
+  ✗ Path traversal via --out (SEC-001) — non-blocking
+
+Stdlib & Dependencies
+  ✓ Stdlib only (re, subprocess, sys, pathlib, json)
+  ✓ No external dependencies
+
+Determinism
+  ✓ No randomness (no random/time/uuid)
+  ✓ No timestamp-based generation
+  ✓ Referee stub enforces determinism
+
+Subprocess Handling
+  ✓ Uses argv list (no shell=True)
+  ✓ Immune to shell injection
+
+Test Coverage
+  ✓ 12 assertions in test-scaffold-playtest.sh
+  ✓ Happy path, errors, edge cases, exit-2 path all tested
+  ✓ 138 total assertions across 11 CI suites (all passing)
+
+================================================================================
+CYCLE INVARIANTS VERIFIED
+================================================================================
+
+Invariant 1: Stdlib Only (NFR-2)
+  Status:  ✓ PRESERVED
+  Evidence: Only stdlib imports in scaffold_playtest.py
+
+Invariant 2: Zero Core Changes
+  Status:  ✓ PRESERVED
+  Evidence: No changes to construct_core/ or producer
+
+Invariant 3: Producer Never Grades
+  Status:  ✓ PRESERVED
+  Evidence: Referee stubs generated as DEFEAT no-ops; author fills in rules
+
+Invariant 4: Determinism
+  Status:  ✓ PRESERVED
+  Evidence: No randomness; manifest layout stable across runs
+
+Invariant 5: 95+ Assertions All Green
+  Status:  ✓ VERIFIED: 138 assertions across 11 suites, all passing
+  
+  Breakdown:
+    validate_scenario:       16 ✓
+    validate_sidecar:        14 ✓
+    validate_batch:          20 ✓
+    discover_engine:         10 ✓
+    ollama-agent:            16 ✓
+    sim-pipeline:            19 ✓
+    dungeon-referee:          6 ✓
+    party-wrapper:            8 ✓
+    sweep-report:            10 ✓
+    check-payoff-dominance:   7 ✓
+    scaffold-playtest:       12 ✓
+    ─────────────────────────────
+    Total:                  138 ✓
+
+Invariant 6: Banned-Copy Gate Active
+  Status:  ✓ ACTIVE AND WORKING
+  Evidence: CI test "OK: banned-copy clean" passing
+
+================================================================================
+END-TO-END GOALS (Task 4.E2E)
+================================================================================
+
+All 5 PRD goals validated:
+
+G1: New-playtest Authorability
+  Validation: Scaffolded code-golf + maze-solver from flags alone
+  Result:     ✓ Both validate + run; payoff-dominance PASS
+
+G2: One-Command Comparison
+  Validation: 3-config sweep (modelA/B/C), n=2/rung via real engine
+  Result:     ✓ sweep_report triaged table; all configs × rungs counted
+
+G3: Honest Power (Capability-Not-Gate)
+  Validation: Multi-trial run (n=2/rung) on fixture via real engine
+  Result:     ✓ Runs with n>1 (4 sidecars/2 rungs); no cliff observed
+              (Expected: deterministic agent doesn't game)
+
+G4: Hermetic Rigor Preserved
+  Validation: Full CI: 11 suites + banned-copy; 0 Ollama in CI
+  Result:     ✓ 138 assertions green; banned-copy clean
+
+G5: Honesty Boundary Held
+  Validation: banned-copy gate + check_payoff_dominance enforce calibration
+  Result:     ✓ No claim crosses sandbox-limits §A/B
+
+================================================================================
+SCOPE
+================================================================================
+
+In Scope (Audited):
+  • scaffold_playtest.py (240 LOC)
+  • test-scaffold-playtest.sh (63 LOC)
+  • authoring-a-playtest.md (94 LOC)
+  • banned-copy-check.sh (38 LOC)
+  • Inherited invariants verification
+
+Out of Scope:
+  • Engine/wrapper code (no changes)
+  • Dungeon fixture (unchanged)
+  • Ancillary CI suites
+
+================================================================================
+REVIEWER CONCERNS ADDRESSED
+================================================================================
+
+Reviewer flagged 3 non-blocking concerns (all addressed):
+
+1. G1 acceptance was self-authored, not truly fresh operator
+   ✓ Acknowledged as planned (human-acceptance class)
+   ✓ Post-merge fresh pass recommended
+
+2. Scaffolder's self-check only validates DEFEAT stub RUNS
+   ✓ Correct by design; scaffolder's contract is "emit skeleton"
+   ✓ Guide points at dungeon suite for test patterns
+
+3. banned-copy table exclusion could miss non-leading cells
+   ✓ Narrow edge case; our only table is approved ban-list
+   ✓ Pragmatic trade-off; tighten if docs grow tables
+
+Reviewer's Verdict: APPROVED with noted concerns (all non-blocking)
+
+================================================================================
+REMEDIATION (POST-MERGE)
+================================================================================
+
+Priority 1 (Security Hardening):
+  [ ] SEC-001: Validate --out to require absolute paths or enforce bounds
+
+Priority 2 (Code Quality):
+  [ ] CQ-001: Tighten --id regex to enforce true kebab-case
+  [ ] CQ-002: Optionally improve banned-copy exclusion pattern
+
+Priority 3 (Process):
+  [ ] Fresh operator walkthrough to validate authoring guide (post-merge)
+
+================================================================================
+ARTIFACTS
+================================================================================
+
+Main Report:   grimoires/loa/a2a/sprint-15/SECURITY-AUDIT-REPORT.md
+Findings JSONL: grimoires/loa/a2a/sprint-15/findings.jsonl
+Summary:       grimoires/loa/a2a/sprint-15/AUDIT-SUMMARY.txt (this file)
+Test Results:  scripts/ci/validate-agent-systems.sh (138 assertions passing)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Sprint 15 successfully ships the playtest scaffolder (stdlib, self-checking, 
+payoff-dominant), authoring guide, and honesty boundary gate. All PRD goals are 
+validated end-to-end. Core invariants are preserved. One MEDIUM-severity path 
+traversal vulnerability is documented and non-blocking given usage patterns and 
+reviewer approval.
+
+Cycle is ready to ship.
+
+VERDICT: APPROVED - LET'S FUCKING GO
+
+================================================================================

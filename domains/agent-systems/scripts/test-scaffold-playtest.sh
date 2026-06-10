@@ -48,6 +48,8 @@ check "bad difficulty range → exit 1" 1 $SC --id ok --task x --difficulty-rang
 check "missing required flag → exit 1" 1 $SC --id ok --task x --out "$W/gen2"
 mkdir -p "$W/exists" && touch "$W/exists/x"
 check "non-empty --out → exit 1 (no clobber)" 1 $SC --id ok --task x --difficulty-range 1-5 --out "$W/exists"
+check "--out with .. traversal → exit 1 (SEC-001)" 1 $SC --id ok --task x --difficulty-range 1-5 --out "$W/../escape"
+check "--id with trailing dash → exit 1 (CQ-001)" 1 $SC --id "bad-" --task x --difficulty-range 1-5 --out "$W/gen3"
 
 # Self-check exit-2 path: break the smoke template via a broken referee, confirm exit 2.
 # Simulate by generating, corrupting the referee, and re-running the smoke as the scaffolder would.
