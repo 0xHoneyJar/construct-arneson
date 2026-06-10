@@ -17,6 +17,7 @@ echo "== agent-systems: validator test suites =="
 "$DOMAIN/scripts/test-validate-sidecar.sh"
 "$DOMAIN/scripts/test-validate-batch.sh"
 "$DOMAIN/scripts/test-discover-engine.sh"
+"$DOMAIN/scripts/test-ollama-agent.sh"
 
 echo "== agent-systems: projection round-trip + hermetic playout (simulated lane) =="
 "$DOMAIN/scripts/test-sim-pipeline.sh"

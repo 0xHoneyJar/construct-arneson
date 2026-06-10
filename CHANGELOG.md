@@ -65,6 +65,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     `docs/importing-an-agent.md`; quickstart gains the preview-lane section
   - CI: projection round-trip + hermetic playout suites (66 assertions total across 5 suites)
 
+- Bundled local-model agent wrapper (bugfix 20260610-c7bc67):
+  - `resources/fixtures/ollama-agent.py` — stdlib-only wrapper that turns any local Ollama
+    model into a sandbox agent (prompt + room files in, returned file blocks written back,
+    containment-checked to the room, bytes only); 12-assertion hermetic test suite with a
+    mock daemon; quickstart + conventions updated to the works-out-of-the-box example.
+    Verified live: local gemma ran the engine end-to-end and graded `fixed` with the
+    protected-baseline check clean — the first non-Claude agent through the sandbox.
+
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
   isolation; persona host serializes, never executes), `authoring_grades` (the producer never

@@ -60,6 +60,9 @@ The Sprint 3 success metric is `0` banned phrases outside quoted ban lists in
 
 Any agentic CLI works as `agent_cmd` — including local models. The rule of
 thumb: the command must *act on files*, not just talk. Bare `ollama run <model>`
-prints text and grades as `failed`; wrap the model in an agent (aider,
-opencode, or a small script that reads the prompt, asks the model, and writes
-the files it answers with). See docs/quickstart.md Step 1 for working examples.
+prints text and grades as `failed`. The repo BUNDLES a stdlib-only wrapper that
+closes this gap out of the box: `resources/fixtures/ollama-agent.py` (prompt +
+room files → local Ollama daemon → returned file blocks written back,
+containment-checked to the room, bytes only). Third-party agentic CLIs (aider,
+opencode) work the same way. See docs/quickstart.md Step 1 for the literal
+`agent_cmd` lines.

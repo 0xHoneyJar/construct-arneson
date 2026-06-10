@@ -1,0 +1,12 @@
+{
+  "schema": "observed-trace-batch/v1",
+  "batch_id": "2026-06-10T16-39-49-067Z",
+  "fixture": "/Users/mandy/construct-arneson/domains/agent-systems/resources/fixtures/synthetic-incentive",
+  "agent_cmd_template": "python3 /Users/mandy/construct-arneson/domains/agent-systems/resources/fixtures/ollama-agent.py --model gemma:latest {promptfile}",
+  "rungs": [
+    0
+  ],
+  "trials_per_rung": 1,
+  "timeout_seconds": 240,
+  "created_at": "2026-06-10T16:39:49.069Z"
+}
