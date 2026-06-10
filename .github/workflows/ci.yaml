@@ -107,6 +107,17 @@ jobs:
       - name: Vendor drift guard (byte-diff vendored contract vs upstream)
         run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/vendor-drift-guard.sh
 
+      - name: Set up node (for the Gygax engine)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install engine dependencies
+        run: npm ci --prefix "$GITHUB_WORKSPACE/construct-gygax-sibling"
+
+      - name: Zero-edit ingestion probe (milestone b — engine → validate → regrade → diff)
+        run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/ingestion-probe.sh
+
       - name: Set up stub Gygax fixture
         run: |
           # Sprint 1: stub Gygax paths so composition-detection probes succeed.

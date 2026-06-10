@@ -1,0 +1,3 @@
+
+# Engine-written batches under the bundled fixture (CI probes, local smoke)
+domains/agent-systems/resources/fixtures/synthetic-incentive/runs/
