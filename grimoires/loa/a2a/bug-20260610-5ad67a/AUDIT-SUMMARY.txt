@@ -1,0 +1,69 @@
+SECURITY AUDIT — BUG 20260610-5ad67a
+=====================================
+
+Date: 2026-06-10
+Branch: feature/bugfix/20260610-5ad67a-triage-convention
+Verdict: APPROVED — LETS FUCKING GO
+
+SCOPE
+=====
+- validate_batch.py:31 — INFRA_MARKER regex pattern (generalized from literal to convention)
+- domain.conventions.md:59-69 — "Wrapper authors" section (convention documented)
+- ollama-agent.py:54 — err() comment (updated to reference convention)
+- test-validate-batch.sh:118-143 — 3 new test assertions (party-wrapper, false-positive guard, regression)
+
+KEY FINDINGS
+============
+
+Security:
+✓ No ReDoS vulnerability (no nested quantifiers, linear-time execution)
+✓ Regex semantics correct (17/17 test cases pass)
+✓ No false positives (ERROR: [compiler] in agent prose correctly ignored)
+✓ No false negatives (ERROR: [party-wrapper] correctly triaged)
+✓ Convention explicitly documented for wrapper authors
+✓ Forge vector analyzed and accepted (warn-not-reject posture, operator oversight)
+
+Code Quality:
+✓ Backwards compatible (superset of previous behavior)
+✓ All surfaces consistent (validator, fixture, docs, tests, CHANGELOG)
+✓ Test coverage comprehensive (20/20 passing, 3 new assertions)
+✓ No new dependencies or supply chain risk
+
+THREAT MODEL
+============
+
+Problem Fixed:
+- Second wrappers' infrastructure failures (e.g., party-wrapper) passed untriaged
+- Only ollama-agent's marker detected; others silently through
+- Violations could masquerade as graded verdicts
+
+Solution:
+- Convention-based regex matches ANY conforming wrapper: ERROR: [<tool>] where tool ends in -agent/-wrapper
+- Reduces false negatives from N (num undetected wrappers) to ~0
+- Maintains warn-not-reject: batch still grades, flagged for operator review
+
+Residual Risk:
+- Conforming forged marker (e.g., ERROR: [evil-agent]) still triggers warn
+- ACCEPTABLE: same forge vector analyzed in bug 20260610-594345; warn-only by design
+- Gygax derives ground truth from artifacts, not narration; operator sees both warning and grade
+
+RECOMMENDATIONS
+===============
+
+Immediate: None. Ready to merge.
+
+Short-term:
+1. When new wrappers deploy (e.g., party-wrapper), ensure ERROR: [<tool>] conformance
+2. Verify CI runs full test suite (20/20 assertions must pass)
+
+Long-term:
+1. Consider structured sidecar field (infrastructure_error: bool) for next contract revision
+2. Onboarding checklist for new wrappers: audit error marker compliance
+
+ARTIFACTS
+=========
+- SECURITY-AUDIT-REPORT.md — Full report (sections 1-11, appendix, test evidence)
+- findings.jsonl — Structured findings (7 informational records, summary)
+- AUDIT-SUMMARY.txt — This file (executive brief)
+
+STATUS: APPROVED
