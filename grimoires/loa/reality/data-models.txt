@@ -1,0 +1,18 @@
+== schemas/core/digest-base.schema.yaml
+36:    digest_schema_version:
+114:  - "digest_schema_version must be an integer"
+== schemas/core/experiential_intent.schema.yaml
+== schemas/core/safety.schema.yaml
+== schemas/core/session-events-base.schema.yaml
+== schemas/core/voice-base.schema.yaml
+== domains/character-voice/schemas/digest-character.schema.yaml
+== domains/character-voice/schemas/session-events-character.schema.yaml
+== domains/character-voice/schemas/voice-character.schema.yaml
+== domains/ttrpg/schemas/digest-ttrpg.schema.yaml
+== domains/ttrpg/schemas/session-events-ttrpg.schema.yaml
+== domains/ttrpg/schemas/voice-archetype.schema.yaml
+== domains/ttrpg/schemas/voice-npc.schema.yaml
+== domains/ttrpg/schemas/voice-pc.schema.yaml
+== examples/test-domain/schemas/digest-test.schema.yaml
+== examples/test-domain/schemas/session-events-test.schema.yaml
+== examples/test-domain/schemas/voice-test.schema.yaml

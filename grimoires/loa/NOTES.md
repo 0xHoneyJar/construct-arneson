@@ -86,3 +86,46 @@ Post-playtest skill. Converts a session into a Gygax-ingestible format. Identifi
 - Every clarifying question a player asked
 
 This is the composition glue. `/distill` output is what `/cabal --from-session` and future Gygax analyzers actually consume. Binary admissibility check for v1: Gygax can round-trip a `/braunstein` session through `/distill` → `/cabal` without manual reformatting.
+
+---
+
+## Session: 2026-06-09 — /ride (first ride)
+
+Full ride completed on branch `v3.3/exemplar-capture`. Artifacts: drift-report, consistency-report, governance-report, hygiene-report, trajectory-audit, legacy/INVENTORY, context/claims-to-verify, reality/* (8 token-optimized files, 3,884 tokens).
+
+**Ride results**: 12 commands documented · 16 schemas · 0 tech-debt markers · drift score 8.5/10 · consistency 9/10 · round-trip test + all 5 CI validators pass locally.
+
+**Decisions made during ride** (rationale in trajectory-audit.md):
+- Preserved authored v3.4 prd.md/sdd.md (verified FR-1..FR-5 all implemented) instead of regenerating
+- Skipped Phase 8 deprecation banners — README/docs are live shippable surfaces
+
+**Top findings needing human action**:
+1. No LICENSE file, but README.md:79 references one (blocking for freeside-characters consumption)
+2. protocols/anti-patterns.md + meta-interactions.md (v3 humanness layer) not declared in construct.yaml::protocols
+3. character-voice schemas + test-roundtrip.sh have zero CI coverage (validate-schemas.sh covers core+ttrpg only)
+4. No git tags despite version 3.3.0 cadence
+5. `__pycache__/` not gitignored; stray NOTES.md.tmp
+
+---
+
+## Session: 2026-06-09 — /plan-and-analyze (parked) + sandbox-doc review
+
+Discovery for the agent-sandbox cycle started: context ingested (8 files), /ride grounding complete, synthesis presented. **Interview PARKED before Phase 1 questions** — user is building construct-gygax first (per agent-sandbox-direction.md §6 build-order verdict: consumer pins the seam contract before producer builds to it). Resume discovery once Gygax's ingest schema is pinned; scope confirmed = sandbox direction only (not leftover v3.4 — that work is verified shipped).
+
+**Meanwhile-work delivered this session:**
+- Reviewed `context/agent-sandbox-direction.md` (Opus 4.8 draft) against ride reality. 6 CriticMarkup marks (s1-s5, c1-c2) awaiting user adjudication in Roughdraft. Load-bearing finding: §4.1 conflated sidecar (session-emitted, session-events-base v2) with digest (/distill-emitted, digest-base v2); recommendation in c1 = pin Gygax ingest contract at sidecar/event level, demote digest to derived view (would supersede 2026-04-13 "digest is the Gygax-ingestible artifact" decision).
+- `discovery/seam-strawman.md` written: producer-side offer for the seam — 4 schema deltas (per-event seq/at, origin stamp, entity_ref discipline, signal-taxonomy reconciliation) + 3 questions for Gygax's ingest design. NOTE: Arneson signal enum has 9 values vs doc's "8-signal taxonomy" claim — independent authorship, will drift unless Gygax publishes canonical taxonomy and Arneson vendors it.
+- `discovery/observability-layers.md` written: 7-layer observability map for playtest sessions (grounding, host, turn, signal, HITL, artifact, verification) + "capture without a validator is a claim" rule. Candidate FRs/NFRs for when sandbox-cycle discovery resumes. Corrected seam-strawman delta 1: timestamps already required by schema invariant (events-base:164), the gap is enforcement + per-event seq/ids.
+- `discovery/arneson-independent-commitments.md` written: cross-repo brief for construct-gygax — 9 producer-side commitments buildable with zero Gygax dependency + the 5 decisions Gygax owns. User feeding it to the gygax repo during its build.
+- `discovery/sandbox-particulars.md` written: 5 sandbox-proper themes beyond observability — scenario-as-artifact (re-runnable), visibility mask + context manifest (evaluation-awareness hygiene), simulation containment invariant (hosted agents narrate, never execute — belongs in refusals.yaml BEFORE agent-systems domain exists), per-run memory policy (fresh vs continuing), comparability mechanics (scripted-GM mode, N-run honesty). All Gygax-independent.
+
+**Decision (2026-06-09, /plan-and-analyze Phase 1):** Cycle centers on the **agent-systems lane** — Arneson hosts agent-under-incentive scenarios and emits `observed-trace/v1` sidecars as `producer.kind: simulation`. Rationale: construct-gygax shipped the awareness-ladder ingest (`schemas/observed-trace.v1.schema.json` + trace CLI) and no TTRPG `/cabal --from-session` exists, inverting agent-sandbox-direction.md's priority order (#5 promoted over #1). TTRPG stays the reference vertical; its seam deferred until a Gygax consumer exists. User confirmed. Marks c1/c2 in the direction doc are resolved by shipped reality (sidecar-level contract; producer-bound claim tags).
+
+**Decision (2026-06-09, /plan-and-analyze Phase 6 — MAJOR):** "Arneson never runs real code" is DROPPED as identity dogma. Arneson is the sandbox/house for BOTH pretend agents and real agents. Containment reframes from abstinence to isolation ("agents run inside a locked room": isolated run dirs, bounds, labels). Gygax sheds running, keeps designing tests + grading + diffing. Surviving invariants: (1) the grader never produces the evidence it grades, (2) every output labeled pretend vs real (claim_strength), (3) the persona-host engine itself still never executes — real runs happen in the runner engine under isolation. observed-trace/v1 already supports the split: `observation` block is OPTIONAL, filled by grader at ingest. Supersedes the containment-as-refusal item in discovery/sandbox-particulars.md §3 and the doc's §4b "runner is NOT Arneson" line. User decision, stated explicitly ("feels like a blocker for growth").
+
+**Session park (2026-06-09):** Discovery PARKED at end of Phase 6 (scope confirmed incl. real-mode hosting). Phase 7 (Risks & Dependencies) + pre-generation gate + PRD generation remain. **Resume trigger:** Gygax lands the 4 work items in `grimoires/loa/discovery/gygax-changes-brief.md` (grade-on-ingest, drivable runner CLI, batch-dir contract doc, sibling-readable fixtures). Direction doc cleaned: marks s1-s5 accepted, c1/c2 removed (resolved by reality), dated addendum added recording the 3 supersessions. Session-scoped instruction (this session only): user wants super simple language, fewer words.
+
+**Decision (2026-06-09, post-Phase-6 adjustment):** G-1 redefined — **real lane is the gate**: done = a real agent runs through Arneson's sandbox (scenario file → locked room → labeled batch, every layer logged) and Gygax grades it + diffs against its prediction. Pretend/simulated mode KEPT but demoted to secondary milestone (nearly free — existing hosting engine; only mode that works before a real agent exists). User confirmed.
+| 2026-06-09 | plan-and-analyze | **v4.0 PRD generated**: grimoires/loa/prd.md — The Agent Sandbox. 14 FRs, 6 NFRs, 5 goals, 5 risks (all user-confirmed), real lane = gate (G-1), simulated lane secondary. All Gygax cycle-008 dependencies verified present. Ready for /architect. |
+| 2026-06-09 | sprint-plan | **v4.0 sprint plan generated**: grimoires/loa/sprint.md. 4 sprints mapped 1:1 to PRD milestones a-d: S1 conformance substrate (7 tasks), S2 real lane (4), S3 loop closure + docs = G-1 gate (4), S4 simulated lane (7 incl. P0 E2E). Sprint Ledger CREATED (grimoires/loa/ledger.json): cycle-001 agent-sandbox-v4.0, local 1-4 = global 8-11 (prior 7 sprints detected, numbering continues). Beads materialized: epics bd-3m6/bd-29t/bd-120/bd-1w3 + 22 tasks, epic chain + 9 intra-sprint deps, sprint:N labels. Assumptions in sprint.md tail (Gygax checkout stability; demo-run spend approved via FR-3 guardrail at run time; S3-before-S4 ordering swappable if no real agent available). OQ-4 confirm scheduled in S2 task 2.2; OQ-1 probe in S4 task 4.6. Ready for /run sprint-plan. |
+| 2026-06-09 | architect | **SDD v4.0 generated**: grimoires/loa/sdd.md. Agent-systems vertical: /playout dual-lane (dispatcher+validator+labeler over Gygax's ladder engine; persona host for simulated). Key resolutions vs contract reality: (1) engine grades inline (ladder index.ts:177-185) → G-1 "ungraded handoff" satisfied via canonical `--regrade` ingest, batch handed over byte-untouched; (2) simulated lane must arrive GRADED (gygax-changes-status.md:24-26) vs FR-9 "Arneson never fills observation" → resolved by artifact materialization from `artifact_declare` events + score-on-assemble via Gygax's own `ladder score --batch` (analyst's scorer fills observation, producer preserved per index.ts:204); standalone = honestly-labeled ungraded. (3) stdlib JSON-Schema gap → contract-specific validator pinned to vendored sha256, refuses on drift. 4 sprints mapped to PRD milestones a-d. 4 OQs (OQ-1: ladder score on simulation batches needs Sprint-4 probe). Ready for /sprint-plan. |

@@ -1,0 +1,10 @@
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:02:37Z","files_modified":26,"lines_total":1151,"threshold":100,"verdict":"warn","tool_call_count":42,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:04:40Z","files_modified":27,"lines_total":1205,"threshold":100,"verdict":"warn","tool_call_count":43,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:05:56Z","files_modified":27,"lines_total":1209,"threshold":100,"verdict":"warn","tool_call_count":44,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:10:54Z","files_modified":27,"lines_total":1217,"threshold":100,"verdict":"warn","tool_call_count":45,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:23:51Z","files_modified":28,"lines_total":1443,"threshold":100,"verdict":"warn","tool_call_count":46,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:33:03Z","files_modified":29,"lines_total":2131,"threshold":100,"verdict":"warn","tool_call_count":47,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:33:16Z","files_modified":30,"lines_total":2133,"threshold":100,"verdict":"warn","tool_call_count":48,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:40:38Z","files_modified":31,"lines_total":2531,"threshold":100,"verdict":"warn","tool_call_count":49,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:44:26Z","files_modified":31,"lines_total":2533,"threshold":100,"verdict":"warn","tool_call_count":50,"session_id":"mandy-20260610"}
+{"phase":"karpathy_check","principle":"surgical_changes","timestamp":"2026-06-10T00:50:30Z","files_modified":32,"lines_total":2565,"threshold":100,"verdict":"warn","tool_call_count":51,"session_id":"mandy-20260610"}

@@ -1,0 +1,8 @@
+scripts/ci/validate-construct.sh
+scripts/ci/validate-fallbacks.sh
+scripts/ci/validate-fixture.sh
+scripts/ci/validate-schemas.sh
+scripts/ci/validate-skills.sh
+domains/character-voice/scripts/test-roundtrip.sh
+examples/synthetic-fixture/tradition-folk-horror-minimalist.yaml
+examples/synthetic-fixture/game-state.yaml
