@@ -105,26 +105,26 @@ machine-checked before any agent ever runs.
 playout record — and a fixture batch round-trips through Gygax's trace CLI with zero manual edits.
 
 ### Deliverables
-- [ ] `discover_engine.py` with three-step resolution + FR-6 graceful-absence message
-- [ ] `/playout` skill (SKILL.md + index.yaml), real lane complete
-- [ ] Identity containment reframe (`identity/refusals.yaml` + `ARNESON.md`)
-- [ ] CI zero-edit ingestion probe (arneson-with-gygax leg)
+- [x] `discover_engine.py` with three-step resolution + FR-6 graceful-absence message
+- [x] `/playout` skill (SKILL.md + index.yaml), real lane complete
+- [x] Identity containment reframe (`identity/refusals.yaml` + `ARNESON.md`)
+- [x] CI zero-edit ingestion probe (arneson-with-gygax leg)
 
 ### Acceptance Criteria
-- [ ] Engine discovery order: `--engine` flag → `ARNESON_GYGAX_ROOT` → sibling probe `../construct-gygax`; candidate valid iff `scripts/lib/ladder/index.ts` exists (sdd.md §1.6)
-- [ ] Absent engine fails immediately with the exact FR-6 message naming the dependency and pointing at simulated mode (sdd.md §6.1); no retries, no partial fallbacks
-- [ ] Guardrail states `this will spawn N real agent runs (rungs × trials = R × T) via: <agent_cmd>` before spawning; `--yes` skips; `--dry-run` never reaches the prompt (FR-3, sdd.md §4.3)
-- [ ] Engine invoked via subprocess argv array (never `shell=True`), `cwd` = discovered Gygax root, stdout `--json` parsed, exit 2 mapped to `ENGINE SETUP FAILURE:` with engine stderr attached (sdd.md §5.1)
-- [ ] Batch handed over byte-untouched; report's next-step line is the literal `--regrade` command (R-7, sdd.md §5.2.2)
-- [ ] Playout record written to `grimoires/arneson/playouts/<playout-id>.yaml` with scenario sha256, lane, engine git sha, batch path, counts, validation outcome (sdd.md §3.5)
-- [ ] `identity/refusals.yaml` drops never-executes, adopts locked-room containment, states both invariants: judge-never-produces-evidence + forecast-never-a-sidecar-claim (FR-11)
-- [ ] CI probe: assembled fixture batch → Gygax `trace/index.ts` → grade + diff complete, zero manual edits (milestone b, sdd.md §7.1)
+- [x] Engine discovery order: `--engine` flag → `ARNESON_GYGAX_ROOT` → sibling probe `../construct-gygax`; candidate valid iff `scripts/lib/ladder/index.ts` exists (sdd.md §1.6)
+- [x] Absent engine fails immediately with the exact FR-6 message naming the dependency and pointing at simulated mode (sdd.md §6.1); no retries, no partial fallbacks
+- [x] Guardrail states `this will spawn N real agent runs (rungs × trials = R × T) via: <agent_cmd>` before spawning; `--yes` skips; `--dry-run` never reaches the prompt (FR-3, sdd.md §4.3)
+- [x] Engine invoked via subprocess argv array (never `shell=True`), `cwd` = discovered Gygax root, stdout `--json` parsed, exit 2 mapped to `ENGINE SETUP FAILURE:` with engine stderr attached (sdd.md §5.1)
+- [x] Batch handed over byte-untouched; report's next-step line is the literal `--regrade` command (R-7, sdd.md §5.2.2)
+- [x] Playout record written to `grimoires/arneson/playouts/<playout-id>.yaml` with scenario sha256, lane, engine git sha, batch path, counts, validation outcome (sdd.md §3.5)
+- [x] `identity/refusals.yaml` drops never-executes, adopts locked-room containment, states both invariants: judge-never-produces-evidence + forecast-never-a-sidecar-claim (FR-11)
+- [x] CI probe: assembled fixture batch → Gygax `trace/index.ts` → grade + diff complete, zero manual edits (milestone b, sdd.md §7.1)
 
 ### Technical Tasks
-- [ ] Task 2.1: Implement `discover_engine.py` (flag → env → sibling probe; engine root to stdout, or exit 1 with FR-6 message) + shell test covering all three resolution paths and the absence case (sdd.md §1.6, §5.3). → **[G-1, G-3]**
-- [ ] Task 2.2: Author `/playout` SKILL.md + index.yaml, real lane: scenario gate via `validate_scenario.py --lane real`; cost guardrail + `--yes` + `--dry-run` pass-through (FR-3); engine dispatch per sdd.md §5.1 (argv array, `--json`, cwd=engine root, timeout forwarding); post-run `validate_batch.py` conformance gate before the path is reported (FR-9); playout record write; success/loud-failure report per sdd.md §4.4. Confirm OQ-4 with operator in-sprint (recommendation: leave `producer.id: "claude-cli"` as engine truth). → **[G-1, G-4]**
-- [ ] Task 2.3: Identity reframe: rewrite the containment stanza in `identity/refusals.yaml` + `ARNESON.md` — locked-room isolation (isolated run dirs, time limits, full logging, labeled output), persona-host-never-executes bright line, both invariants stated explicitly (FR-11, prd.md:146-151). → **[G-4]**
-- [ ] Task 2.4: Add CI zero-edit ingestion probe to the arneson-with-gygax leg: fixture batch → `npx tsx scripts/lib/trace/index.ts <batch> --regrade` → assert grade + diff complete with zero manual edits (FR-14, sdd.md §7.1 check 6). → **[G-1]**
+- [x] Task 2.1: Implement `discover_engine.py` (flag → env → sibling probe; engine root to stdout, or exit 1 with FR-6 message) + shell test covering all three resolution paths and the absence case (sdd.md §1.6, §5.3). → **[G-1, G-3]**
+- [x] Task 2.2: Author `/playout` SKILL.md + index.yaml, real lane: scenario gate via `validate_scenario.py --lane real`; cost guardrail + `--yes` + `--dry-run` pass-through (FR-3); engine dispatch per sdd.md §5.1 (argv array, `--json`, cwd=engine root, timeout forwarding); post-run `validate_batch.py` conformance gate before the path is reported (FR-9); playout record write; success/loud-failure report per sdd.md §4.4. Confirm OQ-4 with operator in-sprint (recommendation: leave `producer.id: "claude-cli"` as engine truth). → **[G-1, G-4]**
+- [x] Task 2.3: Identity reframe: rewrite the containment stanza in `identity/refusals.yaml` + `ARNESON.md` — locked-room isolation (isolated run dirs, time limits, full logging, labeled output), persona-host-never-executes bright line, both invariants stated explicitly (FR-11, prd.md:146-151). → **[G-4]**
+- [x] Task 2.4: Add CI zero-edit ingestion probe to the arneson-with-gygax leg: fixture batch → `npx tsx scripts/lib/trace/index.ts <batch> --regrade` → assert grade + diff complete with zero manual edits (FR-14, sdd.md §7.1 check 6). → **[G-1]**
 
 ### Dependencies
 - Sprint 1: validators, vendored contract, fixture batch (Tasks 1.2, 1.5, 1.6)
