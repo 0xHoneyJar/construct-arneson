@@ -50,7 +50,7 @@ def triage(obj):
     status = run.get("status") if isinstance(run, dict) else None
     narration = obj.get("narration") if isinstance(obj, dict) else None
 
-    if status in ("runner-error", "timeout"):
+    if status in ("runner-error", "timeout", "infra-failure"):
         return ("infra", None)
     if isinstance(narration, str) and INFRA_MARKER.search(narration):
         return ("infra", None)

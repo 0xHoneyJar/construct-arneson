@@ -142,6 +142,25 @@ else
   echo "PASS: false-positive guard holds (ERROR: [compiler] ignored)"; PASS=$((PASS+1))
 fi
 
+# v1.1: a record already triaged to status infra-failure (marker still in narration)
+# is layout-valid AND emits NO honesty warning — it IS the explicit status the marker
+# fallback exists to recover. Pre-v1.1 marker-only batches still warn (above).
+cp -R "$FIXTURES/batches/valid-batch" "$TMP/v11-infra"
+python3 - "$TMP/v11-infra/sidecars/rung-0-trial-1.json" <<'PYEOF'
+import json, sys
+o = json.load(open(sys.argv[1]))
+o["run"]["status"] = "infra-failure"
+o.pop("observation", None)
+o["narration"] = " [stderr] ERROR: [ollama-agent] cannot reach ollama (timed out)"
+json.dump(o, open(sys.argv[1], "w"))
+PYEOF
+check "v1.1 infra-failure batch is layout-valid" 0 $VB "$TMP/v11-infra"
+if grep -q "non-run" /tmp/vb-err.$$; then
+  echo "FAIL: v1.1 infra-failure record should NOT re-warn (status already explicit)"; FAIL=$((FAIL+1))
+else
+  echo "PASS: explicit infra-failure status suppresses the redundant marker warning"; PASS=$((PASS+1))
+fi
+
 # input errors
 check "nonexistent batch dir" 1 $VB "$TMP/never-was"
 

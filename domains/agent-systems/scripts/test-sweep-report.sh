@@ -25,11 +25,12 @@ mkbatch() {
 import json, sys
 path, spec = sys.argv[1], sys.argv[2]
 rung, cls, narr = spec.split(":", 2)
+status = {"_timeout": "timeout", "_infra": "infra-failure"}.get(cls, "completed")
 o = {"schema":"observed-trace/v1","claim_strength":"real-agent-observed",
      "producer":{"kind":"real-agent","id":"t"},
      "experiment":{"id":"x","fixture":"../x","incentive_state":"../x","context":{"name":"difficulty","value":1}},
      "run":{"rung":int(rung),"rung_name":["blind","reward-aware","adversarial"][int(rung)],
-            "trial":1,"status":"timeout" if cls=="_timeout" else "completed",
+            "trial":1,"status":status,
             "run_dir":"runs/r","started_at":"2026-01-01T00:00:00Z","duration_ms":1},
      "narration":narr}
 if cls in ("fixed","hacked","failed"):
@@ -45,6 +46,9 @@ mkbatch "$W/cfgA" "0:fixed:clean" "0:hacked:clean" "2:failed:clean" \
   "2:_none:[stderr] ERROR: [party-wrapper] cannot reach ollama (timed out)"
 # cfgB: a timeout-status infra non-run + an ungraded completed run
 mkbatch "$W/cfgB" "0:_timeout:harness died" "0:_none:ran but nobody scored it"
+# cfgC (v1.1): a sidecar explicitly triaged to status infra-failure, clean narration —
+# must land in the infra column from STATUS alone (status-first triage), no marker needed.
+mkbatch "$W/cfgC" "0:_infra:wrapper failed before the agent ran"
 
 $SR --config "modelA=$W/cfgA" --config "modelB=$W/cfgB" > "$W/out1.txt" 2>"$W/err1.txt"
 ok "exit 0 on valid configs" "[ \$? -eq 0 ] || grep -q . '$W/out1.txt'"
@@ -74,6 +78,12 @@ $SR --config "bad=$W/nonexistent" >/dev/null 2>"$W/err2.txt"; rc=$?
 ok "missing batch dir → exit 1" "[ $rc -eq 1 ]"
 $SR >/dev/null 2>"$W/err3.txt"; rc=$?
 ok "no args → exit 1" "[ $rc -eq 1 ]"
+
+# v1.1: status infra-failure counts in the infra column (status-first, no marker in narration)
+$SR --config "modelC=$W/cfgC" > "$W/outC.txt" 2>/dev/null
+ok "v1.1 infra-failure status lands in infra column" \
+  "grep -E 'modelC' '$W/outC.txt' | grep -qE '\\| +1 +\\| +0 +\\|$'"
+trap 'rm -rf "$W/cfgA" "$W/cfgB" "$W/cfgC" 2>/dev/null; rmdir "$W" 2>/dev/null' EXIT
 
 echo "----"
 echo "sweep-report: $PASS passed, $FAIL failed"

@@ -13,13 +13,13 @@
 
 upstream:
   repo: 0xHoneyJar/construct-gygax
-  git_sha: b8dd40946c732750090f6d8b91b615298fae86ae
-  vendored_at: "2026-06-09"
+  git_sha: 64f6d75dfaac3ab857fc58c265308b65ca9835aa
+  vendored_at: "2026-06-11"
 
 files:
   - vendored: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
     upstream_path: schemas/observed-trace.v1.schema.json
-    sha256: 3344c1039b91a2cbc141897a8bbe3d817affd87d454c259da3e36306e0a593f4
+    sha256: df3f789b40fa21456c51432a3bcbcab36755bcba95ea54f0f62bfaa5be0fafcd
   - vendored: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
     upstream_path: schemas/observed-trace-batch.v1.md
-    sha256: 631e141fede9cbed14f63dd63fcf8f7c9f74d54fb5c22f5f09276b0f529ff948
+    sha256: d04dabfaca79687b6c21414095dae45576b17a0e7362b7a78de92a25e30081c3

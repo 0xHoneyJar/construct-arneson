@@ -130,9 +130,13 @@ def main(argv):
         # this batch. Matching the marker convention is stamping, not judging
         # (G-4 posture). Emitters: ollama-agent.py err() and any wrapper following
         # domain.conventions.md "Wrapper authors"; co-tested in test-validate-batch.sh.
+        # v1.1: a record already triaged to status "infra-failure" needs no warning —
+        # it IS the explicit status the marker fallback exists to recover. The warn
+        # remains for pre-v1.1 marker-only batches (status still "completed").
         if (isinstance(obj, dict)
                 and isinstance(obj.get("narration"), str)
-                and INFRA_MARKER.search(obj["narration"])):
+                and INFRA_MARKER.search(obj["narration"])
+                and not (isinstance(run, dict) and run.get("status") == "infra-failure")):
             warn(
                 f"{path.name}: narration carries a wrapper infrastructure error marker — "
                 "this is a non-run, not a verdict; exclude it from comparisons and re-run "
