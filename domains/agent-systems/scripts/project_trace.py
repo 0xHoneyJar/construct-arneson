@@ -102,6 +102,14 @@ def main(argv):
         f"construct {str(provenance.get('construct_git_sha', '?'))[:12]}; "
         f"run {preamble['run_id']}"
     )
+    # v1.1 producer.provenance (opaque, displayed never interpreted): map the native
+    # preamble's provenance block onto the contract keys, stamping only present strings.
+    # The sim lane knows model_id + construct_sha; engine/cmd shas belong to the real lane.
+    producer_provenance = {}
+    if isinstance(provenance.get("model_id"), str):
+        producer_provenance["model_id"] = provenance["model_id"]
+    if isinstance(provenance.get("construct_git_sha"), str):
+        producer_provenance["construct_sha"] = provenance["construct_git_sha"]
 
     # Segment events into trials.
     trials, current = [], None
@@ -162,6 +170,7 @@ def main(argv):
                 "kind": "simulation",
                 "id": "arneson-host",
                 "detail": producer_detail,
+                **({"provenance": dict(producer_provenance)} if producer_provenance else {}),
             },
             "experiment": {
                 "id": str(manifest["id"]),

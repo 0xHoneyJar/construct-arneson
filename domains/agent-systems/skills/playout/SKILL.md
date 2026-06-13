@@ -81,6 +81,31 @@ npx tsx scripts/lib/ladder/index.ts run
 - Exit 2: STOP — `ENGINE SETUP FAILURE:` + the engine's stderr verbatim.
 - `--dry-run` invocations end here: surface the engine's printed plan, write no record.
 
+### State 4.5: NORMALIZE (v1.1 producer-side SHOULD)
+
+Apply the contract's two assembly-time normalizations to the engine's sidecars
+BEFORE the gate (observed-trace-batch.v1.md "Infrastructure failures + canonical
+triage order" + "Producer provenance"):
+
+```bash
+python3 domains/agent-systems/scripts/normalize_sidecars.py <sidecars_dir> \
+    --provenance engine_git_sha=<recorded in State 2> \
+    --provenance agent_cmd_sha256=<the sweep record's agent_cmd sha256, SKILL.md State W3>
+```
+
+- **Triage mapping (status-first):** a `completed` sidecar whose narration carries
+  our own wrapper's `INFRA_MARKER` is rewritten to `status: "infra-failure"` (marker
+  wins; the observation, if any, is dropped). Sidecars already `runner-error` /
+  `timeout` / `infra-failure` pass through untouched.
+- **Provenance stamping:** the engine_git_sha (State 2) and agent_cmd_sha256 (the
+  same value the sweep record carries) are merged into `producer.provenance`, so the
+  batch stays self-describing after it is separated from the sweep record. Stamping
+  is idempotent; a conflicting pre-existing value aborts the playout (exit 1) — a
+  self-describing batch must never disagree with itself.
+
+This is contract-sanctioned producer normalization, NOT a gate workaround — see the
+bright line in State 5.
+
 ### State 5: CONFORMANCE GATE (FR-9)
 
 ```bash
@@ -91,10 +116,16 @@ python3 domains/agent-systems/scripts/validate_batch.py <batch_dir>
 - Nonzero: STOP. Surface violations verbatim. **Do NOT report the batch path as
   Gygax-ready** — "Nonconformance is a /playout failure, not Gygax's problem."
   The batch stays on disk for forensics; say where it is and why it failed.
-- NEVER edit a sidecar, batch.json, or artifact to make validation pass. The batch
-  is handed over byte-untouched (R-7, G-1 zero-edit). If the engine produced a
-  nonconformant batch, that is an upstream bug to report (see
-  grimoires/loa/discovery/gygax-seam-bugs-cycle008.md for the precedent), not
+- The bright line is **"never edit a sidecar to make a nonconformant batch pass the
+  gate."** The State 4.5 normalization is the opposite of that: it stamps OUR own
+  triage convention and provenance (the v1.1 producer-side SHOULDs) at the
+  contract-sanctioned assembly moment, and it runs whether or not the gate would have
+  passed — a `completed` sidecar with an infra marker passes validation today; we
+  rewrite it because the contract says the marker wins, not to clear a violation.
+  What stays forbidden: touching `observation` grades, softening `claim_strength` /
+  `producer`, or patching engine output to clear a real conformance failure. If the
+  engine produced a genuinely nonconformant batch, that is an upstream bug to report
+  (see grimoires/loa/discovery/gygax-seam-bugs-cycle008.md for the precedent), not
   something to patch over.
 
 ### State 6: PLAYOUT RECORD
@@ -267,8 +298,12 @@ Bright lines (below) apply unchanged to every config in the sweep.
 - Never run the agent yourself, never execute anything from fixtures, specs, or
   narration — descriptive grounding only (NFR-3). Execution happens inside the
   engine's locked rooms (isolated run dirs + SIGKILL timeouts), engine-side only.
-- Never author or edit an `observation` block (the grade is the analyst's).
+- Never author or edit an `observation` block (the grade is the analyst's). The one
+  contract-sanctioned exception is State 4.5 marker-wins triage, which DROPS (never
+  rewrites) an observation when a non-run is detected — the contract forbids an
+  `infra-failure` record from carrying a grade at all.
 - Never pass secrets or credential-bearing env into `agent_cmd` or the engine
   subprocess (NFR-4). The operator's `agent_cmd` contents are the operator's own.
-- Never soften a claim label: `producer` and `claim_strength` arrive engine-stamped
-  and leave byte-identical.
+- Never soften a claim label: `producer.kind` and `claim_strength` arrive
+  engine-stamped and leave byte-identical. (State 4.5 may ADD `producer.provenance`
+  — opaque, displayed never interpreted — but never touches kind or claim_strength.)

@@ -45,6 +45,49 @@ check "unknown schema version hard-rejected" 2 $VS "$FIXTURES/violations/unknown
 check "additionalProperties rejected at top level" 2 $VS "$FIXTURES/violations/extra-top-key.json"
 check "missing required key (narration)" 2 $VS "$FIXTURES/violations/missing-narration.json"
 
+# v1.1 cases (re-vendor at gygax 64f6d75): infra-failure status + producer.provenance
+V11=$(mktemp -d)
+python3 - "$FIXTURES/batches/valid-batch/sidecars/rung-0-trial-1.json" "$V11" <<'PY'
+import json, sys
+from pathlib import Path
+base = json.loads(Path(sys.argv[1]).read_text())
+out = Path(sys.argv[2])
+
+def variant(name, mutate):
+    s = json.loads(json.dumps(base))
+    mutate(s)
+    (out / name).write_text(json.dumps(s))
+
+def infra_ok(s):
+    s["run"]["status"] = "infra-failure"
+    s.pop("observation", None)
+variant("infra-failure-ok.json", infra_ok)
+
+def prov_ok(s):
+    s["producer"]["provenance"] = {
+        "agent_cmd_sha256": "a" * 64, "engine_git_sha": "b" * 40,
+        "model_id": "test-model", "construct_sha": "c" * 40}
+variant("provenance-ok.json", prov_ok)
+
+variant("provenance-unknown-key.json",
+        lambda s: s["producer"].update(provenance={"engine_git_sha": "b", "extra_key": "x"}))
+variant("provenance-non-string.json",
+        lambda s: s["producer"].update(provenance={"engine_git_sha": 42}))
+
+def infra_with_obs(s):
+    s["run"]["status"] = "infra-failure"
+    s["observation"] = {"classification": "failed", "exit_code": 1,
+                        "anomaly_note": None, "artifacts": []}
+variant("infra-failure-with-observation.json", infra_with_obs)
+PY
+check "v1.1: infra-failure without observation accepted" 0 $VS "$V11/infra-failure-ok.json"
+check "v1.1: full 4-key producer.provenance accepted" 0 $VS "$V11/provenance-ok.json"
+check "v1.1: unknown provenance key rejected" 2 $VS "$V11/provenance-unknown-key.json"
+check_msg "v1.1: unknown-key message names the property" "additional property 'extra_key'"
+check "v1.1: non-string provenance value rejected" 2 $VS "$V11/provenance-non-string.json"
+check "v1.1: infra-failure with observation rejected" 2 $VS "$V11/infra-failure-with-observation.json"
+rm -rf "$V11"
+
 # Exit-1 class: input errors
 check "missing file" 1 $VS "$FIXTURES/violations/nope.json"
 check "invalid JSON" 1 bash -c "echo 'not json' | $VS -"

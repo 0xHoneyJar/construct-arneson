@@ -1,10 +1,27 @@
 {
   "version": 1,
   "created": "2026-06-10T00:37:18Z",
-  "last_updated": "2026-06-10T21:10:00Z",
-  "next_sprint_number": 16,
-  "active_cycle": null,
+  "last_updated": "2026-06-11T17:45:00Z",
+  "next_sprint_number": 17,
+  "active_cycle": "cycle-003",
   "cycles": [
+    {
+      "id": "cycle-003",
+      "label": "seam-alignment-v1.1-adoption",
+      "status": "active",
+      "created": "2026-06-11T17:45:00Z",
+      "prd": "external: construct-gygax/grimoires/gygax/designs/seam-alignment-v1.1-brief.md@64f6d75 (micro-cycle, no local PRD)",
+      "sdd": null,
+      "sprints": [
+        {
+          "global_id": 16,
+          "local_label": "sprint-1",
+          "status": "planned",
+          "created": "2026-06-11T17:45:00Z",
+          "completed": null
+        }
+      ]
+    },
     {
       "id": "cycle-002",
       "label": "playtest-instrument-v4.1",

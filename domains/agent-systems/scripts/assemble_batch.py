@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from restricted_yaml import ParseError, parse_file  # noqa: E402
+from normalize_sidecars import NormalizeError, _parse_provenance_args, normalize_dir  # noqa: E402
 
 
 def err(msg):
@@ -26,10 +27,22 @@ def err(msg):
 
 
 def main(argv):
-    args = dict(zip(argv[1::2], argv[2::2]))
+    # Required args are positional pairs; optional --provenance key=value flags may
+    # repeat. Pull the provenance flags out first, then parse the rest as before.
+    rest, provenance_pairs = [], []
+    i = 1
+    while i < len(argv):
+        if argv[i] == "--provenance" and i + 1 < len(argv):
+            provenance_pairs.append(argv[i + 1])
+            i += 2
+        else:
+            rest.append(argv[i])
+            i += 1
+    args = dict(zip(rest[0::2], rest[1::2]))
     needed = ("--scenario", "--traces", "--runs", "--out")
-    if any(k not in args for k in needed) or len(argv) != 9:
-        err("usage: assemble_batch.py --scenario <s.yaml> --traces <dir> --runs <dir> --out <batch-dir>")
+    if any(k not in args for k in needed) or len(rest) != 8:
+        err("usage: assemble_batch.py --scenario <s.yaml> --traces <dir> --runs <dir> "
+            "--out <batch-dir> [--provenance key=value ...]")
         return 1
 
     scenario_file = Path(args["--scenario"])
@@ -57,6 +70,12 @@ def main(argv):
         return 1
     fixture_abs = str((scenario_file.resolve().parent / fixture_rel).resolve())
 
+    try:
+        provenance = _parse_provenance_args(provenance_pairs)
+    except NormalizeError as e:
+        err(str(e))
+        return 1
+
     out.mkdir(parents=True, exist_ok=True)
     (out / "sidecars").mkdir(exist_ok=True)
     for sc in sorted(traces.glob("*.json")):
@@ -64,6 +83,15 @@ def main(argv):
     if (out / "runs").exists():
         shutil.rmtree(out / "runs")
     shutil.copytree(runs, out / "runs")
+
+    # v1.1 assembly-time normalization on the ASSEMBLED copy only (never the source
+    # projected trace): INFRA_MARKER → infra-failure (status-first triage) + provenance
+    # stamping. See normalize_sidecars.py.
+    try:
+        normalize_dir(out / "sidecars", provenance)
+    except NormalizeError as e:
+        err(str(e))
+        return 1
 
     manifest = {"schema": "observed-trace-batch/v1", "fixture": fixture_abs}
     (out / "batch.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

@@ -31,7 +31,8 @@ VENDORED_SCHEMA = VENDOR_DIR / "observed-trace.v1.schema.json"
 CLAIM_ENUM = {"real-agent-observed", "simulation-derived"}
 PRODUCER_KIND_ENUM = {"real-agent", "simulation"}
 RUNG_NAME_ENUM = {"blind", "reward-aware", "adversarial"}
-STATUS_ENUM = {"completed", "runner-error", "timeout"}
+STATUS_ENUM = {"completed", "runner-error", "timeout", "infra-failure"}
+PROVENANCE_KEYS = {"agent_cmd_sha256", "engine_git_sha", "model_id", "construct_sha"}
 CLASSIFICATION_ENUM = {"fixed", "hacked", "failed"}
 ARTIFACT_STATUS_ENUM = {"intact", "modified", "added", "deleted"}
 
@@ -112,13 +113,22 @@ def _validate_producer(producer, v):
     for key in ("kind", "id"):
         if key not in producer:
             v.append(f"producer: required property '{key}' missing")
-    _check_extra_keys(producer, {"kind", "id", "detail"}, "producer", v)
+    _check_extra_keys(producer, {"kind", "id", "detail", "provenance"}, "producer", v)
     if "kind" in producer and producer["kind"] not in PRODUCER_KIND_ENUM:
         v.append(f"producer.kind: {producer['kind']!r} not in {sorted(PRODUCER_KIND_ENUM)}")
     if "id" in producer and not _is_str(producer["id"], 1):
         v.append("producer.id: must be a non-empty string")
     if "detail" in producer and not isinstance(producer["detail"], str):
         v.append("producer.detail: must be a string")
+    if "provenance" in producer:
+        prov = producer["provenance"]
+        if not isinstance(prov, dict):
+            v.append("producer.provenance: not an object")
+            return
+        _check_extra_keys(prov, PROVENANCE_KEYS, "producer.provenance", v)
+        for key in sorted(PROVENANCE_KEYS & set(prov.keys())):
+            if not isinstance(prov[key], str):
+                v.append(f"producer.provenance.{key}: must be a string (opaque, displayed never interpreted)")
 
 
 def _validate_experiment(experiment, v):
@@ -228,8 +238,8 @@ def _validate_allof(obj, v):
             v.append("allOf: producer.kind 'real-agent' requires claim_strength 'real-agent-observed' (producer-bound claim)")
         if kind == "simulation" and claim != "simulation-derived":
             v.append("allOf: producer.kind 'simulation' requires claim_strength 'simulation-derived' (a simulation may not launder its output as observed)")
-    if isinstance(run, dict) and run.get("status") in ("runner-error", "timeout") and "observation" in obj:
-        v.append("allOf: a non-completed run (runner-error/timeout) MUST NOT carry an observation — nothing ran")
+    if isinstance(run, dict) and run.get("status") in ("runner-error", "timeout", "infra-failure") and "observation" in obj:
+        v.append("allOf: a non-completed run (runner-error/timeout/infra-failure) MUST NOT carry an observation — nothing ran")
 
 
 def validate_obj(obj):
