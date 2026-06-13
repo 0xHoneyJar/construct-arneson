@@ -16,9 +16,9 @@
         {
           "global_id": 16,
           "local_label": "sprint-1",
-          "status": "planned",
+          "status": "completed",
           "created": "2026-06-11T17:45:00Z",
-          "completed": null
+          "completed": "2026-06-13T18:30:00Z"
         }
       ]
     },
