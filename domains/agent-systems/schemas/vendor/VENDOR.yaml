@@ -13,8 +13,8 @@
 
 upstream:
   repo: 0xHoneyJar/construct-gygax
-  git_sha: 64f6d75dfaac3ab857fc58c265308b65ca9835aa
-  vendored_at: "2026-06-11"
+  git_sha: 3fa6c91745c0882b5ee72edc087c0151deb126ae
+  vendored_at: "2026-06-14"
 
 files:
   - vendored: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
@@ -23,3 +23,6 @@ files:
   - vendored: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
     upstream_path: schemas/observed-trace-batch.v1.md
     sha256: d04dabfaca79687b6c21414095dae45576b17a0e7362b7a78de92a25e30081c3
+  - vendored: domains/agent-systems/schemas/vendor/signal-taxonomy.v1.schema.json
+    upstream_path: schemas/signal-taxonomy.v1.schema.json
+    sha256: f6ba7182d8d41e53595a142316451377456a1899217a085fdbc9c4a22e542ce6

@@ -107,6 +107,9 @@ jobs:
       - name: Vendor drift guard (byte-diff vendored contract vs upstream)
         run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/vendor-drift-guard.sh
 
+      - name: Convergence guard regression (source signal enum ↔ vendored taxonomy)
+        run: ARNESON_GYGAX_ROOT="$GITHUB_WORKSPACE/construct-gygax-sibling" ./scripts/ci/test-vendor-drift-guard.sh
+
       - name: Set up node (for the Gygax engine)
         uses: actions/setup-node@v4
         with:
