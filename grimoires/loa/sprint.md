@@ -1,7 +1,7 @@
 # Sprint Plan — Micro-Cycle: Seam-Alignment v1.1 Adoption (cycle-003)
 
-**Date:** 2026-06-11 · **Cycle:** cycle-003 (`seam-alignment-v1.1-adoption`) · **Sprints:** 1 (global #16, local `sprint-1`)
-**Source requirements:** Gygax cycle-009 seam brief — `construct-gygax/grimoires/gygax/designs/seam-alignment-v1.1-brief.md` (gygax `main` @ `64f6d75`). No PRD/SDD: micro-cycle scoped directly by the brief + operator instruction, following the cycle-008 brief/status-reply channel precedent.
+**Date:** 2026-06-11 (sprint-1) · 2026-06-14 (sprint-2) · **Cycle:** cycle-003 (`seam-alignment-v1.1-adoption`) · **Sprints:** 2 (global #16 `sprint-1`, global #17 `sprint-2`)
+**Source requirements:** Gygax cycle-009 seam brief — `construct-gygax/grimoires/gygax/designs/seam-alignment-v1.1-brief.md` (gygax `main` @ `64f6d75`); sprint-2 closes the reciprocal half — Gygax cycle-010 published the canonical signal taxonomy our sprint-1 seam reply asked for (`construct-gygax/schemas/signal-taxonomy.v1.schema.json` @ `3fa6c91`). No PRD/SDD: micro-cycle scoped directly by the brief + operator instruction, following the cycle-008 brief/status-reply channel precedent.
 **Predecessor:** cycle-002 playtest-instrument-v4.1 (archived; global sprints 12–15)
 
 ---
@@ -126,6 +126,75 @@ The re-vendored batch doc carries the convention text; nothing Arneson-side chan
 
 ---
 
+## Sprint 2 (global #17): Signal Taxonomy Vendor + Source↔Vendor Convergence Guard
+
+**Scope:** SMALL (3 tasks + E2E) · **Start:** 2026-06-14 · **Mode:** single `/run sprint-2` session
+
+**Sprint Goal:** Close the reciprocal half of the seam. Sprint-1's reply sent Gygax the canonical 9-value signal taxonomy; Gygax cycle-010 published it verbatim as `signal-taxonomy.v1.schema.json` (gygax `3fa6c91`) and stated "Arneson vendors a pinned copy." This sprint vendors that pin — and adds the convergence guard that gives vendoring-a-list-we-authored its only real value: the source enum and the published copy can never silently diverge.
+
+### Why this is more than bookkeeping
+
+Arneson **authors** the 9 values (`schemas/core/session-events-base.schema.yaml:84`); Gygax merely publishes the canonical copy. Vendoring it back is pointless unless something fails loudly when the two drift. Task 2.3 is that something: a CI invariant asserting our source `signal.classification` enum equals the vendored taxonomy enum (value set + canonical order). Without it, this sprint is a no-op file copy.
+
+### Deliverables
+
+- [x] `signal-taxonomy.v1.schema.json` vendored byte-identical to gygax `3fa6c91`; `VENDOR.yaml` carries its sha256 pin + `upstream.git_sha` bumped to `3fa6c91`
+- [x] `vendor-drift-guard.sh` byte-diffs the taxonomy against the sibling checkout alongside the two observed-trace files
+- [x] Source↔vendor convergence guard: our `session-events-base.schema.yaml` signal enum proven identical (set + order) to the vendored taxonomy; divergence fails CI
+- [x] All pre-existing test suites + `vendor-drift-guard.sh` green; new convergence check covered by a test
+
+### Acceptance Criteria
+
+- [x] `shasum -a 256 domains/agent-systems/schemas/vendor/signal-taxonomy.v1.schema.json` == `f6ba7182d8d41e53595a142316451377456a1899217a085fdbc9c4a22e542ce6` == upstream gygax bytes; matches the new `VENDOR.yaml` pin
+- [x] `ARNESON_GYGAX_ROOT=../construct-gygax ./scripts/ci/vendor-drift-guard.sh` exits 0 and reports the taxonomy as byte-identical (3 files checked, not 2)
+- [x] The convergence guard exits 0 today (source and vendored enums agree: `safety, insight, concern, friction, praise, confusion, delight, surprise, boredom`, same order)
+- [x] The convergence guard exits non-zero (proven via a temporary mutation in-test, reverted) if the source enum is reordered or a value added/removed without re-vendoring
+- [x] `bottleneck` (digest-ttrpg.schema.yaml:81) is NOT pulled into scope — it is digest-side grouping, not a signal class (per seam reply §1); convergence guard compares only the taxonomy source, so it stays cleanly green
+- [x] Every pre-existing `domains/agent-systems/scripts/test-*.sh` suite passes unchanged
+
+### Technical Tasks
+
+- [x] **Task 2.1: Vendor signal-taxonomy + update VENDOR.yaml pin** → **[G-4]**
+  - Byte-exact copy of `schemas/signal-taxonomy.v1.schema.json` from `construct-gygax` @ `3fa6c91745c0882b5ee72edc087c0151deb126ae` → `domains/agent-systems/schemas/vendor/` (sha256 `f6ba7182d8d41e53595a142316451377456a1899217a085fdbc9c4a22e542ce6`).
+  - Update `VENDOR.yaml`: add a third `files` entry (`vendored:` path, `upstream_path: schemas/signal-taxonomy.v1.schema.json`, `sha256:`), bump `upstream.git_sha: 3fa6c91…`, `vendored_at: "2026-06-14"`. Remains GYGAX'S FILE — never edited here (VENDOR.yaml header contract). The existing self-pin python check iterates `files` generically, so it covers the new entry with no code change.
+
+- [x] **Task 2.2: Extend `vendor-drift-guard.sh` to cover the taxonomy** → **[G-4]**
+  - Add `signal-taxonomy.v1.schema.json` to the byte-diff `for name in …` loop (currently hardcodes the two observed-trace files). Same `cmp -s` against `$GYGAX_ROOT/schemas/$name`, same FAIL message pattern. No change to the generic self-pin block.
+
+- [x] **Task 2.3: Source↔vendor convergence guard** → **[G-5]**
+  - Add a check that parses the `signalClassification` enum from the vendored `signal-taxonomy.v1.schema.json` and the `signal.classification` `values` list from `schemas/core/session-events-base.schema.yaml`, and asserts they are identical as ordered sequences (not just sets — canonical order is part of the published contract per the taxonomy `$comment`).
+  - Home: a new check inside `vendor-drift-guard.sh` (stdlib `python3`, matching the existing embedded self-pin block) so the same CI leg that catches upstream drift also catches source/published divergence. FAIL loudly with both lists printed on mismatch.
+  - This is the one piece that makes the vendor pin load-bearing rather than decorative.
+
+- [x] **Task 2.E2E: End-to-End Goal Validation** (P0 — Must Complete) → **[G-4] [G-5]**
+  - `vendor-drift-guard.sh` green against the gygax sibling checkout: 3 files byte-identical, 3 pins match, convergence guard passes.
+  - All 11 pre-existing `domains/agent-systems/scripts/test-*.sh` suites (sprint-1 left them green) still pass — this sprint touches no validator/producer code, so zero behavioral regression is the expected result.
+  - Negative proof for the convergence guard (temporary in-test mutation of the source enum → guard exits non-zero → revert).
+
+### Dependencies
+
+- **Task ordering:** 2.1 → 2.2 → 2.3 → 2.E2E.
+- **External:** `construct-gygax` sibling at ≥ `3fa6c91` (present locally at `3fa6c91` = gygax `main`). No gygax-side action — their cycle-010 closeout doc records all seam debts settled.
+- **Out of scope (tracked follow-up, not this sprint):** reconciling the `bottleneck` grouping key in `domains/ttrpg/schemas/digest-ttrpg.schema.yaml:81`. Sprint-1's reply committed this as internal digest-side cleanup, explicitly separate from the signal taxonomy. Surgical-change discipline: it does not belong in the vendor-the-taxonomy sprint.
+- **Stdlib-only rule:** any new parsing stays stdlib-only (the guard already uses an embedded `python3` heredoc).
+
+### Risks & Mitigation
+
+| Risk | Mitigation |
+|------|------------|
+| Convergence guard parses YAML by hand (no stdlib yaml) and mis-reads the enum | Parse the single `values: [...]` inline list with a targeted regex anchored on the `classification:` block; cover with the negative test (reorder → fail). If brittle, the fallback is a checked-in expected-list constant compared to both sources. |
+| Re-vendor bumps `upstream.git_sha` to `3fa6c91` — the two observed-trace pins must still match that newer sha | They are byte-unchanged between `64f6d75` and `3fa6c91` (cycle-010 only added the taxonomy file); drift guard re-confirms all three against the same checkout. Verify in 2.1. |
+| Treating `bottleneck` as in-scope and editing the digest schema | Explicitly out of scope above; convergence guard compares only the taxonomy source enum, which never contained `bottleneck`. |
+
+### Success Metrics
+
+- 1/1 new vendored file byte-identical to upstream; 3/3 sha256 pins match
+- `vendor-drift-guard.sh`: 3 files checked, convergence guard green
+- Convergence guard: passes today, fails on injected divergence (both directions proven)
+- 0 modifications to any pre-existing test expectation or validator/producer code
+
+---
+
 ## Appendix A: Task Dependencies
 
 ```mermaid
@@ -147,5 +216,7 @@ No PRD exists for this micro-cycle; goals are auto-assigned from the operator-sc
 | G-1 | Vendored contract pinned at v1.1 (≥ `ecefcd5`); validators accept v1.1 producer records; drift guard green | 1.1, 1.2, 1.E2E | sha256 match + 6 validator cases + v1.0 regression |
 | G-2 | Arneson-assembled batches implement the v1.1 SHOULD: marker→`infra-failure` at assembly (canonical triage order, marker wins) + self-describing `producer.provenance`; consumers triage the new status | 1.3, 1.4, 1.E2E | Hermetic pipeline proof + infra column in sweep table |
 | G-3 | Seam reply delivered: 9-value taxonomy (+ `bottleneck` drift flag), check-dominance position, OQ-B preference | 1.5, 1.E2E | Brief on disk with all three positions, taxonomy verbatim from source |
+| G-4 | Signal taxonomy vendored + pinned at gygax `3fa6c91`; drift guard byte-checks it against upstream | 2.1, 2.2, 2.E2E | sha256 match + `vendor-drift-guard.sh` reports 3 files |
+| G-5 | Source↔vendor convergence is enforced: our authored enum and the published taxonomy can never silently diverge | 2.3, 2.E2E | Guard green today; fails on injected reorder/add/remove |
 
-All three goals have contributing tasks; the final (only) sprint carries the E2E validation task. No warnings.
+All goals have contributing tasks; each sprint carries its own E2E validation task. No warnings. (G-1/G-2/G-3 = sprint-1, COMPLETED; G-4/G-5 = sprint-2.)

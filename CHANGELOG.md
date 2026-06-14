@@ -126,6 +126,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versioning follo
     table; fails the build on any overclaim in docs or report wording)
   - **E2E: all 5 PRD goals validated** — authorability, one-command comparison, honest multi-trial
     power, hermetic rigor, honesty boundary
+  - Seam closeout (cycle-003 sprint-2): vendored Gygax's published `signal-taxonomy.v1.schema.json`
+    (the 9 `signal.classification` values Arneson authored, republished canonical by Gygax) byte-exact
+    under `schemas/vendor/` with VENDOR.yaml pin at gygax `3fa6c91`; `vendor-drift-guard.sh` byte-checks
+    it and adds a **source↔vendor convergence guard** that fails loudly if our source enum and the
+    vendored taxonomy ever drift in value set or canonical order (`test-vendor-drift-guard.sh` covers
+    both directions; wired into CI)
 
 ### Changed
 - Identity (FR-11 containment reframe): `refusals.yaml` gains `host_execution` (locked-room
