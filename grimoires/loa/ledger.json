@@ -1,15 +1,33 @@
 {
   "version": 1,
   "created": "2026-06-10T00:37:18Z",
-  "last_updated": "2026-06-15T00:00:00Z",
-  "next_sprint_number": 22,
-  "active_cycle": "cycle-004",
+  "last_updated": "2026-06-16T00:00:00Z",
+  "next_sprint_number": 23,
+  "active_cycle": "cycle-005",
   "cycles": [
+    {
+      "id": "cycle-005",
+      "label": "voice-persona-bridge",
+      "status": "active",
+      "created": "2026-06-16T00:00:00Z",
+      "prd": "grimoires/loa/context/voice-persona-bridge-brief.md (micro-cycle, brief-as-requirements; precedent cycle-003)",
+      "sdd": null,
+      "sprints": [
+        {
+          "global_id": 22,
+          "local_label": "sprint-1",
+          "status": "planned",
+          "created": "2026-06-16T00:00:00Z",
+          "completed": null
+        }
+      ]
+    },
     {
       "id": "cycle-004",
       "label": "simulation-fidelity-gap-report",
-      "status": "active",
+      "status": "archived",
       "created": "2026-06-15T00:00:00Z",
+      "archived": "2026-06-16T00:00:00Z",
       "prd": "grimoires/loa/prd.md",
       "sdd": "grimoires/loa/sdd.md",
       "sprints": [

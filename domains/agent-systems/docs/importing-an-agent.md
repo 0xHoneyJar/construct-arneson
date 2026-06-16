@@ -47,3 +47,32 @@ same scenario in real mode (`agent_cmd` pointing at your actual agent) and
 compare; then improve the persona against the gap report via `/voice`
 (docs/pairing-workflow.md). One variable per scenario: never change persona
 and fixture together.
+
+## Faster start: scaffold from a voice
+
+Already workshopped a character with `/voice`? You can bootstrap a **valid
+persona skeleton** from it instead of filling the schema by hand:
+
+```bash
+python3 domains/agent-systems/scripts/scaffold_agent_persona.py \
+  --from-voice <npc-id>        # reads grimoires/arneson/voices/npcs/<npc-id>.yaml
+# or, from nothing:
+python3 domains/agent-systems/scripts/scaffold_agent_persona.py --blank --id <name>
+```
+
+It writes a schema-valid `agent-persona` to
+`domains/agent-systems/resources/personas/<id>.yaml` with `source` provenance
+pinned to the voice file. **It scaffolds, it does not convert:** the
+`disposition` is a *draft* seeded from the voice's personality (edit it), and
+`capabilities` / `knowledge` / `rung_overlays` are TODO stubs you must author —
+because a voice describes how the character *talks*, not how an agent *acts on a
+task*. The skeleton runs as-is, but it's a starting point, not a finished agent.
+
+**Exploration-origin, not fidelity-grade.** A voice-scaffolded persona is stamped
+`source.kind: character-voice` and carries an `EXPLORATION persona` header. A
+fictional voice has no real-agent counterpart, so there is nothing for the gap
+report to diverge against — these personas are for **behavioral exploration only
+and are not eligible for fidelity / gap-report claims**. To make a fidelity-grade
+persona (one that closes the Gygax/Arneson loop), ground `source` in a *real*
+agent's spec via the manual procedure above and use `behavioral-spec`.
+
