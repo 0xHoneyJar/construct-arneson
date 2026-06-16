@@ -1,0 +1,38 @@
+# pyproject.toml — DEV TOOLING CONFIG ONLY (cycle-004, FR-11).
+#
+# There is intentionally NO [project] table and NO dependency declaration. The
+# runtime is stdlib + the vendored restricted_yaml parser (NFR-1); nothing here
+# makes the runtime import a third-party package. This file configures ruff + mypy
+# for local + CI linting only.
+#
+# Scope (OQ-3): the gate is the cycle-004 modules and their imports —
+# gap_report.py, summarize_playout.py, triage_lib.py. Pre-existing sibling scripts
+# are NOT refactored in this cycle; broad findings there are out of scope and are
+# excluded below rather than rewritten.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Lint only the cycle-004 scope; siblings are excluded (OQ-3, not refactored here).
+include = [
+    "domains/agent-systems/scripts/gap_report.py",
+    "domains/agent-systems/scripts/summarize_playout.py",
+    "domains/agent-systems/scripts/triage_lib.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+# E402 (module-level import not at top) is expected: the sibling imports follow a
+# sys.path.insert so the scripts run standalone; they carry an inline noqa.
+
+[tool.mypy]
+python_version = "3.11"
+# Scoped to the cycle-004 modules (OQ-3). Permissive on the dynamic JSON/YAML dict
+# shapes these scripts read; the contract is enforced by schemas + tests, not types.
+files = [
+    "domains/agent-systems/scripts/gap_report.py",
+    "domains/agent-systems/scripts/summarize_playout.py",
+    "domains/agent-systems/scripts/triage_lib.py",
+]
+ignore_missing_imports = true
+check_untyped_defs = false
