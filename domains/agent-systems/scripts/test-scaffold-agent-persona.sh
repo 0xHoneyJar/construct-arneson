@@ -41,7 +41,8 @@ d = parse(open(sys.argv[2]).read())
 req = ["persona_id", "source", "disposition", "capabilities", "knowledge", "rung_overlays"]
 assert all(k in d for k in req), f"missing: {[k for k in req if k not in d]}"
 s = d["source"]
-assert s.get("ref") and s.get("sha256") and s.get("kind") == "behavioral-spec", "bad source provenance"
+# voice-sourced => character-voice (exploration-origin), never behavioral-spec.
+assert s.get("ref") and s.get("sha256") and s.get("kind") == "character-voice", "bad source provenance"
 assert list(d["rung_overlays"].keys()) == ["blind", "reward-aware", "adversarial"], "rung keys wrong"
 assert isinstance(d["capabilities"], list) and d["capabilities"], "capabilities empty"
 print("OK")
@@ -56,6 +57,11 @@ ok "disposition carries the voice signal (baseline)" "grep -q 'sharp-engaged' '$
 ok "capabilities are TODO stubs (not fabricated task behavior)" "grep -q 'TODO: what this agent would DO' '$W/probe.persona.yaml'"
 ok "rung overlays are TODO stubs" "grep -q 'TODO: what the agent knows at the blind rung' '$W/probe.persona.yaml'"
 ok "source pins voice provenance (sha256)" "grep -qE 'sha256: [0-9a-f]{64}' '$W/probe.persona.yaml'"
+# Honest provenance: voice-sourced => character-voice (exploration), NOT behavioral-spec.
+ok "voice persona is labelled kind: character-voice" "grep -q 'kind: character-voice' '$W/probe.persona.yaml'"
+ok "voice persona is NOT stamped behavioral-spec" "! grep -q 'kind: behavioral-spec' '$W/probe.persona.yaml'"
+ok "voice persona carries the EXPLORATION-only marker" "grep -q 'EXPLORATION persona' '$W/probe.persona.yaml'"
+ok "marker disclaims fidelity / gap-report eligibility" "grep -qi 'NOT eligible for fidelity' '$W/probe.persona.yaml'"
 
 # Determinism: byte-equal across two runs.
 ( cd "$W" && $SC --from-voice probe --out "$W/d1.yaml" >/dev/null 2>&1 )
@@ -66,6 +72,9 @@ ok "deterministic (byte-equal across runs)" "diff -q '$W/d1.yaml' '$W/d2.yaml' >
 ( cd "$W" && $SC --blank --id test-blank --out "$W/blank.yaml" >/dev/null 2>&1 )
 ok "--blank exits 0" "[ \$? -eq 0 ]"
 ok "--blank skeleton has required fields" "grep -q 'persona_id: test-blank' '$W/blank.yaml' && grep -q 'rung_overlays:' '$W/blank.yaml'"
+# --blank is meant to be grounded in a real spec by the human => behavioral-spec, no exploration marker.
+ok "--blank uses behavioral-spec (human grounds it in a real spec)" "grep -q 'kind: behavioral-spec' '$W/blank.yaml'"
+ok "--blank carries no exploration marker" "! grep -q 'EXPLORATION persona' '$W/blank.yaml'"
 
 # Negative paths.
 ( cd "$W" && $SC --from-voice does-not-exist --out "$W/x.yaml" >/dev/null 2>"$W/err2" )

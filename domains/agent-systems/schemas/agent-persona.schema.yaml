@@ -33,8 +33,15 @@ fields:
         required: true
       kind:
         type: enum
-        values: [system-prompt, behavioral-spec]
+        values: [system-prompt, behavioral-spec, character-voice]
         required: true
+        description: >
+          Provenance category. system-prompt / behavioral-spec trace to a REAL
+          agent's spec — fidelity-grade: there is a real-lane counterpart to diverge
+          against in the gap report. character-voice marks an EXPLORATION-origin
+          persona scaffolded from a fictional character voice (cycle-005): no real
+          counterpart exists, so it is for behavioral exploration only and is NOT
+          eligible for fidelity / gap-report claims.
 
   disposition:
     type: prose

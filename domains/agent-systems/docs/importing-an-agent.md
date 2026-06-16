@@ -68,3 +68,11 @@ pinned to the voice file. **It scaffolds, it does not convert:** the
 because a voice describes how the character *talks*, not how an agent *acts on a
 task*. The skeleton runs as-is, but it's a starting point, not a finished agent.
 
+**Exploration-origin, not fidelity-grade.** A voice-scaffolded persona is stamped
+`source.kind: character-voice` and carries an `EXPLORATION persona` header. A
+fictional voice has no real-agent counterpart, so there is nothing for the gap
+report to diverge against — these personas are for **behavioral exploration only
+and are not eligible for fidelity / gap-report claims**. To make a fidelity-grade
+persona (one that closes the Gygax/Arneson loop), ground `source` in a *real*
+agent's spec via the manual procedure above and use `behavioral-spec`.
+
