@@ -1,388 +1,192 @@
-# Sprint Plan: Simulation Fidelity Gap Report
+# Sprint Plan — cycle-005 · voice→agent-persona authoring bridge
 
-**Version:** 1.0
-**Date:** 2026-06-15
-**Author:** Sprint Planner Agent
-**PRD Reference:** grimoires/loa/prd.md
-**SDD Reference:** grimoires/loa/sdd.md
-**Cycle:** cycle-004 (`simulation-fidelity-gap-report`)
-**Global sprint range:** 18–21
+> **Cycle:** cycle-005 (micro, 1 sprint) · **Label:** voice-persona-bridge
+> **Global sprint:** 22 (local: sprint-1) · **Type:** feature (small)
+> **Source of truth:** `grimoires/loa/context/voice-persona-bridge-brief.md` (brief-as-requirements; no separate PRD/SDD — micro-cycle precedent: cycle-003)
+> **Execution path:** `/run sprint-22` (implement → review → audit). Not implemented during planning.
+> **Date:** 2026-06-16
 
 ---
 
 ## Executive Summary
 
-This cycle ships a diagnostic — `gap_report.py` — that pairs a simulated-lane playout with its real graded batch and tabulates their divergence using **arithmetic and quoted labels only**. The sprint backbone follows SDD §8 Development Phases (R1/R2 already resolved against the codebase). Four sprints: (1) sim-lane diffability + contracts, (2) the `gap_report.py` core, (3) the skill + enablers + the test gates, (4) cycle hygiene.
+One SMALL sprint (3 tasks) delivers `scaffold_agent_persona.py` — a stdlib-only
+scaffolder, sibling to `domains/agent-systems/scripts/scaffold_playtest.py`, that
+emits a **schema-valid `agent-persona` skeleton** from a `/voice` output (or blank).
 
-All five sprint-plan open questions (OQ-1…OQ-5) are **resolved** and baked into the task definitions below — they are not re-asked.
+The bridge removes the hand-transcription step in `importing-an-agent.md`: authoring
+a persona now starts from a valid file with provenance + a DRAFT-seeded disposition,
+instead of a blank schema. Task-behavior fields stay **guided TODO stubs** the human
+fills — the scaffolder never fabricates behavior from dialogue.
 
-**Total Sprints:** 4 (global 18, 19, 20, 21)
-**Sprint Duration:** 2.5 days each
-**Execution path:** `/run sprint-plan` (implement → review → audit per sprint). No implementation happens in this plan.
+> From brief (L11-12): "A scaffolder that bootstraps a **schema-valid, runnable
+> `agent-persona` skeleton** from a voice (or blank), so authoring starts from a
+> valid file instead of a blank schema — removing the hand-transcription step and
+> guaranteeing validity."
 
----
-
-## Resolved Open Questions (baked into tasks)
-
-| OQ | Resolution | Lands in |
-|----|------------|----------|
-| OQ-1 | **Post-pass script.** A standalone `summarize_playout.py` reads the committed native `session-events-agent` sidecar and emits `playout-summary.v1.json`. It does **not** modify the live playout host serializer. Deterministic + testable on fixtures without running a persona. (Promotable to host-emit later; out of scope now.) | Sprint 18 (T18.2) |
-| OQ-2 | **Shared `triage_lib.py`.** Extract triage / `INFRA_MARKER` logic out of `sweep_report.py` into a shared module; both `sweep_report.py` and `gap_report.py` import it. Existing `test-sweep-report.sh` must still pass byte-equal (guards the extraction). | Sprint 19 (T19.1) |
-| OQ-3 | **Scoped lint.** ruff+mypy gate applies to `gap_report.py` + `summarize_playout.py` + `triage_lib.py` + their imports only. Pre-existing sibling findings get **scoped ignores**, not refactors. Refines PRD SM-6 from "whole dir" to "scoped". | Sprint 20 (T20.4) |
-| OQ-4 | **Complement.** `scripts/test.sh` aggregates / co-exists with the existing `scripts/ci/*` legs; does **not** supersede them. | Sprint 20 (T20.3) |
-| OQ-5 | **Scenario-scoped `move-map.yaml`.** One map per scenario; `scenario_id` field present. | Sprint 18 (T18.3) |
+**Why one sprint:** three tightly-coupled deliverables (script + test + doc on-ramp)
+around a single artifact, mirroring the existing `scaffold_playtest.py` shape.
 
 ---
 
-## Sprint Overview
+## Primary Goals (extracted from brief)
 
-| Sprint | Global | Theme | Scope | Key Deliverables | Dependencies |
-|--------|--------|-------|-------|------------------|--------------|
-| 1 | 18 | Sim-lane diffability + contracts | MEDIUM (5) | `playout-summary.v1.schema.json`, `summarize_playout.py`, `move-map.yaml` + schema, synthetic fixture pair + golden | None |
-| 2 | 19 | `gap_report.py` core | LARGE (7) | `triage_lib.py` extraction, D1, D2, provenance+framing render, pairing refusal, output write, read-only/arithmetic audit | Sprint 18 |
-| 3 | 20 | Skill + enablers + gates | MEDIUM (6) | `gap-report` SKILL.md, `test-gap-report.sh`, `scripts/test.sh`, `pyproject.toml`, real smoke, E2E goal validation | Sprint 19 |
-| 4 | 21 | Cycle hygiene | SMALL (2) | Ledger/NOTES finalization, archive confirmation | Sprint 20 |
+| ID  | Goal | Measurement | Validation Method |
+|-----|------|-------------|-------------------|
+| G-1 | Bootstrap a schema-valid `agent-persona` skeleton from a voice or blank | `--from-voice akane` and `--blank` both emit YAML that round-trips through `restricted_yaml` and passes self-check (exit 0) | T22.2 test asserts schema-valid output for both paths |
+| G-2 | Guarantee provenance + DRAFT disposition without fabricating task-behavior | `source.{ref,sha256,kind}` present; `disposition` seeded from voice prose marked "edit me"; capabilities/knowledge/rung_overlays are TODO stubs | T22.2 asserts seeded disposition + provenance + TODO stubs present |
+| G-3 | Faster on-ramp for the manual import procedure | Short "scaffold a persona from a voice" note appended to `importing-an-agent.md` pointing at the new script | T22.3 doc review; on-ramp references `scaffold_agent_persona.py` |
+
+> Goal-to-task mapping: see Appendix C.
 
 ---
 
-## Sprint 18 (cycle-004 sprint-1): Sim-lane Diffability + Contracts
+## Grounding (source citations)
 
-**Duration:** 2.5 days
-**Scope:** MEDIUM (5 tasks)
+- **Target schema** — `domains/agent-systems/schemas/agent-persona.schema.yaml`:
+  required fields are `persona_id`, `source{ref,sha256,kind}`, `disposition`,
+  `capabilities` (list[string]), `knowledge{knows,does_not_know}`,
+  `rung_overlays{blind,reward-aware,adversarial}`.
+- **Template / exemplar** — `domains/agent-systems/resources/personas/neutral-agent.yaml`
+  (the only existing persona; field order + `source.kind: behavioral-spec` shape).
+- **Sibling scaffolder (pattern to mirror)** — `scaffold_playtest.py`:
+  stdlib-only, `err()` prints `ERROR: [scaffold_playtest] ...`, exit `0/1/2`,
+  self-check on write (R-2: "never ship a subtly-broken fixture"), `--id` kebab-case
+  guard so it "can never influence the output path" (L161), `--out` `..`-traversal
+  refusal (SEC-001, L185-190).
+- **Round-trip parser** — `restricted_yaml.py` exposes `parse(text)` / `parse_file(path)`.
+- **Voice fixture** — `grimoires/arneson/voices/npcs/akane.yaml` (has
+  `display_name`, `emotional_register`, `speech_patterns`, etc. — the prose to seed
+  `disposition` from). `akane-canon.yaml` also present.
+- **Test discovery** — `scripts/test.sh` globs `domains/*/scripts/test-*.sh`
+  (L17), so a sibling `test-scaffold-agent-persona.sh` is "picked up with zero wiring."
+- **Doc on-ramp target** — `domains/agent-systems/docs/importing-an-agent.md`
+  (49 lines; "documented procedure, not a script" — the note adds the script as a
+  faster start, not a replacement for the prose-to-prose review).
 
-### Sprint Goal
-Give the simulated lane a deterministic, diffable structure and the contracts the report depends on — so `gap_report.py` has well-defined, fixture-producible inputs.
+---
 
-> From sdd.md §8 Phase 1: "Sim-lane diffability + contracts (R1/R2 foundation)" (sdd.md:L691)
+## Sprint 22 (local sprint-1) — voice→agent-persona scaffolder
+
+**Scope:** SMALL (3 tasks)
+
+**Sprint Goal:** Ship a stdlib-only `scaffold_agent_persona.py` that emits a
+schema-valid, provenance-pinned, DRAFT-seeded `agent-persona` skeleton from a voice
+or blank, with a sibling test and a doc on-ramp — never fabricating task-behavior.
 
 ### Deliverables
-- [ ] `domains/agent-systems/schemas/playout-summary.v1.schema.json` — Arneson-owned, additive, NOT vendored (FR-1, R1)
-- [ ] `domains/agent-systems/scripts/summarize_playout.py` — post-pass that reads the native `session-events-agent` sidecar and emits `playout-summary.v1.json` (OQ-1, R1)
-- [ ] `domains/agent-systems/move-map.yaml` + a documented `move-map/v1` schema (R2, OQ-5)
-- [ ] `domains/agent-systems/resources/fixtures/gap-report/` deterministic sim+real fixture pair + `gap-report.golden.md` target (SM-1 scaffolding)
+
+- [ ] `domains/agent-systems/scripts/scaffold_agent_persona.py` — stdlib-only scaffolder
+- [ ] `domains/agent-systems/scripts/test-scaffold-agent-persona.sh` — sibling domain test (auto-discovered by `scripts/test.sh`)
+- [ ] On-ramp note appended to `domains/agent-systems/docs/importing-an-agent.md`
 
 ### Acceptance Criteria
-- [ ] `playout-summary.v1.schema.json` validates the §3.1 shape: `schema="playout-summary/v1"`, `lane="simulated"`, `producer.kind`/`claim_strength`, `trials[].action_labels` (slugs `^[a-z0-9-]+$`), `trials[].outcome_signal` ∈ closed `OUTCOME_SIGNAL` set, `trials[].stop_reason` (sdd.md §3.1, §3.5)
-- [ ] `summarize_playout.py` is **deterministic**: same native sidecar → byte-identical `playout-summary.v1.json` (stable ordering); runs without invoking a persona host
-- [ ] `summarize_playout.py` does NOT modify, write to, or re-run the live playout host serializer (OQ-1 boundary)
-- [ ] `summarize_playout.py` is stdlib + vendored `restricted_yaml` only; imports nothing from `construct-gygax` (NFR-1, NFR-2)
-- [ ] `move-map.yaml` carries `schema: move-map/v1` and a `scenario_id` field (scenario-scoped, OQ-5); entries follow §3.3 (`canonical`, `sim_labels`, `real_evidence`)
-- [ ] Synthetic fixture pair pins the **same** `scenario_sha256` on both sim summary and real record; exercises all three D2 sets (a shared move, a sim-only raw label, a real-only move) and ≥2 verdict classes in D1 (sdd.md §7.2)
+
+**Functional (the script):**
+- [ ] `--from-voice akane` reads `grimoires/arneson/voices/npcs/akane.yaml` and emits a schema-valid `agent-persona` skeleton to `domains/agent-systems/resources/personas/akane.yaml` (default `--out`), with:
+  - [ ] `persona_id` = the npc id
+  - [ ] `source: {ref: <voice file path>, sha256: <of that file>, kind: behavioral-spec}` — provenance traceable
+  - [ ] `disposition`: a **DRAFT** seeded from the voice's personality/description prose, marked "edit me"
+  - [ ] `capabilities` / `knowledge{knows,does_not_know}` / `rung_overlays{blind,reward-aware,adversarial}`: **guided TODO stubs** with **NAMED** rung keys (`blind`/`reward-aware`/`adversarial`, NOT numeric)
+- [ ] `--blank --id <name>` emits a valid skeleton with no source-from-voice (`source.ref` points at its own spec stub, per `neutral-agent.yaml` precedent)
+- [ ] `--out` defaults to `domains/agent-systems/resources/personas/<id>.yaml`; honored when given
+- [ ] **Self-check on write**: emitted YAML is parsed back (round-trips through `restricted_yaml`) and all required `agent-persona` fields are asserted present + well-formed; **exit 2** if its own output is broken (mirrors `scaffold_playtest.py` R-2)
+- [ ] **Deterministic**: byte-equal output across runs (stable field order, no clock/random)
+- [ ] Missing/invalid voice → **exit 1** with `ERROR: [scaffold_agent_persona] ...`
+- [ ] Input errors (missing required flag, bad `--id`, `..` traversal in `--out`) → **exit 1**; exit codes `0` ok / `1` input error / `2` self-check failed
+
+**Test (T22.2):**
+- [ ] `test-scaffold-agent-persona.sh` is a sibling to existing `domains/*/scripts/test-*.sh` and runs green under `scripts/test.sh`
+- [ ] Asserts: `--from-voice akane` (fixture) → schema-valid skeleton with seeded disposition + provenance + TODO stubs; `--blank` path valid; missing-voice → exit 1; deterministic byte-equal across two runs
+
+**Doc (T22.3):**
+- [ ] `importing-an-agent.md` gains a short "scaffold a persona from a voice" note referencing `scaffold_agent_persona.py` as the fast on-ramp into the existing procedure (does not delete or contradict the prose-to-prose honesty rule)
+
+**HARD GUARDRAILS (load-bearing — must hold):**
+- [ ] **Scaffolds, does NOT auto-convert** — capabilities/knowledge/rung_overlays are TODO stubs; task-behavior is NEVER fabricated from dialogue/voice prose
+- [ ] **NOT wired to the gap report** — no auto-optimization of a persona against divergence; no import of `gap_report.py`; human stays the author
+- [ ] **Standalone-plus-composable** — no edit to the `/voice` skill; no cross-domain runtime coupling; the voice file is read for provenance/seed only
+- [ ] **stdlib-only** — no third-party imports (matches `scaffold_playtest.py`)
 
 ### Technical Tasks
-- [ ] T18.1: Author `playout-summary.v1.schema.json` (Draft 2020-12, additive-only policy note in-file) per SDD §3.1 → **[SM-1, G-4]**
-- [ ] T18.2: Implement `summarize_playout.py` — read committed native `session-events-agent` sidecar, project `agent_turn` action labels + `trial_end` → `outcome_signal`/`stop_reason`, emit `playout-summary.v1.json`; deterministic ordering; no host-serializer edit (OQ-1) → **[SM-1, G-4]**
-- [ ] T18.3: Author `move-map.yaml` (scenario-scoped, OQ-5) + a documented `move-map/v1` schema; encode the `real_evidence` recognizer fields (`artifact_path`+`artifact_status`, `anomaly_note_present`) per SDD §3.3 → **[SM-1]**
-- [ ] T18.4: Build the synthetic deterministic fixture pair under `resources/fixtures/gap-report/` (sim summary + minimal graded `observed-trace/v1` batch with `observation.classification` filled + the move-map), same `scenario_sha256`, covering all D2 sets + ≥2 D1 classes → **[SM-1]**
-- [ ] T18.5: Establish the `gap-report.golden.md` expected-body target from the fixture (byte-stable goal; finalized against `gap_report.py` output in Sprint 19) → **[SM-1]**
+
+- [ ] **T22.1 — `scaffold_agent_persona.py`** → **[G-1] [G-2]**
+  - Arg parse (manual, sibling-style): `--from-voice <npc-id>` XOR `--blank --id <name>`; `--out` (default `domains/agent-systems/resources/personas/<id>.yaml`). Reject providing both/neither input modes → exit 1.
+  - `--id` / npc-id kebab-case guard so it can never influence the output path (port `scaffold_playtest.py` L161); `--out` `..`-traversal refusal (SEC-001).
+  - `--from-voice`: read `grimoires/arneson/voices/npcs/<id>.yaml`; missing/unparseable → exit 1 with `ERROR: [scaffold_agent_persona] ...`. Compute `sha256` of the voice file; set `source = {ref, sha256, kind: behavioral-spec}`. Seed `disposition` (DRAFT, "edit me") from the voice's personality/description prose (e.g. `display_name` + an `emotional_register`/`speech_patterns` summary) — **descriptive grounding, not task-behavior**.
+  - `--blank`: `source.ref` points at an own-spec stub (neutral-agent precedent); `disposition` is a blank "edit me" stub.
+  - Emit `capabilities` (list), `knowledge.{knows,does_not_know}`, `rung_overlays.{blind,reward-aware,adversarial}` as **guided TODO stubs** with **named** rung keys. Stable field order; no clock/random (deterministic).
+  - Self-check on write: re-parse via `restricted_yaml.parse_file`, assert required fields present/well-formed; exit 2 on broken output.
+  - Exit `0/1/2`; `err()` prefix `ERROR: [scaffold_agent_persona]`.
+- [ ] **T22.2 — `test-scaffold-agent-persona.sh`** → **[G-1] [G-2]**
+  - Sibling `check name expected cmd...` harness (port `test-scaffold-playtest.sh` shape). Hermetic temp `--out`.
+  - Cases: `--from-voice akane` → exit 0 + emitted file parses + has seeded disposition + `source.sha256` non-empty + named rung keys + TODO-stub markers; `--blank --id foo` → exit 0, valid, no voice source; missing voice (`--from-voice nope`) → exit 1; determinism (two runs → `diff` byte-equal). Guardrail assertions: no numeric rung keys; capabilities/knowledge are stubs not voice-derived.
+- [ ] **T22.3 — doc on-ramp** → **[G-3]**
+  - Append a short "Scaffold a persona from a voice" section to `importing-an-agent.md`: one-liner usage (`python3 scripts/scaffold_agent_persona.py --from-voice <id>`), what it seeds vs. what stays TODO, and a pointer back to step 3+ of the existing procedure (the human still authors task-behavior + reviews).
+- [ ] **T22.E2E — End-to-End Goal Validation** (P0, Must Complete) → **[G-1] [G-2] [G-3]**
+  - G-1: run `scaffold_agent_persona.py --from-voice akane --out <tmp>` then `restricted_yaml.parse_file(<tmp>)` succeeds AND the script's own self-check exits 0.
+  - G-2: emitted file contains non-empty `source.sha256`, a `disposition` with the "edit me"/DRAFT marker, and TODO stubs (not voice-derived behavior) for capabilities/knowledge/rung_overlays.
+  - G-3: `importing-an-agent.md` contains the on-ramp note naming `scaffold_agent_persona.py`.
+  - Guardrails: `grep` confirms no `gap_report` import in the script; no change to any `/voice` skill file; no third-party import.
 
 ### Dependencies
-- None (first sprint of the cycle). Reads existing vendored contract + native-sidecar fixture as read-only references.
 
-### Security Considerations
-- **Trust boundaries:** native `session-events-agent` sidecar is Arneson-produced; the real graded batch is Gygax-produced and consumed read-only. `summarize_playout.py` reads the native sidecar only — it never reads or writes the real batch.
-- **External dependencies:** NONE added. Runtime stays stdlib + vendored `restricted_yaml` (NFR-1).
-- **Sensitive data:** none. Fixtures are synthetic.
-- **Vendored contract:** `schemas/vendor/*` is NOT touched; `playout-summary.v1.schema.json` is a separate Arneson-owned schema (NFR-7).
+- **Internal (existing, present):** `domains/agent-systems/schemas/agent-persona.schema.yaml`, `resources/personas/neutral-agent.yaml`, `scripts/restricted_yaml.py`, `scripts/scaffold_playtest.py` (pattern), `grimoires/arneson/voices/npcs/akane.yaml` (test fixture), `scripts/test.sh` (auto-discovery).
+- **Cross-task:** T22.2 depends on T22.1 (tests the script); T22.3 independent; T22.E2E depends on T22.1 + T22.3.
+- **External:** none. Python 3 stdlib only.
 
 ### Risks & Mitigation
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Native sidecar field shape drifts from `summarize_playout.py` assumptions | Med | Med | Pin the projection against the committed `native-sidecar.events.yaml` fixture; the deterministic fixture is the gate |
-| Outcome-signal vocabulary too narrow for real native data | Low | Low | `OUTCOME_SIGNAL` is closed (SDD §3.5); unmapped stop_reasons fail loud rather than silently mis-tag |
+
+| Risk | Mitigation |
+|------|------------|
+| Disposition seeding drifts toward fabricating task-behavior from dialogue | Seed `disposition` ONLY (descriptive prose); capabilities/knowledge/rung_overlays remain TODO stubs. T22.2 asserts the boundary; T22.E2E greps for guardrail violations. |
+| Schema fields hand-mirrored and drift from `agent-persona.schema.yaml` | Self-check re-parses emitted YAML and asserts each required field; exit 2 on mismatch (mirrors scaffold_playtest R-2). |
+| Voice YAML shape varies across npcs (akane vs future voices) | Seed defensively from a small set of well-known keys (`display_name`, personality/emotional prose) with graceful fallback to a generic "edit me" stub; never hard-require optional voice keys. |
+| Non-determinism via dict ordering or timestamps | Emit fields in a fixed literal order; no `datetime`/`random`; T22.2 byte-equal `diff` across two runs. |
+| `--out` default writes into `resources/personas/` during the test | Tests use a hermetic temp `--out`; never rely on the default path in CI. |
+| Accidental coupling to gap report / `/voice` skill | No import of `gap_report.py`; no write outside the persona output path; T22.E2E grep guardrail. |
 
 ### Success Metrics
-- `summarize_playout.py` produces byte-identical `playout-summary.v1.json` across two runs on the same fixture (determinism)
-- Synthetic fixture pair validates against both schemas and pins one shared `scenario_sha256`
+
+- `scripts/test.sh` runs `test-scaffold-agent-persona.sh` green (auto-discovered).
+- `--from-voice akane` and `--blank --id foo` both produce skeletons that round-trip through `restricted_yaml` and pass the script's self-check (exit 0).
+- Two consecutive runs produce byte-identical output (deterministic).
+- Missing voice → exit 1; broken self-output → exit 2 (verified reachable in test).
+- Zero third-party imports; zero edits to `/voice` skill files; zero `gap_report` references.
 
 ---
 
-## Sprint 19 (cycle-004 sprint-2): gap_report.py Core
+## Risk Register (cycle-level)
 
-**Duration:** 2.5 days
-**Scope:** LARGE (7 tasks)
-
-### Sprint Goal
-Implement the core `gap_report.py` — pairing refusal, D1 outcome divergence, D2 action-set divergence, provenance+framing render — arithmetic and quoted labels only, read-only on the real batch.
-
-> From sdd.md §8 Phase 2: "gap_report.py (core)" (sdd.md:L698)
-
-### Deliverables
-- [ ] `domains/agent-systems/scripts/triage_lib.py` — shared triage / `INFRA_MARKER` module extracted from `sweep_report.py` (OQ-2)
-- [ ] `sweep_report.py` refactored to import `triage_lib.py`; `test-sweep-report.sh` still passes **byte-equal** (guards the extraction)
-- [ ] `gap_report.py` with D1, D2, provenance, framing, pairing refusal (exit 2), output write to `gap-reports/`
-- [ ] Read-only + arithmetic-only audit pass documented (no classifier, no writes to batch)
-
-### Acceptance Criteria
-- [ ] `triage_lib.py` exposes `triage`, `_sidecar_paths`, `INFRA_MARKER`; `sweep_report.py` imports them; `test-sweep-report.sh` output is byte-identical to pre-extraction (OQ-2 guard)
-- [ ] D1 tabulates real verdict-class counts (`fixed`/`hacked`/`failed`/`infra`/`ungraded`) from `observation.classification` via `triage_lib`, **verbatim/quoted**, beside sim `outcome_signal` tags as separate rows (FR-3, sdd.md §3.4)
-- [ ] D2 computes `shared`/`sim_only`/`real_only` over move labels via `move-map.yaml`; unmapped sim labels surface raw in `sim_only`; sets sorted lexicographically (FR-4, sdd.md §3.3)
-- [ ] Provenance block renders `scenario_id`, `scenario_sha256`, sim `producer.kind`+`claim_strength` **quoted**, real `batch_path`, `engine_git_sha`, validation status, run counts (FR-5, NFR-5)
-- [ ] Framing footer renders the standing frame verbatim (simulated = exploration, real = proof; divergence shown not judged; interpretation is the analyst's) (FR-6)
-- [ ] `scenario_sha256` mismatch → `ERROR: [gap_report] scenario_sha256 mismatch: sim=<a> real=<b>` on stderr, **exit 2** (distinct from input-error exit 1) (FR-2, SM-4)
-- [ ] Report written to `grimoires/arneson/playouts/gap-reports/<scenario_id>-<timestamp>.md`; timestamp in filename only, body clock-free (FR-7, NFR-6)
-- [ ] Real batch opened `"r"` only — no writes, no grader subprocess, no `--regrade`; **arithmetic only**, no classification/severity/cliff function present (FR-8, NFR-4, sdd.md §4.3)
-- [ ] Output is **deterministic** — generated body byte-matches the Sprint 18 golden (timestamped filename excluded) (NFR-6, SM-1)
-
-### Technical Tasks
-- [ ] T19.1: Extract `triage`, `_sidecar_paths`, `INFRA_MARKER` into `triage_lib.py`; refactor `sweep_report.py` to import; verify `test-sweep-report.sh` byte-equal (OQ-2, R7) → **[SM-5, G-4]**
-- [ ] T19.2: Implement `main(argv)` + `parse_args` (`--sim`/`--real` only) + `load_sim` + `load_real` (reads `lane`, `scenario_sha256`, `batch_path`, validation status) per SDD §4.2 → **[SM-1]**
-- [ ] T19.3: Implement `assert_paired` refusal — exit 2 + both-sha message (FR-2) → **[SM-4, G-4]**
-- [ ] T19.4: Implement `outcome_divergence` (D1) — `tally_real` via `triage_lib` + sim `outcome_signal` tags, iterate fixed `VERDICT_CLASSES`/`OUTCOME_SIGNAL` tuples (FR-3, NFR-6) → **[SM-1, G-4]**
-- [ ] T19.5: Implement `action_divergence` (D2) — normalize via `move-map.yaml`, three sorted sets, raw-when-unmapped (FR-4, sdd.md §3.3) → **[SM-1, G-4]**
-- [ ] T19.6: Implement `provenance` (quoted labels, validation status) + `render` + `write_report` to `gap-reports/`, deterministic body (FR-5, FR-6, FR-7, NFR-6) → **[SM-1, G-4]**
-- [ ] T19.7: Negative-design audit — confirm no classifier/severity/cliff, no batch writes, no grader subprocess, no `construct-gygax` import, no third-party import (sdd.md §4.3; FR-8, NFR-1, NFR-2, NFR-4) → **[G-4]**
-
-### Dependencies
-- Sprint 18: `playout-summary.v1.schema.json`, `move-map.yaml`, synthetic fixture pair, golden file.
-
-### Security Considerations
-- **Trust boundaries:** real graded batch + grader sidecars are Gygax-produced, untrusted-for-mutation. `gap_report.py` opens them read-only. Producer-never-judges (G-4 §3) is enforced structurally — no classifier in the script.
-- **External dependencies:** NONE added. stdlib + vendored `restricted_yaml`.
-- **Sensitive data:** none.
-- **Injection surface:** sidecar JSON parse errors are caught per-file and skipped (mirrors `sweep_report` tolerance), never crashing the run (sdd.md §6).
-
-### Risks & Mitigation
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| `triage_lib.py` extraction changes `sweep_report.py` byte output | Med | Med | `test-sweep-report.sh` byte-equal gate is the acceptance criterion (R7) |
-| Hash-order nondeterminism leaks into rendered sets/tables | Med | High | Iterate over fixed tuples + `sorted()` everywhere; golden-file diff catches it (NFR-6) |
-| Pairing refusal collides with generic input-error exit | Low | Med | Exit 2 is reserved exclusively for the FR-2 refusal; SM-4 negative test asserts the path |
-
-### Success Metrics
-- Generated report body byte-matches the Sprint 18 golden (SM-1)
-- Mismatch fixture → exit 2 with both shas named (SM-4)
-- `test-sweep-report.sh` passes byte-equal post-extraction
+| ID | Risk | Severity | Mitigation | Owner Task |
+|----|------|----------|------------|------------|
+| R-1 | Scaffolder fabricates task-behavior from dialogue (guardrail breach) | High | TODO stubs only for capabilities/knowledge/rung_overlays; tested + grepped | T22.1, T22.2, T22.E2E |
+| R-2 | Emitted skeleton diverges from schema | Med | Self-check re-parse + required-field asserts; exit 2 | T22.1 |
+| R-3 | Hidden coupling to gap report or `/voice` skill | Med | Standalone script; grep guardrail in E2E | T22.E2E |
+| R-4 | Non-deterministic output | Low | Fixed field order, no clock/random; byte-equal test | T22.1, T22.2 |
 
 ---
 
-## Sprint 20 (cycle-004 sprint-3): Skill + Enablers + Gates
+## Appendix C: Goal Traceability
 
-**Duration:** 2.5 days
-**Scope:** MEDIUM (6 tasks)
+| Goal | Description | Contributing Tasks |
+|------|-------------|--------------------|
+| G-1 | Schema-valid skeleton from voice or blank | T22.1, T22.2, T22.E2E |
+| G-2 | Provenance + DRAFT disposition, no fabricated behavior | T22.1, T22.2, T22.E2E |
+| G-3 | Faster on-ramp for manual import | T22.3, T22.E2E |
 
-### Sprint Goal
-Wrap the script in an operator skill, stand up the test gates and dev enablers, run the informational real smoke, and validate all PRD success metrics end-to-end.
-
-> From sdd.md §8 Phase 3: "Skill + enablers + tests (the gates)" (sdd.md:L707)
-
-### Deliverables
-- [ ] `domains/agent-systems/skills/gap-report/SKILL.md` — thin wrapper (G1 pair gate → G2 generate → G3 report) (FR-9)
-- [ ] `domains/agent-systems/scripts/test-gap-report.sh` — golden + banned-copy grep + negative + import-grep + read-only checks (the gate)
-- [ ] `scripts/test.sh` — unified runner, globs `domains/*/scripts/test-*.sh` + Python validator self-tests (FR-10, OQ-4 complement)
-- [ ] `pyproject.toml` — ruff + mypy, scoped, NO `[project]`/runtime deps (FR-11, OQ-3)
-- [ ] Real informational smoke from `awareness-ladder-demo` (exit 0, not a gate)
-- [ ] Task 20.E2E: End-to-End Goal Validation (all PRD success metrics)
-
-### Acceptance Criteria
-- [ ] `gap-report/SKILL.md` mirrors `playout/SKILL.md` pattern; G1 surfaces the script's refusal verbatim on sha mismatch; G3 states the standing frame and never summarizes divergence as a verdict (FR-9, sdd.md §5.2)
-- [ ] `test-gap-report.sh`: (a) golden body diff passes, (b) banned-copy grep reuses the `scripts/ci/banned-copy-check.sh` BANNED regex and finds **0 hits** outside quoted ban lists, (c) mismatch negative asserts exit 2, (d) source grep finds no third-party / `construct-gygax` import, (e) batch bytes snapshot identical before/after a run (SM-1, SM-3, SM-4, FR-8, NFR-1)
-- [ ] `scripts/test.sh` exit 0 runs every `domains/*/scripts/test-*.sh` (incl. the new one by glob) + validator self-tests; **complements** `scripts/ci/*`, does not supersede (SM-5, FR-10, OQ-4)
-- [ ] `pyproject.toml` has NO `[project]` table and NO runtime dependency; `ruff` + `mypy` clean on `gap_report.py` + `summarize_playout.py` + `triage_lib.py` + their imports; pre-existing sibling findings handled via narrowly-scoped `per-file-ignores`/module overrides with a one-line comment each — not refactored (SM-6 refined to scoped, FR-11, OQ-3)
-- [ ] Real smoke: `awareness-ladder-demo` sim+real pair → `gap_report.py` exits 0 and writes a report; treated as informational (NOT a gate) per R3 (SM-2)
-- [ ] G-4 hard constraints verified end-to-end: arithmetic-only output, read-only on the real batch, quoted `producer.kind`/`claim_strength` labels, banned-copy grep clean, deterministic golden, stdlib-only + no Gygax imports
-
-### Technical Tasks
-- [ ] T20.1: Author `skills/gap-report/SKILL.md` (G1 pair gate, G2 generate, G3 report + framing; bright lines from `playout/SKILL.md`) (FR-9) → **[SM-2, G-4]**
-- [ ] T20.2: Implement `test-gap-report.sh` — golden diff, banned grep (reuse CI regex, single source of truth), mismatch negative, import-grep, read-only byte snapshot (sdd.md §7.3) → **[SM-1, SM-3, SM-4, G-4]**
-- [ ] T20.3: Implement `scripts/test.sh` — glob domain `test-*.sh` + validator self-tests, nonzero on any failure; complement `scripts/ci/*` (FR-10, OQ-4) → **[SM-5]**
-- [ ] T20.4: Author `pyproject.toml` (ruff+mypy, scoped, no runtime deps) + make the cycle's surface clean + scoped ignores for pre-existing sibling findings (FR-11, OQ-3) → **[SM-6]**
-- [ ] T20.5: Run the real informational smoke from `awareness-ladder-demo`; record exit 0; document it is not a gate (R3) → **[SM-2]**
-- [ ] T20.E2E: End-to-End Goal Validation (see below) → **[All SM, G-4]**
-
-### Task 20.E2E: End-to-End Goal Validation
-
-**Priority:** P0 (Must Complete)
-**Goal Contribution:** All PRD success metrics (SM-1…SM-6) + the G-4 hard-constraint bundle.
-
-**Validation Steps:**
-
-| Goal ID | Goal | Validation Action | Expected Result |
-|---------|------|-------------------|-----------------|
-| SM-1 | Byte-stable report for synthetic fixture pair | Run golden-file diff in `test-gap-report.sh` | Generated body byte-matches golden (timestamp excluded) |
-| SM-2 | Real-pair smoke produces a report, exit 0 | Run `gap_report.py` on `awareness-ladder-demo` sim+real pair | Exit 0; report written (informational, not a gate) |
-| SM-3 | 0 banned phrases outside quoted ban lists | Banned-copy grep over a freshly generated report | 0 hits |
-| SM-4 | Mismatched `scenario_sha256` refuses | Run mismatch negative fixture | Exit 2 + both shas named |
-| SM-5 | One command runs all tests green | `scripts/test.sh` | Exit 0 |
-| SM-6 (scoped, OQ-3) | ruff+mypy clean on cycle surface + imports | `ruff` + `mypy` via `pyproject.toml` | Clean on gap_report/summarize_playout/triage_lib + imports; siblings scoped-ignored |
-| G-4 | Hard constraints | Inspect output + script source | Arithmetic-only, read-only on batch, quoted labels, banned-clean, deterministic, stdlib-only + no Gygax imports |
-
-**Acceptance Criteria:**
-- [ ] Each metric validated with documented evidence (test output captured)
-- [ ] Integration verified: sim summary → `gap_report.py` → report, end-to-end on both synthetic and real pairs
-- [ ] No metric marked "not achieved" without explicit justification
-
-### Dependencies
-- Sprint 19: working `gap_report.py` + golden output.
-- Sprint 18: fixtures, schemas, move-map.
-
-### Security Considerations
-- **Trust boundaries:** the skill is operator-facing; it never authors a grade, edits the batch, softens a claim label, or paraphrases a simulation upward (sdd.md §5.2 bright lines).
-- **External dependencies:** `pyproject.toml` adds ruff/mypy as **dev-only** tooling — explicitly NO runtime dep, NO `[project]` table (FR-11, NFR-1). This is the one place a dependency could leak in; the acceptance criterion forbids it.
-- **Sensitive data:** none.
-
-### Risks & Mitigation
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Whole-dir lint surfaces unrelated sibling findings | Med | Low | OQ-3 scoped ignores (`per-file-ignores`/module overrides) with one-line comments; do not refactor siblings |
-| `pyproject.toml` accidentally introduces a runtime dep | Low | High | Acceptance criterion: no `[project]` table, no dependency list; grep asserts it |
-| Real smoke flakes (persona-host nondeterminism) | High | Low | Smoke is informational only — exit 0 is the only assertion (R3, SM-2) |
-
-### Success Metrics
-- `scripts/test.sh` exit 0 (SM-5)
-- All SM-1…SM-6 validated in Task 20.E2E
-- Banned-copy grep clean (SM-3)
+**Coverage check:** All goals (G-1, G-2, G-3) have ≥1 contributing task. ✓
+**E2E validation:** T22.E2E present in the (only) sprint, P0. ✓
+No warnings.
 
 ---
 
-## Sprint 21 (cycle-004 sprint-4): Cycle Hygiene
+## Appendix A: Task Dependencies
 
-**Duration:** 0.5 day
-**Scope:** SMALL (2 tasks)
-
-### Sprint Goal
-Finalize ledger and NOTES state for the cycle; confirm cycle-003 archival and cycle-004 sprint completion records.
-
-> From sdd.md §8 Phase 4: "Open cycle-004, archive cycle-003 via the ledger flow — R4" (sdd.md:L715)
-
-### Deliverables
-- [ ] Ledger reflects cycle-003 archived + cycle-004 active with sprints 18–21 (applied at plan time — this sprint confirms + records sprint completions)
-- [ ] `grimoires/loa/NOTES.md` updated with cycle-004 decision log + session continuity
-
-### Acceptance Criteria
-- [ ] `grimoires/loa/ledger.json`: `cycle-003.status == "archived"`, `active_cycle == "cycle-004"`, `next_sprint_number == 22`, sprints 18–21 registered (verified)
-- [ ] Sprint completion timestamps recorded for 18–20 as `/run` closes each
-- [ ] NOTES.md carries the cycle-004 decision log (OQ-1…OQ-5 resolutions, key tradeoffs)
-
-### Technical Tasks
-- [ ] T21.1: Confirm ledger state (cycle-003 archived, cycle-004 active, next_sprint_number=22); record sprint 18–20 completion timestamps → **[hygiene]**
-- [ ] T21.2: Update `grimoires/loa/NOTES.md` — cycle-004 decision log + session continuity + deferred items (host-emit promotion of OQ-1, D3 Rich tier, `/voice` feedback loop) → **[hygiene]**
-
-### Dependencies
-- Sprints 18–20 completed (their completion timestamps are recorded here).
-
-### Security Considerations
-- **Trust boundaries:** ledger + NOTES are State Zone (read/write). No app code touched.
-- **External dependencies:** none.
-- **Sensitive data:** none.
-
-### Risks & Mitigation
-| Risk | Probability | Impact | Mitigation |
-|------|-------------|--------|------------|
-| Ledger drift if a sprint reopens | Low | Low | Confirm-only sprint; re-validate JSON before close |
-
-### Success Metrics
-- Ledger JSON valid + cycle states correct
-- NOTES.md decision log present
-
----
-
-## Risk Register
-
-| ID | Risk | Sprint | Probability | Impact | Mitigation | Owner |
-|----|------|--------|-------------|--------|------------|-------|
-| R1 | Sim lane emits no diffable structure | 18 | Confirmed | High | Additive `playout-summary.v1.json` via post-pass `summarize_playout.py` (OQ-1) | Implementer |
-| R2 | Sim/real action vocabularies diverge | 18–19 | High | Med | Documented `move-map.yaml`; raw labels when unmapped (R2, OQ-5) | Implementer |
-| R3 | Persona-host nondeterminism → real smoke can't gate | 20 | High | Low | Synthetic golden is the gate (SM-1); real pair is exit-0 smoke (SM-2) | Implementer |
-| R4 | Orphaned cycle-002 prd; cycle-003 still active | 21 | Resolved | Low | cycle-004 opened + cycle-003 archived at plan time (this plan) | Planner |
-| R5 | "grader's report" Markdown-only, not parseable | 19 | Confirmed | Med | D1 reads `observation.classification` from graded sidecars via `triage_lib` (sdd.md §3.2) | Implementer |
-| R6 | Whole-dir lint surfaces pre-existing findings | 20 | Med | Low | Scoped lint (OQ-3): cycle surface clean, siblings scoped-ignored | Implementer |
-| R7 | Triage drifts between `sweep_report.py` and `gap_report.py` | 19 | Low | Med | Shared `triage_lib.py` (OQ-2); `test-sweep-report.sh` byte-equal guard | Implementer |
-
----
-
-## Success Metrics Summary
-
-| Metric | Target | Measurement Method | Sprint |
-|--------|--------|-------------------|--------|
-| SM-1 | Byte-stable golden report | golden-file diff in `test-gap-report.sh` | 19 (impl), 20 (gate) |
-| SM-2 | Real pair → exit 0 | informational smoke | 20 |
-| SM-3 | 0 banned phrases | grep (reused CI regex) | 20 |
-| SM-4 | sha mismatch refuses | negative test, exit 2 | 19 (impl), 20 (gate) |
-| SM-5 | one command, all green | `scripts/test.sh` exit 0 | 20 |
-| SM-6 (scoped) | ruff+mypy clean on cycle surface | `pyproject.toml` gate | 20 |
-
----
-
-## Dependencies Map
-
+```mermaid
+graph TD
+    T1["T22.1 scaffold_agent_persona.py"] --> T2["T22.2 test-scaffold-agent-persona.sh"]
+    T1 --> E["T22.E2E goal validation"]
+    T3["T22.3 doc on-ramp"] --> E
+    T2 --> E
 ```
-Sprint 18 ──────────▶ Sprint 19 ──────────▶ Sprint 20 ──────────▶ Sprint 21
-   │                     │                     │                     │
-   └─ Contracts +        └─ gap_report.py      └─ Skill + gates +    └─ Cycle
-      fixtures +            core (D1/D2/         E2E validation +       hygiene
-      summarize_playout     refusal/render)      real smoke
-```
-
----
-
-## Appendix
-
-### A. PRD Feature Mapping
-
-| PRD Requirement | Sprint | Status |
-|-----------------|--------|--------|
-| FR-1 Inputs | 18 (schema), 19 (load) | Planned |
-| FR-2 Pairing refusal | 19 | Planned |
-| FR-3 D1 outcome divergence | 19 | Planned |
-| FR-4 D2 action-set divergence | 19 | Planned |
-| FR-5 Provenance block | 19 | Planned |
-| FR-6 Framing footer | 19 | Planned |
-| FR-7 Output location | 19 | Planned |
-| FR-8 Read-only on real batch | 19 | Planned |
-| FR-9 Skill wrapper | 20 | Planned |
-| FR-10 Unified test runner | 20 | Planned |
-| FR-11 Dev-only pyproject.toml | 20 | Planned |
-| NFR-1 stdlib-only runtime | 18, 19, 20 | Planned |
-| NFR-2 No Gygax coupling | 18, 19, 20 | Planned |
-| NFR-3 Banned-copy clean | 20 | Planned |
-| NFR-4 Arithmetic only | 19 | Planned |
-| NFR-5 Validator-respecting | 19 | Planned |
-| NFR-6 Deterministic core | 18, 19 | Planned |
-| NFR-7 Vendored contract read-only | 18 | Planned |
-
-### B. SDD Component Mapping
-
-| SDD Component | Sprint | Status |
-|---------------|--------|--------|
-| `playout-summary.v1.schema.json` (§3.1) | 18 | Planned |
-| `summarize_playout.py` (OQ-1) | 18 | Planned |
-| `move-map.yaml` + schema (§3.3) | 18 | Planned |
-| Synthetic fixture pair + golden (§7.2) | 18 | Planned |
-| `triage_lib.py` (§4.1, OQ-2) | 19 | Planned |
-| `gap_report.py` (§4) | 19 | Planned |
-| `skills/gap-report/SKILL.md` (§5.2) | 20 | Planned |
-| `test-gap-report.sh` (§7.3) | 20 | Planned |
-| `scripts/test.sh` (§7.4, OQ-4) | 20 | Planned |
-| `pyproject.toml` (§2.2, OQ-3) | 20 | Planned |
-| Cycle hygiene (§8 Phase 4) | 21 | Planned |
-
-### C. PRD Goal Mapping
-
-The PRD expresses goals as success metrics (SM-1…SM-6) plus the G-4 hard-constraint bundle (arithmetic-only, read-only, quoted labels, banned-clean, deterministic, stdlib-only/no-Gygax). These are the traceability anchors.
-
-| Goal ID | Goal Description | Contributing Tasks | Validation Task |
-|---------|------------------|-------------------|-----------------|
-| SM-1 | Byte-stable golden report | T18.1, T18.2, T18.4, T18.5, T19.2, T19.4, T19.5, T19.6, T20.2 | T20.E2E |
-| SM-2 | Real-pair smoke, exit 0 | T20.1, T20.5 | T20.E2E |
-| SM-3 | 0 banned phrases | T20.2 | T20.E2E |
-| SM-4 | sha mismatch refuses (exit 2) | T19.3, T20.2 | T20.E2E |
-| SM-5 | one command, all green | T19.1, T20.3 | T20.E2E |
-| SM-6 (scoped) | ruff+mypy clean on cycle surface | T20.4 | T20.E2E |
-| G-4 | Hard-constraint bundle | T18.1, T18.2, T19.1, T19.3, T19.4, T19.5, T19.6, T19.7, T20.1, T20.2 | T20.E2E |
-
-**Goal Coverage Check:**
-- [x] All PRD goals (SM-1…SM-6 + G-4) have at least one contributing task
-- [x] All goals have a validation task in the final implementation sprint (T20.E2E)
-- [x] No orphan tasks (every task traces to ≥1 SM or G-4 or cycle hygiene)
-
-**Per-Sprint Goal Contribution:**
-
-- Sprint 18: SM-1 (foundation: contracts + fixtures + summarize), G-4 (partial: schema, stdlib-only)
-- Sprint 19: SM-1 (core impl), SM-4 (refusal), SM-5 (triage extraction), G-4 (arithmetic/read-only/quoted/deterministic)
-- Sprint 20: SM-2, SM-3, SM-5 (runner), SM-6 (lint), G-4 (full E2E verification) — E2E validation of all goals
-- Sprint 21: cycle hygiene (no SM/G-4 contribution)
-
----
-
-*Generated by Sprint Planner Agent. Arithmetic only; the report shows where forecast and observation diverge — it never judges fidelity.*

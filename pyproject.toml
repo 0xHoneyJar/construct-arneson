@@ -18,6 +18,7 @@ include = [
     "domains/agent-systems/scripts/gap_report.py",
     "domains/agent-systems/scripts/summarize_playout.py",
     "domains/agent-systems/scripts/triage_lib.py",
+    "domains/agent-systems/scripts/scaffold_agent_persona.py",
 ]
 
 [tool.ruff.lint]
@@ -36,6 +37,7 @@ files = [
     "domains/agent-systems/scripts/gap_report.py",
     "domains/agent-systems/scripts/summarize_playout.py",
     "domains/agent-systems/scripts/triage_lib.py",
+    "domains/agent-systems/scripts/scaffold_agent_persona.py",
 ]
 ignore_missing_imports = true
 check_untyped_defs = false

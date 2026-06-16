@@ -47,3 +47,24 @@ same scenario in real mode (`agent_cmd` pointing at your actual agent) and
 compare; then improve the persona against the gap report via `/voice`
 (docs/pairing-workflow.md). One variable per scenario: never change persona
 and fixture together.
+
+## Faster start: scaffold from a voice
+
+Already workshopped a character with `/voice`? You can bootstrap a **valid
+persona skeleton** from it instead of filling the schema by hand:
+
+```bash
+python3 domains/agent-systems/scripts/scaffold_agent_persona.py \
+  --from-voice <npc-id>        # reads grimoires/arneson/voices/npcs/<npc-id>.yaml
+# or, from nothing:
+python3 domains/agent-systems/scripts/scaffold_agent_persona.py --blank --id <name>
+```
+
+It writes a schema-valid `agent-persona` to
+`domains/agent-systems/resources/personas/<id>.yaml` with `source` provenance
+pinned to the voice file. **It scaffolds, it does not convert:** the
+`disposition` is a *draft* seeded from the voice's personality (edit it), and
+`capabilities` / `knowledge` / `rung_overlays` are TODO stubs you must author —
+because a voice describes how the character *talks*, not how an agent *acts on a
+task*. The skeleton runs as-is, but it's a starting point, not a finished agent.
+
