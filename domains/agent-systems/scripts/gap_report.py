@@ -77,7 +77,9 @@ def parse_args(argv):
             )
         i += 2
     if not sim or not real:
-        raise InputError("usage: gap_report.py --sim <playout-summary.json> --real <real-playout.yaml>")
+        raise InputError(
+            "usage: gap_report.py --sim <playout-summary.json> --real <real-playout.yaml>"
+        )
     return sim, real, move_map, out_dir
 
 
@@ -110,7 +112,9 @@ def load_real(path):
     if not isinstance(rec, dict) or rec.get("lane") != "real":
         raise InputError(f"real record {path} lane is not 'real'")
     if rec.get("validation") == "non-conformant":
-        raise InputError(f"real batch records validation: non-conformant ({path}); declining (read-only, no regrade)")
+        raise InputError(
+            f"real batch records validation: non-conformant ({path}); declining (read-only)"
+        )
     batch_path = rec.get("batch_path")
     if not batch_path:
         raise InputError(f"real record {path} has no batch_path")

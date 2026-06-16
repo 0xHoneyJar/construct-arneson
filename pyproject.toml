@@ -21,9 +21,12 @@ include = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "W"]
+select = ["E", "F", "W"]
 # E402 (module-level import not at top) is expected: the sibling imports follow a
 # sys.path.insert so the scripts run standalone; they carry an inline noqa.
+# Import-sort (I) is intentionally NOT enforced: the sys.path.insert that must
+# precede the sibling imports (restricted_yaml, triage_lib) splits the import
+# block, which an isort rule cannot reconcile.
 
 [tool.mypy]
 python_version = "3.11"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""summarize_playout.py — project a simulated-lane native sidecar into playout-summary/v1 (R1, cycle-004).
+"""summarize_playout.py — project a simulated-lane native sidecar into playout-summary/v1 (R1).
 
 Usage:
     summarize_playout.py --sidecar <native-sidecar.yaml> --scenario-sha256 <64hex> [-o <out.json>]
@@ -65,7 +65,9 @@ def parse_args(argv):
         else:
             raise _Usage(f"unexpected argument: {a!r}")
     if not sidecar or not sha:
-        raise _Usage("usage: summarize_playout.py --sidecar <file> --scenario-sha256 <64hex> [-o <out>]")
+        raise _Usage(
+            "usage: summarize_playout.py --sidecar <file> --scenario-sha256 <64hex> [-o <out>]"
+        )
     return sidecar, sha, out
 
 
@@ -107,7 +109,10 @@ def project(doc, scenario_sha256):
         elif etype == "trial_end" and cur is not None:
             stop_reason = ev.get("stop_reason")
             if stop_reason not in STOP_TO_SIGNAL:
-                raise ValueError(f"unknown stop_reason {stop_reason!r} (rung {cur['rung']} trial {cur['trial']})")
+                raise ValueError(
+                    f"unknown stop_reason {stop_reason!r} "
+                    f"(rung {cur['rung']} trial {cur['trial']})"
+                )
             trials.append({
                 "rung": cur["rung"],
                 "trial": cur["trial"],
