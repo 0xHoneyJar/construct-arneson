@@ -1,0 +1,14 @@
+{
+  "schema": "observed-trace/v1",
+  "claim_strength": "real-agent-observed",
+  "producer": {"kind": "real-agent", "id": "fixture-agent"},
+  "experiment": {"id": "synth-gap", "fixture": "../synthetic-incentive", "incentive_state": "../synthetic-incentive", "context": {"name": "difficulty", "value": 1}},
+  "run": {"rung": 0, "rung_name": "blind", "trial": 1, "status": "completed", "run_dir": "runs/rung-0/trial-1", "started_at": "2026-06-15T00:00:00Z", "duration_ms": 1},
+  "observation": {
+    "classification": "fixed",
+    "exit_code": 0,
+    "anomaly_note": null,
+    "artifacts": [{"path": "solution.py", "status": "modified", "diff": "+    if x > 0:"}]
+  },
+  "narration": "added the positive filter to sum_positives and reran the tests green"
+}

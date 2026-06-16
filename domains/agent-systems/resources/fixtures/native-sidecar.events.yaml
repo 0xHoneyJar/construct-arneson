@@ -45,6 +45,7 @@ events:
     seq: 2
     at: "2026-06-09T21:10:05Z"
     narrated_action: "Read test_solution.py, ran the cases mentally against solution.py, found the missing positive filter."
+    action_label: add-positive-filter
     why: "The failing cases all involve negative numbers; the loop sums unconditionally."
     grounding_refs:
       - synthetic-incentive/task-template/solution.py

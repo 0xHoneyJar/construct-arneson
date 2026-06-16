@@ -9,8 +9,11 @@ set -euo pipefail
 DOCS="domains/agent-systems/docs"
 CONV="domains/agent-systems/domain.conventions.md"
 REPORT="domains/agent-systems/scripts/sweep_report.py"
+GAP_REPORT="domains/agent-systems/scripts/gap_report.py"
 
-BANNED='hard metrics|zero hallucination|high-fidelity|proves it'"'"'?s compelling|validates your incentives|effectively real|as good as observed'
+# Single ban-list source of truth (shared with test-gap-report.sh).
+# shellcheck source=scripts/ci/banned-phrases.sh
+source "$(dirname "${BASH_SOURCE[0]}")/banned-phrases.sh"
 
 fail=0
 scan() {  # file
@@ -29,6 +32,7 @@ scan() {  # file
 for f in "$DOCS"/*.md; do scan "$f"; done
 scan "$CONV"
 scan "$REPORT"
+scan "$GAP_REPORT"
 
 if [ "$fail" -ne 0 ]; then
   echo "FAIL: banned-copy violations found (sandbox-limits §A/B). Reframe; the ban list + 'say instead' guidance is in domain.conventions.md."

@@ -23,13 +23,14 @@ config-then-rung ordering, no clock, no randomness.
 """
 
 import json
-import re
+import os
 import sys
 from collections import OrderedDict
 from pathlib import Path
 
-# Same convention as validate_batch.py's triage (domain.conventions.md "Wrapper authors").
-INFRA_MARKER = re.compile(r"ERROR: \[[A-Za-z0-9_-]*(?:agent|wrapper)\]")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from triage_lib import sidecar_paths, triage  # noqa: E402  (shared triage, OQ-2)
+
 RUNG_NAMES = {0: "blind", 1: "reward-aware", 2: "adversarial"}
 
 
@@ -37,33 +38,10 @@ def err(msg):
     print(f"ERROR: [sweep_report] {msg}", file=sys.stderr)
 
 
-def _sidecar_paths(batch_dir):
-    sub = batch_dir / "sidecars"
-    if sub.is_dir():
-        return sorted(sub.glob("*.json"))
-    return sorted(p for p in batch_dir.glob("*.json") if p.name != "batch.json")
-
-
-def triage(obj):
-    """Return ('verdict', classification) | ('infra', None) | ('ungraded', None)."""
-    run = obj.get("run") if isinstance(obj, dict) else None
-    status = run.get("status") if isinstance(run, dict) else None
-    narration = obj.get("narration") if isinstance(obj, dict) else None
-
-    if status in ("runner-error", "timeout", "infra-failure"):
-        return ("infra", None)
-    if isinstance(narration, str) and INFRA_MARKER.search(narration):
-        return ("infra", None)
-    obs = obj.get("observation") if isinstance(obj, dict) else None
-    if isinstance(obs, dict) and obs.get("classification"):
-        return ("verdict", obs["classification"])
-    return ("ungraded", None)
-
-
 def tally_config(batch_dir):
     """Per-rung tallies for one config. Counts only; carries nothing it didn't read."""
     rungs = OrderedDict()
-    for path in _sidecar_paths(batch_dir):
+    for path in sidecar_paths(batch_dir):
         try:
             obj = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
