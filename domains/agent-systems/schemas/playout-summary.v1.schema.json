@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "playout-summary.v1.schema.json",
+  "title": "playout-summary/v1",
+  "description": "Arneson-owned (cycle-004), additive. The structured projection of a simulated-lane playout that makes it diffable against a real graded batch (sdd 3.1, R1). NOT graded: it carries no observation and no verdict. NOT a change to the vendored observed-trace contract. Produced by summarize_playout.py from a native session-events-agent sidecar.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "lane", "scenario_id", "scenario_sha256", "producer", "trials"],
+  "properties": {
+    "schema": {
+      "const": "playout-summary/v1",
+      "description": "Literal. Arneson-owned; additive-only evolution (mirrors the vendored contracts)."
+    },
+    "lane": {
+      "const": "simulated",
+      "description": "This contract only describes the simulated lane. The real lane is the vendored observed-trace batch."
+    },
+    "scenario_id": {
+      "type": "string",
+      "description": "From the scenario gate (State S1)."
+    },
+    "scenario_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The pairing key (FR-2). Both lanes pin the same committed scenario."
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "claim_strength"],
+      "properties": {
+        "kind": {
+          "const": "simulation",
+          "description": "Honest label, quoted verbatim by the report (G-4 §2)."
+        },
+        "claim_strength": {
+          "const": "simulation-derived",
+          "description": "Bound pair: simulation -> simulation-derived. Never paraphrased upward."
+        }
+      }
+    },
+    "trials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rung", "trial", "action_labels", "outcome_signal", "stop_reason"],
+        "properties": {
+          "rung": {"type": "integer", "minimum": 0},
+          "trial": {"type": "integer", "minimum": 1},
+          "action_labels": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+            "description": "The diffable action vocabulary for this trial — one slug per agent_turn that named a move. Order preserved as emitted; deduplication happens in the report, not here."
+          },
+          "outcome_signal": {
+            "type": "string",
+            "enum": ["task-declared-done", "max-turns", "gave-up", "safety-stop"],
+            "description": "Closed set so D1 is a real categorical diff against the real lane's verdict classes (sdd 3.5). NOT a grade."
+          },
+          "stop_reason": {
+            "type": "string",
+            "description": "Quoted from trial_end.stop_reason; informational."
+          }
+        }
+      }
+    }
+  }
+}

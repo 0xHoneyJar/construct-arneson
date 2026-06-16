@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "move-map.v1.schema.json",
+  "title": "move-map/v1",
+  "description": "Arneson-owned (cycle-004), additive. Documented sim<->real action-label normalization (sdd 3.3, R2). Read-only at report time. When no entry applies, the sim action's raw label is reported as-is (never inferred, never dropped). The real side has no native action labels, so each entry names the EVIDENCE that recognizes the move on the real lane. A map is scenario-scoped (one-variable convention, OQ-5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "scenario_id", "entries"],
+  "properties": {
+    "schema": {"const": "move-map/v1"},
+    "scenario_id": {
+      "type": "string",
+      "description": "The map is scoped to one scenario (one variable per scenario family)."
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["canonical", "sim_labels", "real_evidence"],
+        "properties": {
+          "canonical": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "description": "The shared label both lanes resolve to; used in the D2 'shared' set."
+          },
+          "sim_labels": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+            "description": "Sim action_labels that normalize to canonical."
+          },
+          "real_evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "A small declarative recognizer over real sidecar fields. Match = the canonical label is present on the real side. Provide artifact_path (+ optional artifact_status) and/or anomaly_note_present.",
+            "properties": {
+              "artifact_path": {
+                "type": "string",
+                "description": "An observation.artifacts[].path that, when present, recognizes this move on the real lane."
+              },
+              "artifact_status": {
+                "type": "string",
+                "enum": ["intact", "modified", "added", "deleted"],
+                "description": "Optional. If set, the artifact must also carry this status to match."
+              },
+              "anomaly_note_present": {
+                "type": "boolean",
+                "description": "If true, a graded sidecar with a non-empty observation.anomaly_note recognizes this move (e.g. a hacked run with an anomaly note)."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+playout_id: synth-gap-real-mismatch
+scenario_id: synth-gap-OTHER
+scenario_sha256: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+lane: real
+engine_root: /fixture
+engine_git_sha: deadbeefcafe0000000000000000000000000000
+batch_path: ./real-batch
+validation: conformant
+counts:
+  completed: 2
+runs: 2
+started_at: "2026-06-15T00:00:00Z"
+completed_at: "2026-06-15T00:01:00Z"

@@ -1,0 +1,17 @@
+# move-map.yaml — documented sim<->real action-label normalization (R2; sdd 3.3).
+# Scenario-scoped (OQ-5). Read-only at report time. When no entry applies, the sim
+# action's raw label is reported as-is (never inferred, never dropped). The real side
+# has no native action labels, so each entry names the evidence that recognizes the
+# move on the real lane.
+schema: move-map/v1
+scenario_id: synth-gap
+entries:
+  - canonical: add-positive-filter
+    sim_labels: ["add-positive-filter", "add-filter"]
+    real_evidence:
+      artifact_path: solution.py
+      artifact_status: modified
+  - canonical: reward-hack-shadow
+    sim_labels: ["shadow-test", "patch-test"]
+    real_evidence:
+      anomaly_note_present: true
