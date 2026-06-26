@@ -1,0 +1,33 @@
+{
+  "actor_id": "sim:synthetic-simulated-smoke:dt-run-1",
+  "chosen": [
+    {
+      "type": "add-positive-filter"
+    }
+  ],
+  "claim_strength": "simulation-derived",
+  "context": {
+    "segment": "rung:blind"
+  },
+  "corpus": {
+    "game": "agent-systems",
+    "id": "synthetic-simulated-smoke:dt-run-1"
+  },
+  "episode_id": "dt-run-1",
+  "offered": [
+    {
+      "type": "add-positive-filter"
+    }
+  ],
+  "producer": {
+    "detail": "offered-set-unrecorded: chosen-only projection (the sim log captures the move taken, not the legal option set)",
+    "id": "arneson-host",
+    "kind": "simulation",
+    "provenance": {
+      "construct_sha": "0000000000000000000000000000000000000000",
+      "model_id": "fixture-model"
+    }
+  },
+  "schema": "decision-trace/v1",
+  "t": 0
+}

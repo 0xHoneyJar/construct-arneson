@@ -1,0 +1,23 @@
+# Negative fixture: an agent_turn carries a present-but-empty action_label.
+# The emitter projects it (key present) into an option whose `type` is the empty
+# string, which the vendored contract forbids (type minLength 1). The self-check
+# catches it and the emitter REFUSES to write the corpus ⇒ exit 2 (never ship a
+# broken corpus).
+preamble:
+  domain: agent-systems
+  scenario_id: synthetic-simulated-smoke
+  run_id: broken-run
+  visibility_rung: 0
+events:
+  - type: rung_start
+    seq: 1
+    rung: 0
+    rung_name: blind
+    trial: 1
+  - type: agent_turn
+    seq: 2
+    narrated_action: "Recorded an empty action label."
+    action_label: ""
+  - type: trial_end
+    seq: 3
+    status: completed
