@@ -1,10 +1,41 @@
 {
   "version": 1,
   "created": "2026-06-10T00:37:18Z",
-  "last_updated": "2026-06-16T00:00:00Z",
-  "next_sprint_number": 23,
-  "active_cycle": "cycle-005",
+  "last_updated": "2026-06-25T00:00:00Z",
+  "next_sprint_number": 26,
+  "active_cycle": "cycle-007",
   "cycles": [
+    {
+      "id": "cycle-007",
+      "label": "compounding-seam-closure",
+      "status": "active",
+      "created": "2026-06-25T00:00:00Z",
+      "prd": "grimoires/loa/prd.md",
+      "sdd": "grimoires/loa/sdd.md",
+      "sprints": [
+        {
+          "global_id": 23,
+          "local_label": "sprint-1",
+          "status": "planned",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": null
+        },
+        {
+          "global_id": 24,
+          "local_label": "sprint-2",
+          "status": "planned",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": null
+        },
+        {
+          "global_id": 25,
+          "local_label": "sprint-3",
+          "status": "planned",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": null
+        }
+      ]
+    },
     {
       "id": "cycle-005",
       "label": "voice-persona-bridge",

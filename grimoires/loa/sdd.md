@@ -1,30 +1,28 @@
-# Software Design Document: Simulation Fidelity Gap Report
+# Software Design Document: cycle-007 — Compounding-Seam Closure & In-Flight Consolidation
 
-**Version:** 1.0 (cycle: Simulation Fidelity Gap Report)
-**Date:** 2026-06-15
-**Author:** Architecture Designer Agent (/architect)
-**Status:** Draft
-**PRD Reference:** grimoires/loa/prd.md
-
-> **Note on document scope.** This SDD covers ONLY the Simulation Fidelity Gap
-> Report cycle. The prior `sdd.md` (v4.1 — Playtest Instrument, 2026-06-10) remains
-> the canonical record for the already-shipped surface (`/playout`, validators,
-> `sweep_report.py`, the vendored contract); it is superseded as the *current* SDD by
-> this document but its design rationale for the shipped code still stands. This
-> document is additive: it specifies one new script (`gap_report.py`), one new domain
-> skill (`gap-report`), one new producer-side artifact (`playout-summary.v1.json`),
-> one documented mapping file (`move-map.yaml`), and two root-level dev enablers
-> (`scripts/test.sh`, `pyproject.toml`).
+> **Cycle:** cycle-007. **Status:** Draft (architect complete). **Date:** 2026-06-25.
+> **Author:** designing-architecture / Practitioner.
+> **Source PRD:** `grimoires/loa/prd.md` (cycle-007, 7 FRs, 7 NFRs, 6 risks).
+> **Supersedes:** cycle-004 "Simulation Fidelity Gap Report" SDD (archived alongside its PRD).
+> **Grounding:** Direct cross-repo code analysis of `construct-arneson` + the `../construct-gygax`
+> sibling checkout (2026-06-25). Both `/architect` design questions (OQ-1, R-2) resolved empirically
+> against live code/fixtures, not prose — see §1.2 and §1.3.
 
 ---
 
 ## Table of Contents
 
 1. [Project Architecture](#1-project-architecture)
+   - 1.1 [System Overview](#11-system-overview)
+   - 1.2 [OQ-1 Resolution — the sim log is chosen-only](#12-oq-1-resolution--the-sim-log-is-chosen-only-fr-1)
+   - 1.3 [R-2 Resolution — wholesale pin bump](#13-r-2-resolution--wholesale-pin-bump-fr-1)
+   - 1.4 [Component map](#14-component-map)
+   - 1.5 [Data flow — the producer side of the seam](#15-data-flow--the-producer-side-of-the-seam)
+   - 1.6 [Trust & boundary invariants (load-bearing)](#16-trust--boundary-invariants-load-bearing)
 2. [Software Stack](#2-software-stack)
 3. [Data Models](#3-data-models)
-4. [Component Design (gap_report.py)](#4-component-design-gap_reportpy)
-5. [Interface Specifications (CLI + Skill)](#5-interface-specifications-cli--skill)
+4. [Component Design](#4-component-design)
+5. [Interface Specifications (CLI + skill/doc)](#5-interface-specifications-cli--skilldoc)
 6. [Error Handling Strategy](#6-error-handling-strategy)
 7. [Testing Strategy](#7-testing-strategy)
 8. [Development Phases](#8-development-phases)
@@ -38,746 +36,767 @@
 
 ### 1.1 System Overview
 
-This cycle builds a **diagnostic that pairs a simulated playout with its real graded
-batch and tabulates their divergence** — arithmetic and quoted labels only.
+cycle-007 is a **consolidation cycle**, not a new subsystem. It closes the *producer side* of the
+Arneson→Gygax compounding seam (Theme A) and restores truth to in-flight project state (Theme C). The
+architecture is the construct's existing one — **filesystem-first, stdlib-only projection scripts +
+drift guards + schema deltas**, with skills as prompt-driven markdown. No new runtime, no services, no
+dependencies.
 
-> From prd.md: "Ship a diagnostic that pairs a simulated playout with its real graded
-> batch and tabulates their divergence — arithmetic and quoted labels only" (prd.md:L28)
+Seven deliverables, grouped by the two themes:
 
-The instrument is named by the domain conventions themselves: the sanctioned
-replacement for the banned phrase "proves it's compelling" is *"shows where forecast
-and observation diverge"* (`domain.conventions.md:L51`). `gap_report.py` is exactly
-that report.
+| FR | Deliverable | Theme | Kind | Priority |
+|----|-------------|-------|------|----------|
+| FR-1 | `emit_decision_trace.py` + vendored `decision-trace.v1.schema.json` + drift-guard extension | A | new script + vendoring | P0 |
+| FR-2 | entity-ref binding table (additive preamble block + resolver + discipline rule) | A | schema delta + script | P0 |
+| FR-5 | ledger reconciliation (cycle-005, 3 bug cycles, cycle-006) | C | data reconciliation | P0 |
+| FR-7 | Gygax-side handoff brief (A2 ingest + A4 intent) | A | markdown deliverable | P0 |
+| FR-3 | experiential-intent extension wiring (effective-vocab loader + test) | A | script + test | P1 |
+| FR-4 | archetype SSOT pin + drift guard | A | pin file + guard script | P1 |
+| FR-6 | seam-adjacent loose ends (bottleneck, freeside test, tmp file, naming exception) | C | mixed | P1 |
 
-Architecturally this is a **filesystem-coupled, single-script tool** in the same mold
-as its structural sibling `sweep_report.py`: read N already-produced artifacts from
-disk, compute counts and set-diffs deterministically, render one Markdown report,
-never write to or regrade the inputs.
-
-### 1.2 The R1 Resolution (critical design dependency)
-
-**Question (R1):** Does the simulated lane currently emit a STRUCTURED action/outcome
-list that `gap_report.py` can diff?
-
-**Answer: NO.** Verified against `skills/playout/SKILL.md`, the persona-host
-serializer pipeline, the session-events-agent schema, and the two existing playout
-artifacts. The chain is:
-
-| Stage | Artifact | Action representation |
-|-------|----------|-----------------------|
-| Sim hosting (State S3) | native sidecar (`session-events-agent v1`) | `agent_turn.narrated_action` — **free prose** (`native-sidecar.events.yaml`; `SKILL.md:L210-213`) |
-| Sim assemble (State S4) | `observed-trace/v1` sidecar via `assemble_batch.py` | collapses to `narration` — **free prose, SECONDARY, never graded** (`observed-trace.v1.schema.json:L230`) |
-| Sim record (State S6) | `playouts/<id>.yaml` | `lane / scenario_sha256 / batch_path / counts` — **no per-action labels, no outcome-signal tags** (`awareness-ladder-demo-…yaml`) |
-
-So there is **no diffable action-label list and no outcome-signal-tag list** anywhere
-in the sim lane's current output. Both existing playout artifacts are `lane: real`;
-there is no simulated-lane artifact yet at all.
-
-> From prd.md (R1): "if absent, a small, in-scope addition to the sim serializer is part
-> of the cycle. First design question for `/architect`." (prd.md:L98)
-
-**Design decision (the minimal sim-serializer addition):** the sim lane emits one new
-**producer-side summary sidecar** — `playout-summary.v1.json` — at State S6, beside
-the batch. It is a *thin projection* of structured fields the host already produces
-(`agent_turn` events + `trial_end` status), tagged with a small closed
-`outcome_signal` vocabulary. It is NOT a change to the vendored `observed-trace/v1`
-schema (NFR-7: the vendored contract is read-only) and NOT a grade (the host never
-grades — `domain.conventions.md` G-4 §3). See §3.1 for the exact shape and §1.4 for
-which component produces it.
-
-**Why a sidecar projection, not a free-prose `narration` parse:** parsing the prose
-`narration` to recover actions would be inference, not a documented structure — it
-would make the diff non-deterministic and non-auditable. A tiny explicit projection,
-emitted by the same host that already structures the `agent_turn` stream, is
-deterministic, auditable, and additive.
-
-### 1.3 The R2 Resolution (move-identity normalization)
-
-**Question (R2):** how do real-lane and sim-lane action labels reconcile?
-
-**Finding:** there is **no `moves.json`** in the batch layout (the PRD/brief's
-"`runs/<rung>/<trial>/moves.json`" does not exist — verified against
-`observed-trace-batch.v1.md` and the `valid-batch` fixture; `runs/<rung>/<trial>/`
-holds *artifact files* — `solution.py`, `test_solution.py` — not a move list). The
-real lane's only **structured** per-run outcome is `observation.classification`, a
-closed enum `{fixed, hacked, failed}` (`observed-trace.v1.schema.json:L176-181`).
-Real-lane *action* labels do not exist natively at all.
-
-**Design decision (documented mapping, never inferred):** move-identity normalization
-is a **documented mapping file**, `move-map.yaml`, committed in the domain. It maps
-sim-lane `action_label` values onto real-lane action labels.
-
-> From prd.md (R2): "Architecture defines move-identity normalization (a documented
-> mapping, not an inferred one); report raw labels when no mapping applies." (prd.md:L99)
-
-Because the real lane has no native action labels, the **real-lane action labels for
-D2 are themselves sourced through the documented map**: each entry declares a canonical
-label and the *evidence key* it is recognized by on the real side (e.g. an
-`observation.artifacts[].path` + `status`, or an `anomaly_note` presence). When no map
-entry applies to a sim action, that action's **raw `action_label` is reported as-is**
-in the sim-only set. This keeps the design simple and honest: the diff is over an
-explicit, committed vocabulary; anything outside it surfaces raw, never silently
-dropped or guessed.
-
-### 1.4 Component Diagram
+The P0 spine (FR-1/2/5/7) closes the seam's producer side and makes the project's records honest. The
+P1 items (FR-3/4/6) make documented-but-dead seams live and clear the loose-end tail. The two design
+questions the PRD delegated to `/architect` are resolved decisively below.
 
 ```mermaid
-graph TD
-    SIMHOST["/playout --scenario (sim lane)<br/>persona host, State S3-S6"]
-    SUMMARY["playout-summary.v1.json<br/>(NEW producer-side sidecar)"]
-    SIMREC["playouts/&lt;id&gt;.yaml<br/>lane: simulated"]
-    REALBATCH["observed-trace/v1 batch<br/>(Gygax-graded, read-only)"]
-    REALREC["playouts/&lt;id&gt;.yaml<br/>lane: real"]
-    MOVEMAP["move-map.yaml<br/>(documented normalization)"]
-    GAP["gap_report.py"]
-    REPORT["gap-reports/&lt;scenario_id&gt;-&lt;ts&gt;.md"]
-    SKILL["skills/gap-report/SKILL.md<br/>(thin wrapper)"]
-    VENDOR["schemas/vendor/*<br/>(read-only contract)"]
-
-    SIMHOST -->|emits at State S6| SUMMARY
-    SIMHOST --> SIMREC
-    SKILL -->|invokes| GAP
-    SIMREC -->|--sim| GAP
-    SUMMARY -->|action + outcome tags| GAP
-    REALREC -->|--real, points at batch| GAP
-    REALBATCH -->|graded sidecars, READ-ONLY| GAP
-    MOVEMAP -->|label normalization| GAP
-    VENDOR -.->|validate-only| GAP
-    GAP --> REPORT
-
-    style GAP fill:#2d6,stroke:#161
-    style SUMMARY fill:#fd6,stroke:#a80
-    style REALBATCH fill:#ddd,stroke:#888
-    style VENDOR fill:#ddd,stroke:#888
+flowchart LR
+    subgraph Arneson["construct-arneson (this cycle — PRODUCER side)"]
+        SE["session-events-agent\nsim-lane event log\n(chosen-only: action_label)"]
+        EMIT["emit_decision_trace.py\n(NEW, FR-1)\nstdlib projection"]
+        VEN["schemas/vendor/\ndecision-trace.v1.schema.json\n(NEW, pinned read-only)"]
+        CORPUS["decision-trace/v1 corpus\nclaim_strength: simulation-derived"]
+        SE --> EMIT
+        VEN -. self-check .-> EMIT
+        EMIT --> CORPUS
+    end
+    subgraph Gygax["construct-gygax (CONSUMER — unchanged, not committed here)"]
+        LENS["revealed-strategy lens\nscripts/lib/trace/strategy.ts"]
+    end
+    CORPUS -->|closing proof: exit 0| LENS
+    GBRIEF["Gygax-side handoff brief\n(FR-7, Arneson-owned md)"]:::brief
+    Arneson -. requests A2/A4 .-> GBRIEF
+    GBRIEF -. Practitioner hands off .-> Gygax
+    classDef brief fill:#fff3cd,stroke:#d39e00;
 ```
 
-Legend: green = the cycle's core deliverable; yellow = the minimal sim-serializer
-addition (R1); grey = read-only inputs (NFR-2, NFR-7).
+### 1.2 OQ-1 Resolution — the sim log is chosen-only (FR-1)
 
-### 1.5 System Components
+**Question (PRD R-1 / brief OQ-1):** Does `session-events-agent` carry the **offered** option set at
+each decision point, or only the **chosen** `action_label`? This decides whether the emitter is a pure
+projection or needs a serializer extension.
 
-#### gap_report.py (core deliverable)
-- **Purpose:** Pair one simulated playout + one real playout on `scenario_sha256`,
-  compute D1 outcome divergence and D2 action-set divergence, render Markdown.
-- **Responsibilities:** argument parsing; pairing-key refusal (FR-2); read sim summary;
-  read + triage real graded sidecars; apply `move-map.yaml`; tally; render; never write
-  inputs (FR-8).
-- **Interfaces:** CLI (`--sim <playout.yaml> --real <playout.yaml>`), stdout = the
-  report path; exit code (§6).
-- **Dependencies:** stdlib + vendored `restricted_yaml`; reads the vendored contract
-  files only to *validate* (never to import code). Imports nothing from
-  `construct-gygax` (NFR-2).
+**Resolved empirically (2026-06-25), chosen-only:**
 
-#### playout-summary.v1.json (R1 addition, sim lane)
-- **Purpose:** Give the sim lane a diffable structure (R1).
-- **Produced by:** the `/playout --scenario` sim lane at State S6 (a small additive
-  serialization step in the existing skill; see §3.1 for the contract).
-- **Consumed by:** `gap_report.py` only.
+- The `agent_turn` event schema defines `narrated_action`, `why`, `action_label` (an optional slug —
+  *the chosen move*), and `grounding_refs`. There is **no `offered` field** (`session-events-agent.schema.yaml:79-100`).
+- The live committed fixture sidecar carries `action_label: add-positive-filter` and no offered set
+  (`native-sidecar.events.yaml:48`).
+- The dungeon hint resolves negative too: the task-template `moves.json` is empty (`[]`); the run-time
+  `moves.json` is a list of *chosen* moves (`{actor, action, target}`), not a legal-option vocabulary
+  (`fixtures/dungeon-crawl/task-template/moves.json`, `fixtures/batches/dungeon-sample/runs/rung-0/trial-1/moves.json`).
+- The Gygax contract **requires** `offered` (`minItems: 1`) with `chosen` a subset of `offered`
+  ("Each must be in `offered`, matched by type") — `../construct-gygax/schemas/decision-trace.v1.schema.json`.
 
-#### move-map.yaml (R2 normalization)
-- **Purpose:** Documented sim↔real action-label normalization; the single source of
-  truth for which labels are "the same move."
-- **Authored:** by hand, committed in `domains/agent-systems/`. Read-only at report time.
+**Decision: chosen-only honest projection.** `emit_decision_trace.py` emits, per decision,
+`offered: [{ "type": <action_label> }]` equal to `chosen`, and stamps an honest marker:
 
-#### gap-report domain skill
-- **Purpose:** Thin operator-facing wrapper mirroring `skills/playout/` + the
-  `sweep_report.py` pattern (FR-9). Gates inputs, invokes the script, surfaces the
-  report path and the framing.
+```
+"producer": { "kind": "simulation", "detail": "offered-set-unrecorded: chosen-only projection (the sim log captures the move taken, not the legal option set)" }
+```
 
-#### Enablers (root)
-- **`scripts/test.sh`** — unified test runner (FR-10).
-- **`pyproject.toml`** — dev-only `ruff` + `mypy` config (FR-11).
+Rationale, in invariant terms:
 
-### 1.6 Data Flow
+1. **Producer-never-judges (NFR-2).** Inventing a plausible offered set the host never presented would
+   be *interpretation/fabrication*. The emitter may only reshape what was actually recorded. Chosen-only
+   is the only honest projection of a chosen-only log.
+2. **Contract-valid.** `offered` has `minItems: 1` and `chosen ⊆ offered` holds trivially → the corpus
+   validates and the lens consumes it (exit 0, `claim_strength: simulation-derived`) — SM-2 met.
+3. **Honest about its own poverty.** `producer.detail` declares the degeneracy openly. A downstream
+   analyst sees that every decision had exactly one recorded option and knows *why* the revealed-strategy
+   signal is empty, rather than being misled by a fabricated option set.
+
+**Forward path (designed-for, NOT built this cycle):** the emitter additionally reads an *optional*
+`offered_labels: [slug, …]` field on `agent_turn` when present, producing a real multi-option `offered`
+set with `chosen ∈ offered` asserted. This field is **deliberately not added to
+`session-events-agent.schema.yaml` this cycle** — nothing would populate it, and shipping an unpopulated
+schema field is exactly the *documented-but-dead-seam* antipattern this very cycle exists to fix (cf.
+FR-3, FR-4). The read-path is ~3 defensive lines (`turn.get("offered_labels")`), so when a future cycle
+teaches the playout host to enumerate the legal option set at each decision (a domain-modeling task), the
+emitter consumes it with zero rework.
+
+> **Honest tradeoff (must survive into the PR description):** this MVP closes the **contract** seam —
+> Arneson sim output is now *consumable* by Gygax's lens — but it does **not** yet close the **analytic**
+> seam. Revealed-strategy analysis over a chosen-only corpus reveals no preference (no alternatives ⇒
+> nothing to reveal). The two halves now *join* structurally and honestly; making the join *analytically
+> valuable* requires offered-set capture, which is future work. The PRD's UC-1 postcondition ("the producer
+> side of the seam is closed; the corpus is consumable, byte-stable, and claim-honest") is satisfied; the
+> PRD makes no claim of analytic richness, and neither do we.
+
+### 1.3 R-2 Resolution — wholesale pin bump (FR-1)
+
+**Question (PRD R-2 / brief note):** the current `VENDOR.yaml` pins `upstream.git_sha: 3fa6c91`
+(cycle-010); the decision-trace file landed at `95ccf21` (cycle-012). Reconcile per-file vs wholesale
+pin so the drift guard stays green for all four files.
+
+**Resolved empirically (2026-06-25):**
+
+| Fact | Evidence |
+|------|----------|
+| decision-trace.v1.schema.json sha256 at Gygax HEAD (95ccf21) = `83d6a69f…dab02` | exact match to the brief's pin |
+| decision-trace.v1.schema.json is **absent** at 3fa6c91 | added in cycle-012 at 95ccf21 |
+| the 3 currently-vendored files (observed-trace, observed-trace-batch, signal-taxonomy) are **byte-identical** at 3fa6c91 **and** 95ccf21 | `git show 3fa6c91:<f> | sha == git show 95ccf21:<f> | sha` for all three |
+
+**Decision: wholesale pin bump `3fa6c91 → 95ccf21`.** Because the three existing vendored files are
+byte-identical across both SHAs, bumping the single `upstream.git_sha` changes **no bytes**, invalidates
+**no** `sha256` pin, and requires **no** validator revisit. We simply add the decision-trace entry (which
+naturally lives at 95ccf21) and bump the wholesale SHA.
+
+Why wholesale over per-file: it is simpler (one `git_sha`), it continues the established convention
+(cycle-003 sprint-2 did `64f6d75 → 3fa6c91` wholesale after a byte-identity verify), and it is *correct*
+precisely because byte-identity holds. Per-file `git_sha` would add structure to `VENDOR.yaml` and the
+drift guard for zero benefit when the bytes are identical. If a future re-vendor ever finds the files
+diverged at the target SHA, *then* switch to per-file — not today. A comment in `VENDOR.yaml` records
+that observed-trace/taxonomy are unchanged since 3fa6c91 and were re-verified byte-identical at 95ccf21.
+
+### 1.4 Component map
+
+```mermaid
+flowchart TD
+    subgraph A["Theme A — seam (producer side)"]
+        F1["FR-1 emit_decision_trace.py\n+ vendored schema + VENDOR.yaml bump\n+ vendor-drift-guard.sh 4th file"]
+        F2["FR-2 binding_table\nsession-events-base preamble (additive)\n+ resolve_entity_refs.py"]
+        F3["FR-3 load_experiential_vocab.py\nbase ∪ extension vocab + validation"]
+        F4["FR-4 archetype-drift-guard.sh\n+ ARCHETYPE-PIN.yaml"]
+        F7["FR-7 gygax-seam-requests brief\n(A2 ingest + A4 intent)"]
+    end
+    subgraph C["Theme C — in-flight consolidation"]
+        F5["FR-5 ledger.json reconciliation\n(verify-gated)"]
+        F6["FR-6 loose ends:\nbottleneck · freeside test · tmp · naming"]
+    end
+    RUN["scripts/test.sh\n(glob-discovers domains/*/scripts/test-*.sh)"]
+    F1 & F2 & F3 --> RUN
+    F6 -. freeside test .-> RUN
+    GUARDS["scripts/ci/*-drift-guard.sh"]
+    F1 & F4 --> GUARDS
+```
+
+All five FR-A scripts are mutually independent at the file level (different scripts, different schemas);
+FR-5 and FR-6 touch only state/data files and tests. The only ordering constraint is intra-FR-1
+(vendor the schema before the emitter self-checks against it).
+
+### 1.5 Data flow — the producer side of the seam (FR-1)
 
 ```mermaid
 sequenceDiagram
-    participant Op as Practitioner
-    participant Sk as gap-report skill
-    participant GR as gap_report.py
-    participant FS as filesystem (sim summary, real batch, move-map)
+    participant Sim as sim-lane playout
+    participant Log as session-events-agent log (.events.yaml)
+    participant Emit as emit_decision_trace.py
+    participant Vendor as decision-trace.v1.schema.json (vendored, pinned)
+    participant Corpus as <corpus>/<id>-<t>.json
+    participant Lens as Gygax strategy.ts (consumer)
 
-    Op->>Sk: gap-report --sim S.yaml --real R.yaml
-    Sk->>GR: invoke (argv array)
-    GR->>FS: read S.yaml + R.yaml (lane + scenario_sha256)
-    alt scenario_sha256 mismatch
-        GR-->>Op: REFUSE (exit 2, names both shas) [FR-2]
-    else paired
-        GR->>FS: read playout-summary.v1.json (sim action + outcome tags)
-        GR->>FS: read real batch graded sidecars (READ-ONLY)
-        GR->>FS: read move-map.yaml
-        GR->>GR: triage real verdicts; tally; set-diff actions
-        GR->>FS: write gap-reports/<scenario_id>-<ts>.md
-        GR-->>Op: report path
+    Sim->>Log: append agent_turn{action_label}, rung_start, trial_end
+    Emit->>Log: read (restricted_yaml), iterate agent_turn in seq order
+    Emit->>Emit: project each chosen action_label → decision-trace/v1 record\n(offered:[chosen] + producer.detail honesty flag)
+    Emit->>Vendor: self-check every record (required fields, additionalProperties:false, enums)
+    alt any record invalid
+        Emit-->>Sim: exit 2 (never ship a broken corpus)
+    else all valid
+        Emit->>Corpus: write deterministic, byte-stable JSON (sorted keys)
     end
+    Note over Corpus,Lens: closing proof (informational gate, NFR posture)
+    Lens->>Corpus: npx tsx ../construct-gygax/scripts/lib/trace/strategy.ts <corpus>/
+    Lens-->>Corpus: exit 0, Revealed Strategy report, claim_strength: simulation-derived
 ```
 
-### 1.7 Trust & Boundary Architecture (the load-bearing constraints)
+### 1.6 Trust & boundary invariants (load-bearing)
 
-These are not optional hardening — they are the reason the report is admissible. Each
-maps to a `domain.conventions.md` G-4 rule and a PRD NFR.
+Every component in this cycle is bound by the PRD's NFRs. These are not aspirational — they are the
+acceptance surface, and each maps to a concrete check.
 
-| Boundary | Rule | Enforcement in this design |
-|----------|------|----------------------------|
-| **Arithmetic only** | G-4 §3 / NFR-4 | The script computes counts, ratios, set-diffs only. It contains NO classifier, NO severity/cliff logic, NO threshold that converts a count into a judgment. Verdict classes are *read from* `observation.classification`, never derived. |
-| **Read-only on the real batch** | FR-8 | The script opens real sidecars `"r"` only; never writes, never invokes the grader, never calls `--regrade`. A unit test asserts batch bytes are unchanged after a run. |
-| **Quote labels verbatim** | G-4 §2 / NFR-3 | `producer.kind`, `claim_strength`, and `observation.classification` strings are copied byte-for-byte into the report; the renderer never paraphrases or up-ranks. |
-| **Banned-copy clean** | NFR-3 | Generated reports + new docs pass the existing `scripts/ci/banned-copy-check.sh` regex; a new test runs that regex over a freshly generated report. |
-| **Deterministic** | NFR-6 | Stable ordering everywhere (sorted sets, fixed table column order, no clock inside the computed body — the only timestamp is in the output *filename*, excluded from the golden body). |
-| **No Gygax coupling** | NFR-2 | Reads Gygax artifacts as files via the vendored contract; imports nothing from `construct-gygax`. |
-| **Vendored contract read-only** | NFR-7 | `schemas/vendor/*` never edited; the new sim summary is a *separate* schema owned by Arneson, not a change to `observed-trace/v1`. |
+| Invariant | Source | Enforced by |
+|-----------|--------|-------------|
+| Standalone-plus-composable | NFR-1 | emitter/loaders import nothing from `construct-gygax`; only coupling = vendored schema (import-grep test); FR-4 guard skips-clean when Gygax absent |
+| Producer-never-judges | NFR-2 | emitter projects shapes only — no severity/score/cliff; chosen-only never fabricates alternatives (§1.2); banned-phrase gate |
+| stdlib-only + deterministic | NFR-3 | `restricted_yaml.py` only; no clock/random; sorted-key JSON; golden-file byte-match test |
+| Read-only vendored contracts | NFR-4 | `vendor-drift-guard.sh` byte-diff + sha-pin (4 files); never edit `schemas/vendor/` |
+| Claim-strength honesty | NFR-5 | `claim_strength: simulation-derived` + `producer.kind: simulation` hardcoded; structural via the schema's enum + `additionalProperties:false` |
+| Additive schema changes only | NFR-6 | FR-2 `binding_table` additive to preamble; FR-1 adds no field to `session-events-agent` this cycle; no renames |
+| No private/upstream game references | NFR-7 | `banned-phrases.sh` / banned-copy gate over all new artifacts incl. the brief |
 
 ---
 
 ## 2. Software Stack
 
+No change to the runtime stack. This section pins versions for reproducibility.
+
 ### 2.1 Runtime
 
-| Category | Technology | Version | Justification |
-|----------|------------|---------|---------------|
-| Language | Python (stdlib only) | 3.11+ (matches existing `domains/agent-systems/scripts/`) | NFR-1: stdlib-only runtime; sibling scripts target this. |
-| YAML parsing | vendored `restricted_yaml` | in-repo (`scripts/restricted_yaml.py`) | NFR-1: no third-party YAML dep; same parser `validate_scenario.py`/`assemble_batch.py` already use. |
-| JSON parsing | stdlib `json` | — | Real sidecars + the new sim summary are JSON. |
-| **Runtime deps** | **NONE** | — | NFR-1: "No new runtime dependencies." |
-
-> From prd.md: "`gap_report.py` uses the Python stdlib + the vendored `restricted_yaml`
-> parser. No new runtime dependencies." (prd.md:L74)
+| Component | Version | Rationale |
+|-----------|---------|-----------|
+| Python | 3.11+ (stdlib only) | New scripts (`emit_decision_trace.py`, `resolve_entity_refs.py`, `load_experiential_vocab.py`) use only the standard library + the in-repo `restricted_yaml.py` parser. No pip dependencies (NFR-3). |
+| `restricted_yaml.py` | in-repo (`domains/agent-systems/scripts/restricted_yaml.py`) | Shared deterministic YAML subset parser already used by `project_trace.py` / `summarize_playout.py` / `gap_report.py`. Reused, not duplicated. |
+| Bash | 4+ (`set -euo pipefail`) | Drift guards + test harness, matching `vendor-drift-guard.sh` / `scripts/test.sh`. |
+| Node / `npx tsx` | as provided by the Gygax sibling checkout | Used **only** for the FR-1 closing proof (running Gygax's lens). Not an Arneson runtime dependency — the proof is an informational gate (SM-2). |
 
 ### 2.2 Dev tooling (NOT runtime)
 
-| Category | Technology | Version | Justification |
-|----------|------------|---------|---------------|
-| Linter | `ruff` | pinned in `pyproject.toml` `[tool.ruff]` | FR-11 / SM-6. Dev-only. |
-| Type checker | `mypy` | pinned in `pyproject.toml` `[tool.mypy]` | FR-11 / SM-6. Dev-only. |
-| Test runner | bash + stdlib coreutils | — | FR-10. `scripts/test.sh`. NOT pytest/npm. |
+Unchanged from cycle-004: `pyproject.toml` declares ruff + mypy scoped to the agent-systems scripts,
+with intentionally **no** `[project]` dependency table (the runtime is stdlib + `restricted_yaml`). New
+scripts must pass `py_compile` and the configured ruff/mypy when those tools are present in the dev/CI
+environment.
 
-> From prd.md: "Dev tooling only: **no `[project]` runtime dependencies**, nothing that
-> makes the runtime import a third-party package." (prd.md:L70)
-
-**`pyproject.toml` shape (FR-11):**
-
-```toml
-# Dev tooling config ONLY — there is intentionally NO [project] table and NO
-# dependency declaration. The runtime is stdlib + vendored restricted_yaml (NFR-1).
-[tool.ruff]
-target-version = "py311"
-line-length = 100
-src = ["domains/agent-systems/scripts"]
-
-[tool.ruff.lint]
-# conservative starter set; gap_report.py + siblings must pass clean (SM-6)
-select = ["E", "F", "I", "B", "UP"]
-
-[tool.mypy]
-files = ["domains/agent-systems/scripts"]
-python_version = "3.11"
-warn_unused_ignores = true
-ignore_missing_imports = true   # restricted_yaml is a local untyped vendored module
-```
-
-> **Design note — scope of the lint/type gate.** `mypy`/`ruff` target the whole
-> `domains/agent-systems/scripts/` directory (matching SM-6's wording). Pre-existing
-> sibling scripts may surface findings. **Decision:** the cycle owns making the gate
-> *green for `gap_report.py` and any file it imports*; pre-existing findings in
-> unrelated siblings are quarantined via narrowly-scoped `per-file-ignores` (ruff) /
-> module overrides (mypy) with a one-line comment each, rather than refactoring code
-> outside this cycle's surface (surgical changes). Sizing is OQ-3 for sprint-plan.
-
-### 2.3 Layout
+### 2.3 Layout (new/changed files)
 
 ```
-construct-arneson/
-├── pyproject.toml                       # NEW (FR-11) — dev tooling only
-├── scripts/
-│   ├── test.sh                          # NEW (FR-10) — unified runner
-│   └── ci/                              # existing CI legs (unchanged)
-└── domains/agent-systems/
-    ├── scripts/
-    │   ├── gap_report.py                # NEW (core deliverable)
-    │   ├── test-gap-report.sh           # NEW (the gate: golden + banned + negative)
-    │   ├── restricted_yaml.py           # existing (reused)
-    │   ├── sweep_report.py              # existing (structural sibling)
-    │   └── …                            # existing validators/tools
-    ├── move-map.yaml                    # NEW (R2 documented mapping)
-    ├── schemas/
-    │   ├── playout-summary.v1.schema.json   # NEW (R1, Arneson-owned, NOT vendored)
-    │   └── vendor/…                     # existing vendored contract (read-only)
-    ├── skills/
-    │   ├── gap-report/SKILL.md          # NEW (FR-9)
-    │   └── playout/SKILL.md             # existing (gains State S6 summary emission)
-    └── resources/fixtures/
-        └── gap-report/                  # NEW deterministic sim+real fixture pair
+domains/agent-systems/
+  scripts/
+    emit_decision_trace.py            # NEW (FR-1)
+    test-emit-decision-trace.sh       # NEW (FR-1) — auto-discovered by scripts/test.sh
+  schemas/vendor/
+    decision-trace.v1.schema.json     # NEW (FR-1) — vendored, read-only, 95ccf21
+    VENDOR.yaml                        # CHANGED — bump git_sha 3fa6c91→95ccf21 + add entry
+  resources/fixtures/
+    decision-trace/                    # NEW — sim-lane episode fixture + golden corpus
+schemas/core/
+  session-events-base.schema.yaml      # CHANGED (FR-2) — additive binding_table + entity_ref rule
+scripts/ (core)
+  resolve_entity_refs.py               # NEW (FR-2)
+  load_experiential_vocab.py           # NEW (FR-3)
+  ci/
+    vendor-drift-guard.sh              # CHANGED (FR-1) — 4th file in byte-diff loop
+    archetype-drift-guard.sh           # NEW (FR-4)
+domains/ttrpg/resources/archetypes-fallback/
+  ARCHETYPE-PIN.yaml                   # NEW (FR-4)
+domains/character-voice/scripts/
+  test-freeside-atomic-write.sh        # NEW (FR-6) — negative-path lock
+domains/ttrpg/schemas/
+  digest-ttrpg.schema.yaml             # CHANGED (FR-6) — bottleneck reconciliation
+grimoires/loa/
+  ledger.json                          # CHANGED (FR-5) — reconciliation
+  discovery/gygax-seam-requests-cycle007.md  # NEW (FR-7) — handoff brief
+  NOTES.md.tmp                         # DELETED (FR-6)
 ```
 
 ---
 
 ## 3. Data Models
 
-This cycle is filesystem-coupled; the "database" is a set of on-disk JSON/YAML/Markdown
-shapes. The shapes below are pinned exactly so the golden-file test (SM-1) is stable.
+### 3.1 `decision-trace/v1` record (FR-1, vendored contract — Gygax-owned)
 
-### 3.1 Input: simulated-lane playout summary — `playout-summary.v1.json` (R1, NEW, Arneson-owned)
+Required by `decision-trace.v1.schema.json` (`additionalProperties: false`). The emitter produces exactly
+these fields per decision:
 
-The minimal sim-serializer addition. Emitted at sim-lane State S6, written next to the
-sim batch. It is the **structured projection** that makes the sim lane diffable. It is
-NOT graded (no `observation`, no verdict) and does NOT touch the vendored schema.
-
-```json
+```jsonc
 {
-  "schema": "playout-summary/v1",
-  "lane": "simulated",
-  "scenario_id": "awareness-ladder-demo",
-  "scenario_sha256": "3093456267278742…",
-  "producer": { "kind": "simulation", "claim_strength": "simulation-derived" },
-  "trials": [
-    {
-      "rung": 0,
-      "trial": 1,
-      "action_labels": ["read-tests", "add-positive-filter", "rerun-tests"],
-      "outcome_signal": "task-declared-done",
-      "stop_reason": "task_declared_done"
-    }
-  ]
+  "schema": "decision-trace/v1",
+  "claim_strength": "simulation-derived",          // NFR-5: hardcoded for sim; never real-agent-observed
+  "producer": {
+    "kind": "simulation",                           // NFR-5: hardcoded
+    "id": "<model_id from preamble.provenance>",    // engine truth
+    "detail": "offered-set-unrecorded: chosen-only projection …",  // §1.2 honesty flag (chosen-only path)
+    "provenance": { "model_id": "<…>", "construct_sha": "<construct_git_sha>" }  // from preamble.provenance
+  },
+  "corpus": { "id": "<scenario_id>:<run_id>", "game": "<domain or scenario family>" },
+  "actor_id": "<persona/agent id>",                 // derivation rule below
+  "episode_id": "<run_id>",                          // one playout run = one episode
+  "t": 0,                                            // decision index within episode, 0-based, stable by seq
+  "context": { "segment": "rung:<rung_name>" },     // conditioning key from rung/visibility context
+  "offered": [ { "type": "<action_label>" } ],      // §1.2: chosen-only ⇒ == chosen; or offered_labels-derived
+  "chosen":  [ { "type": "<action_label>" } ]
 }
 ```
 
-| field | required | source | notes |
-|-------|----------|--------|-------|
-| `schema` | yes | literal | `"playout-summary/v1"`. Arneson-owned; additive-only evolution policy (mirrors the vendored contracts). |
-| `lane` | yes | literal | `"simulated"`. |
-| `scenario_id` / `scenario_sha256` | yes | scenario gate (State S1) | the pairing key (FR-2). |
-| `producer.kind` / `claim_strength` | yes | host | bound pair `simulation`→`simulation-derived`, quoted verbatim by the report (G-4 §2). |
-| `trials[].action_labels` | yes | `agent_turn` events | **the diffable action vocabulary** — one short slug per turn. The prose stays in the sidecar `narration`; the *label* lives here. |
-| `trials[].outcome_signal` | yes | `trial_end` | a value from the closed `OUTCOME_SIGNAL` set (§3.5). The sim lane's D1 column. |
-| `trials[].stop_reason` | yes | `trial_end.stop_reason` | quoted; informational. |
+**Field derivation (deterministic, no clock/random):**
 
-**`outcome_signal` is a small closed set** so D1 is a real categorical diff against the
-real lane's verdict classes — NOT free text. See §3.5.
+| Field | Source in `session-events-agent` | Rule |
+|-------|----------------------------------|------|
+| `producer.id` / `producer.provenance.model_id` | `preamble.provenance.model_id` | verbatim |
+| `producer.provenance.construct_sha` | `preamble.provenance.construct_git_sha` | verbatim |
+| `corpus.id` | `preamble.scenario_id` + `preamble.run_id` | `"<scenario_id>:<run_id>"` |
+| `corpus.game` | `preamble.domain` (+ scenario family if present) | stable string |
+| `actor_id` | persona ref in preamble; else scenario-derived stable id | if no explicit persona id, use a stable `corpus.id`-derived token (documented) — **never** a clock/uuid |
+| `episode_id` | `preamble.run_id` | verbatim |
+| `t` | order of emitted `agent_turn` records within the episode | 0-based monotonic, stable by `seq` |
+| `context.segment` | nearest preceding `rung_start.rung_name` (or `preamble.visibility_rung`) | `"rung:<name>"` — the brief's "rung / visibility context" |
+| `chosen` | `agent_turn.action_label` | `[{ "type": label }]`; turns with **no** `action_label` emit **no** record (never inferred from prose) |
+| `offered` | — (chosen-only) **or** `agent_turn.offered_labels` if present | chosen-only ⇒ `offered == chosen` + `producer.detail`; if `offered_labels` present ⇒ one `{type}` per label, assert `chosen ⊆ offered` |
 
-> **Scope guard.** The host produces `action_labels` as short slugs (`^[a-z0-9-]+$`).
-> It does NOT classify them as good/bad and does NOT map them to verdicts — that is the
-> map's job (read-only) and the analyst's job (judgment). The host only *names* the
-> moves it took.
+> **`option` shape** (from the contract `$defs`): `{ "type": <string, required> , "id"?: <string>, "label"?: <string> }`.
+> The emitter uses `type` (the action_label slug) as the unit of analysis; `id`/`label` are omitted (optional).
 
-### 3.2 Input: real-lane playout record + batch
-
-The real playout record (`playouts/<id>.yaml`, existing shape — see
-`awareness-ladder-demo-20260610T045207Z.yaml`) carries `lane: real`, `scenario_sha256`,
-`batch_path`, `engine_git_sha`, `counts`. `gap_report.py` reads it to (a) confirm
-`lane == real`, (b) get `scenario_sha256` for pairing, (c) resolve `batch_path`.
-
-The **graded batch** at `batch_path` follows `observed-trace-batch/v1`
-(`observed-trace-batch.v1.md`): `batch.json` + `sidecars/*.json`. Each graded sidecar
-carries `observation.classification ∈ {fixed, hacked, failed}` plus
-`observation.artifacts[]` (`{path, status ∈ {intact,modified,added,deleted}, diff}`)
-and `anomaly_note`. The report reads these **read-only** (FR-8).
-
-**D1 verdict source.** "the grader's report" in the PRD is materially the **graded
-sidecars** — the trace CLI's textual report is Markdown-only and not machine-parseable
-(`sweep_report.py` header comment). So `gap_report.py` tallies
-`observation.classification` directly from the sidecars, using the **canonical triage
-order** pinned in the contract and already implemented byte-identically in
-`sweep_report.triage()` (whose logic this script reuses — §4.1):
-
-```
-run.status (runner-error / timeout / infra-failure)
-  → narration INFRA_MARKER
-    → observation present (fixed | hacked | failed)
-      → ungraded (completed, no observation, no marker)
-```
-
-`INFRA_MARKER = ERROR: \[[A-Za-z0-9_-]*(?:agent|wrapper)\]` — copied byte-equal from the
-contract / `sweep_report.py`, so the two sides can never triage the same sidecar
-differently.
-
-### 3.3 Input: move-map.yaml (R2, NEW, documented mapping)
+### 3.2 `VENDOR.yaml` after R-2 (FR-1)
 
 ```yaml
-# move-map.yaml — documented sim↔real action-label normalization (R2; sdd §1.3).
-# Read-only at report time. When no entry applies, the sim action's raw label is
-# reported as-is (never inferred, never dropped). The real side has no native action
-# labels, so each entry names the evidence that recognizes the move on the real lane.
-schema: move-map/v1
-scenario_id: awareness-ladder-demo          # a map is scenario-scoped (one variable)
-entries:
-  - canonical: add-positive-filter           # the shared label both lanes resolve to
-    sim_labels: ["add-positive-filter", "add-filter"]   # sim action_labels that mean this
-    real_evidence:                            # how the real lane is recognized
-      artifact_path: solution.py
-      artifact_status: modified
-  - canonical: reward-hack-shadow
-    sim_labels: ["shadow-test", "patch-test"]
-    real_evidence:
-      anomaly_note_present: true              # graded `hacked` w/ anomaly note
+upstream:
+  repo: 0xHoneyJar/construct-gygax
+  git_sha: 95ccf2190ca6f61badeef71881f1f1c2dee7b1be   # bumped from 3fa6c91 (cycle-010)
+  vendored_at: "2026-06-25"
+  # observed-trace/observed-trace-batch/signal-taxonomy are byte-identical at 3fa6c91 and 95ccf21
+  # (verified 2026-06-25); the bump changes no bytes for those three files.
+files:
+  - vendored: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
+    upstream_path: schemas/observed-trace.v1.schema.json
+    sha256: df3f789b40fa21456c51432a3bcbcab36755bcba95ea54f0f62bfaa5be0fafcd   # unchanged
+  - vendored: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
+    upstream_path: schemas/observed-trace-batch.v1.md
+    sha256: d04dabfaca79687b6c21414095dae45576b17a0e7362b7a78de92a25e30081c3   # unchanged
+  - vendored: domains/agent-systems/schemas/vendor/signal-taxonomy.v1.schema.json
+    upstream_path: schemas/signal-taxonomy.v1.schema.json
+    sha256: f6ba7182d8d41e53595a142316451377456a1899217a085fdbc9c4a22e542ce6   # unchanged
+  - vendored: domains/agent-systems/schemas/vendor/decision-trace.v1.schema.json   # NEW
+    upstream_path: schemas/decision-trace.v1.schema.json
+    sha256: 83d6a69f6001a1fed2592932a24e501cd54db170fb4ababead0adb12745dab02
 ```
 
-| field | meaning |
-|-------|---------|
-| `entries[].canonical` | the shared label used in the D2 "shared" set. |
-| `entries[].sim_labels` | sim `action_labels` that normalize to `canonical`. |
-| `entries[].real_evidence` | a small declarative recognizer over real sidecar fields (`artifact_path`+`artifact_status`, or `anomaly_note_present`). Match = the canonical label is present on the real side. |
+The pin-check loop in `vendor-drift-guard.sh` (`:38-62`) already auto-discovers entries by parsing
+`vendored:`/`sha256:` pairs — adding the YAML entry extends the pin check with zero code change. Only the
+byte-diff loop's hardcoded array (`:20`) gains the fourth filename.
 
-**Normalization algorithm (deterministic):**
-1. **Sim labels** → for each sim `action_label`, if it appears in some entry's
-   `sim_labels`, replace it with that entry's `canonical`; else keep raw.
-2. **Real labels** → for each entry, evaluate `real_evidence` against the real batch's
-   graded sidecars; if any sidecar matches, `canonical` is present on the real side.
-3. **Sets** → `shared = sim ∩ real`, `sim_only = sim − real`, `real_only = real − sim`,
-   each sorted lexicographically for determinism.
+> **Adjacent observation (not a blocker):** `construct.yaml::agent-systems.vendored_contracts` lists only
+> two of the existing vendored files (observed-trace.v1 + batch), omitting signal-taxonomy. FR-1 should add
+> `decision-trace.v1` there; reconciling the pre-existing signal-taxonomy omission is optional hygiene
+> (mention in PR, do not gold-plate).
 
-Raw (unmapped) sim labels can only ever land in `sim_only` (no real evidence recognizes
-them) — the honest outcome: "a move the persona took that we can't confirm in the real
-batch."
+### 3.3 `binding_table` preamble block (FR-2, additive to `session-events-base` v2)
 
-### 3.4 Output: gap report Markdown (FR-3…FR-7)
+`session-events-base.schema.yaml` defines `session_preamble` (`:15`) and its validation rules (`:161`);
+it has no `entity_ref` concept today. FR-2 adds, **additively** (NFR-6):
 
-Pinned section order (deterministic, golden-tested):
-
-```markdown
-# Simulation Fidelity Gap Report — <scenario_id>
-
-## Provenance                                   ← FR-5
-- scenario_id: <id>
-- scenario_sha256: <sha>
-- sim producer.kind: "simulation"               ← quoted verbatim (G-4 §2)
-- sim claim_strength: "simulation-derived"      ← quoted verbatim
-- real batch: <batch_path>
-- engine_git_sha: <sha>
-- real validation: conformant | <status>        ← NFR-5
-- runs: sim <N trials>, real <M runs>
-
-## D1 — Outcome divergence                       ← FR-3
-| outcome class      | real (count) | sim (count) |
-|--------------------|-------------:|------------:|
-| fixed              | 2            | —           |   ← real verdict classes, quoted
-| hacked             | 1            | —           |
-| failed             | 0            | —           |
-| infra              | 0            | —           |
-| ungraded           | 0            | —           |
-| task-declared-done | —            | 3           |   ← sim outcome_signal tags
-> Counts only. Real verdict labels are Gygax's gradings, tallied — never recomputed.
-
-## D2 — Action-set divergence                    ← FR-4
-- shared (N):    [add-positive-filter, …]
-- sim-only (N):  [improvise-x, …]                ← raw labels where unmapped
-- real-only (N): [reward-hack-shadow, …]
-
-## Framing                                        ← FR-6
-Simulated = behavioral exploration; real = proof. This report shows where forecast and
-observation diverge; it does not judge fidelity. Interpretation — cliffs, severity,
-correctness — belongs to the analyst's report.
+```yaml
+# session_preamble (additive block)
+binding_table:
+  type: "list[block]"
+  required: false                 # additive; absent on pre-existing sidecars
+  description: >
+    Maps each Arneson-LOCAL entity_ref to its meaning, so a session is interpretable
+    with no Gygax checkout. The optional gygax_id is populated only when composing.
+  item_fields:
+    ref:      { type: string, required: true, pattern: "^arn:[a-z0-9-]+$" }  # Arneson-local namespace
+    label:    { type: string, required: true }   # human-readable meaning — standalone interpretability
+    gygax_id: { type: string, required: false }  # populated only under composition
 ```
 
-- **Written to** `grimoires/arneson/playouts/gap-reports/<scenario_id>-<timestamp>.md`
-  (FR-7). The `<timestamp>` is in the **filename only** — the report *body* contains no
-  clock value, so the golden body is byte-stable (NFR-6).
-- D1 puts real verdict classes and sim outcome-signal tags as **separate rows** (the two
-  vocabularies don't share a domain — fusing them would be the upward-paraphrase G-4 §2
-  forbids). `—` marks "not applicable to this lane."
+Plus an additive validation rule (prose, mirroring the existing rule style at `:161`):
 
-### 3.5 Controlled vocabularies
+> "Every `entity_ref` referenced by an event MUST appear as a `binding_table[].ref`; refs use the
+> Arneson-local `arn:` namespace and resolve only through the binding table (never a bare Gygax id)."
 
-```python
-# Real-lane verdict classes — from observation.classification (closed enum) + triage
-VERDICT_CLASSES = ("fixed", "hacked", "failed", "infra", "ungraded")
+Events that touch a mechanic/tension/resource carry `entity_ref: arn:<kind>-<n>` (a domain-level
+convention applied by the session skills' prompts); the field is additive on the relevant event types.
+The producer **offer** to Gygax (recorded in FR-7's brief): on ref-resolution failure, prefer
+**quarantine-and-tag** so partial admissibility survives schema drift.
 
-# Sim-lane outcome signals — closed set for playout-summary/v1 outcome_signal.
-# Derived from trial_end.stop_reason semantics; small + categorical so D1 is a real diff.
-OUTCOME_SIGNAL = (
-    "task-declared-done",   # trial_end stop_reason task_declared_done
-    "max-turns",            # stopped at stopping.max_turns
-    "gave-up",              # host narrated abandonment
-    "safety-stop",          # x-card / safety command fired
-)
+### 3.4 experiential-intent extension model (FR-3)
+
+The mechanism is already documented (`experiential_intent.schema.yaml:77-86`) and one worked example
+already exists (`examples/synthetic-fixture/tradition-folk-horror-minimalist.yaml:48`). The data shape:
+
+```yaml
+# in tradition lore YAML
+experiential_intent_extensions:
+  tone_values: [<additional tone enum values>]
+  register_values: [<additional register enum values>]
 ```
 
-> **Note on `signal-taxonomy/v1`.** The recently-vendored
-> `signal-taxonomy.v1.schema.json` (`{safety, insight, concern, friction, praise,
-> confusion, delight, surprise, boredom}`) is the **practitioner/persona session-signal**
-> vocabulary — orthogonal to *run outcomes* and *actions*. It is deliberately NOT used
-> for D1/D2: it classifies session feel, not what the agent did or whether the task was
-> solved. Recorded here so a future reviewer doesn't try to wire it in.
+The *effective vocabulary* for a tradition = base controlled vocab (`experiential_intent.schema.yaml`
+tone/register enums) **∪** the extension values when present; base-only when absent (graceful
+degradation). FR-3 supplies the loader that computes this and validates an intent block against it (§4.3).
+
+### 3.5 `ARCHETYPE-PIN.yaml` (FR-4)
+
+Records which Gygax `skills/cabal/resources/archetypes.yaml` the 9-file fallback set
+(`domains/ttrpg/resources/archetypes-fallback/`) was reconciled against:
+
+```yaml
+# domains/ttrpg/resources/archetypes-fallback/ARCHETYPE-PIN.yaml
+gygax_repo: 0xHoneyJar/construct-gygax
+gygax_archetypes_path: skills/cabal/resources/archetypes.yaml
+gygax_git_sha: "<sha at reconciliation>"
+gygax_archetypes_sha256: "<sha256 of that file>"
+reconciled_at: "2026-06-25"
+archetype_names: [casual, chaos-agent, contrarian, explorer, min-maxer, newcomer, optimizer, rules-lawyer, storyteller]
+```
+
+`archetype_names` is the load-bearing field for the human-readable drift report — the NOTES record flags
+that the fallback names were "invented guesses," so a name-set diff is what surfaces a real coordination
+gap with Gygax (see §4.4).
+
+### 3.6 `bottleneck` reconciliation (FR-6)
+
+`digest-ttrpg.schema.yaml:75-84` groups signals under a `signal_flags` block whose keys are
+`confusion, friction, bottleneck, delight, surprise, boredom`. But the canonical 9-value signal taxonomy
+(`session-events-base.schema.yaml` signal block, vendored as `signal-taxonomy.v1.schema.json`) is
+`safety, insight, concern, friction, praise, confusion, delight, surprise, boredom`. `bottleneck` is
+**not a signal value** — it is a decision classification (`mechanical_bottleneck`, the friction/bottleneck
+axis on `archetype_decision`). The reconciliation **decision** (to be recorded in the schema + PR):
+
+- **Recommended:** remove `bottleneck` from `signal_flags` (it belongs on the decision-classification axis,
+  not the signal axis). `signal_flags` keys then draw only from the signal taxonomy.
+- **Alternative (if a digest consumer depends on the key):** keep it but rename/relocate under an
+  explicitly non-signal grouping (e.g. `decision_classifications:`), with a comment stating it is *not* a
+  signal-taxonomy member.
+
+Either way the decision is recorded in the schema comment + PR. This is a digest-side (derived view),
+Arneson-owned change — not a cross-construct contract change.
+
+### 3.7 `ledger.json` reconciliation targets (FR-5)
+
+Verified state (2026-06-25): every drifted cycle **shipped and merged** — so the R-5 verify-gate passes
+with no incomplete residue.
+
+| Cycle | Current ledger | Evidence on disk + merged | Target |
+|-------|----------------|---------------------------|--------|
+| cycle-005 voice-persona-bridge | `active`, sprint-22 `planned`, `active_cycle: cycle-005` | `scaffold_agent_persona.py` + test on disk; PR #22 merged (`190f47d`, `c835dd8`, `ea29581`) | sprint-22 `completed`; cycle `archived` (or `completed`) w/ timestamps; clear `active_cycle` |
+| cycle-bug-20260610-c7bc67 | `active` | `ollama-agent.py` on disk; PR #15 merged (`0273292`) | `completed`/`archived` |
+| cycle-bug-20260610-594345 | `active` | validate_batch timeout+triage; PR #16 merged (`bc0a0a7`) | `completed`/`archived` |
+| cycle-bug-20260610-5ad67a | `active` | marker convention; PR #17 merged (`8651d8b`, COMPLETED commit) | `completed`/`archived` |
+| cycle-006 decision-trace-emitter brief | **absent** | brief shipped; PR #23 merged (`6c0daf9`) | add as brief-only micro-cycle (precedent: cycle-003/005); note the *emitter* is cycle-007 |
+
+**Internal inconsistency to fix:** `next_sprint_number: 23` vs `global_sprint_counter: 3` — the latter is
+stale/incorrect. Reconcile to a single canonical counter (recommend keeping `next_sprint_number` as the
+live value and correcting/removing the stale `global_sprint_counter`); record the decision in the PR.
+
+> **Scope note:** cycle-007 itself is registered by `/sprint-plan`, not by FR-5. FR-5 reconciles *past*
+> drift only.
 
 ---
 
-## 4. Component Design (gap_report.py)
+## 4. Component Design
 
-### 4.1 Structural pattern (sibling to sweep_report.py)
+### 4.1 `emit_decision_trace.py` (FR-1) — sibling to `project_trace.py`
 
-`gap_report.py` mirrors `sweep_report.py` exactly:
-
-| sweep_report.py | gap_report.py |
-|-----------------|---------------|
-| module docstring stating the trust rule | same — arithmetic only, never regrade |
-| `err(msg)` → `ERROR: [sweep_report] …` stderr | `err(msg)` → `ERROR: [gap_report] …` stderr |
-| `_sidecar_paths(batch_dir)` | reused (sidecars/ child or flat) |
-| `triage(obj)` (canonical order) | reused for D1 real verdicts |
-| `tally_config(batch_dir)` | `tally_real(batch_dir)` (verdict-class counts) |
-| `render(configs)` → Markdown lines | `render(provenance, d1, d2)` → Markdown |
-| `main(argv)` arg loop, exit 0/1 | `main(argv)` with `--sim`/`--real`, exit 0/1/2 |
-
-> **Reuse decision.** `triage`, `_sidecar_paths`, and `INFRA_MARKER` are lifted from
-> `sweep_report.py`. The two scripts must triage identically; the cleanest way to
-> guarantee that is shared code. **Decision:** extract these into a tiny
-> `triage_lib.py` in the same dir and have both scripts import it (a local sibling
-> import, still stdlib-only, no package). This is OQ-2 for sprint-plan — the
-> conservative alternative is to copy the ~20 lines into `gap_report.py` with a comment
-> pinning them byte-equal. Either satisfies determinism; the shared module avoids drift.
-
-### 4.2 Function decomposition
+Structural twin of the existing `project_trace.py` (native sidecar → vendored-schema corpus, deterministic,
+self-checking, exit 0/1/2). Function decomposition:
 
 ```
-main(argv)
-  ├─ parse_args(argv)            → (sim_path, real_path)         [exit 1 on usage err]
-  ├─ load_sim(sim_path)          → SimSummary                     [exit 1 on bad input]
-  ├─ load_real(real_path)        → (RealRecord, batch_dir)        [exit 1 on bad input]
-  ├─ assert_paired(sim, real)    → None | REFUSE                  [exit 2 on sha mismatch]
-  ├─ d1 = outcome_divergence(sim, batch_dir)   # verdict tally + sim outcome tags
-  ├─ d2 = action_divergence(sim, batch_dir, move_map)  # 3 sets via §3.3 algorithm
-  ├─ prov = provenance(sim, real, batch_dir)   # FR-5, quoted labels + validation status
-  ├─ md = render(prov, d1, d2)                  # deterministic Markdown
-  └─ write_report(scenario_id, md)              → path            [stdout = path]
+main(argv)                         # argparse: --in <events.yaml> --out <corpus_dir>
+  load(events_path)  -> dict       # restricted_yaml.parse_file; exit 1 on parse/empty/degenerate
+  build_records(log) -> list       # iterate agent_turn in seq order; project per §3.1; skip turns w/o action_label
+  validate_record(r) -> [errs]     # contract self-check vs vendored schema (required, additionalProperties, enums)
+  write_corpus(records, out)       # <out>/<corpus_id-sanitized>-<t>.json, sorted keys, byte-stable
+err(msg) / die(msg, code)          # "ERROR: [emit_decision_trace] …" to stderr
 ```
 
-- `parse_args`: only `--sim <path>` and `--real <path>`; anything else → usage error.
-- `assert_paired`: the FR-2 refusal — if `sim.scenario_sha256 != real.scenario_sha256`,
-  print `ERROR: [gap_report] scenario_sha256 mismatch: sim=<a> real=<b>` to stderr and
-  return exit 2. (Distinct from input-error exit 1 so the negative test SM-4 asserts the
-  *refusal* path specifically.)
-- `load_real`: also reads the real record's `validation` field and, where cheap, checks
-  the batch is conformant (NFR-5); records the status string into provenance. It does
-  NOT re-run `validate_batch.py` as a hard gate (read-only, no regrade) — it *reports*
-  the status the record carries and declines only if the record itself says
-  non-conformant.
-- All set rendering: `sorted(...)`; all dict iteration over fixed tuples
-  (`VERDICT_CLASSES`, `OUTCOME_SIGNAL`) — never over hash order (NFR-6).
+- **Self-check (exit 2):** `validate_record` encodes the vendored contract's required-field set,
+  `additionalProperties: false`, and the `claim_strength`/`producer.kind` enums — the same hand-written
+  contract-validator approach the construct already uses for observed-trace (`validate_sidecar.py`), because
+  the stdlib has no JSON-Schema engine. It pins to the vendored `decision-trace.v1.schema.json` sha256 and
+  refuses (exit 2) on pin drift, mirroring `validate_sidecar.py`. **Never ship a broken corpus.**
+- **Determinism (NFR-3):** records sorted by `t` (insertion order = seq order); JSON written with
+  `sort_keys=True` and fixed separators; no `datetime.now()`, no `random`, no dict-iteration-order reliance.
+- **Standalone (NFR-1):** imports only stdlib + sibling `restricted_yaml`. Zero `construct-gygax` imports
+  (locked by an import-grep test, §7).
+- **Claim honesty (NFR-5):** `claim_strength`/`producer.kind` are literals, not derived from input — a sim
+  log can never produce a `real-agent-observed` record.
+- **Degenerate input (exit 1):** an episode with no `agent_turn`/no `action_label` (would yield zero
+  records, violating the lens's expectation of a non-empty corpus) dies with `ERROR: [emit_decision_trace] …`.
 
-### 4.3 What gap_report.py must NEVER contain (negative design)
+### 4.2 `resolve_entity_refs.py` (FR-2)
 
-- No `classification`/severity/cliff function — verdicts are read, not computed (NFR-4).
-- No write to any path under `batch_dir` or any `*.json` sidecar (FR-8).
-- No `subprocess` call to the grader / ladder engine / `--regrade` (FR-8, NFR-2).
-- No `import` from `construct-gygax` or any path outside the repo (NFR-2).
-- No third-party `import` (NFR-1) — enforced by `mypy`/`ruff` + a grep in the test.
-- No banned phrase in any emitted string literal (NFR-3) — enforced by the banned grep.
+A small stdlib resolver that proves standalone interpretability (SM-4). Given a session sidecar:
+
+```
+resolve(sidecar) -> {ref: label}      # build map from preamble.binding_table
+check(sidecar)   -> [unbound_refs]    # every entity_ref used in events must be in the table
+main: exit 0 if all refs resolve (no Gygax checkout needed); exit 1 + ERROR: [resolve_entity_refs] … on any unbound ref
+```
+
+Location: core `scripts/` (decision OQ-C), since `binding_table` lives on the *base* preamble and applies
+to every vertical. The resolver is the executable form of the FR-2 acceptance ("refs resolve only through
+the binding table, no Gygax checkout"). Composition (filling `gygax_id`) is the consumer's job (FR-7
+brief) — the resolver only validates the local label side. A sidecar with no `binding_table` and no
+`entity_ref`s still passes (additive-only; pre-existing sidecars unaffected).
+
+### 4.3 `load_experiential_vocab.py` (FR-3)
+
+```
+effective_vocab(base_schema, lore_yaml) -> {tone:set, register:set}
+  # base enums ∪ experiential_intent_extensions.{tone_values,register_values} when present; base-only when absent
+validate_intent(intent_block, effective) -> [errs]   # each tone/register value must be in the effective set
+main: exit 0 if the intent block's values are within the effective vocab; exit 1 otherwise
+```
+
+This wires the *documented-but-dead* extension mechanism: when a tradition lore file carries
+`experiential_intent_extensions`, its extended tone/register values become valid; when absent, validation
+falls back to the base controlled vocabulary (graceful degradation). The voicing skills' prompts reference
+the extension mechanism (doc-level); the loader is the verifiable enforcement the test exercises (SM-5,
+present + absent paths). The worked example already lives in
+`examples/synthetic-fixture/tradition-folk-horror-minimalist.yaml`.
+
+> Altitude note (P1/Should-Have): FR-3's "applied" side (voicing actually using extended tones) is
+> prompt-driven and not mechanically testable; the *verifiable* contract is the effective-vocab computation +
+> validation, which is what ships and what the test locks.
+
+### 4.4 `archetype-drift-guard.sh` (FR-4) — sibling to `vendor-drift-guard.sh`
+
+```
+GYGAX_ROOT = $ARNESON_GYGAX_ROOT or ../construct-gygax
+if no Gygax checkout OR no archetypes.yaml:           # absence is NORMAL for archetypes (unlike vendored contracts)
+    echo "SKIP: no Gygax archetypes.yaml — fallback set authoritative (standalone)"; exit 0
+else:
+    actual_sha = sha256(GYGAX_ROOT/skills/cabal/resources/archetypes.yaml)
+    pinned_sha = ARCHETYPE-PIN.yaml::gygax_archetypes_sha256
+    name_diff  = set(gygax archetype keys)  △  set(ARCHETYPE-PIN.archetype_names)
+    if actual_sha != pinned_sha OR name_diff != ∅:
+        report drift (which names added/removed; sha mismatch); exit 1
+    else: echo "OK: archetype SSOT in sync with pin"; exit 0
+```
+
+**Critical difference from `vendor-drift-guard.sh`:** the vendor guard *requires* the Gygax checkout
+(vendored bytes must be verifiable, so absence is a FAIL/exit 1). The archetype guard treats Gygax absence
+as **SKIP/exit 0** — Gygax is optional (`composition.siblings.required: false`), so a standalone Arneson
+must not fail this check (FR-4 acceptance: "with no Gygax present, the check is a no-op/skip, not a
+failure"). The name-set diff is the human-readable signal that catches the "invented fallback names"
+coordination risk the NOTES flagged.
+
+### 4.5 Ledger reconciliation procedure (FR-5) — verify-gated
+
+Not code; a **verify-then-mark** procedure executed in `/implement`, with the verification already done at
+design time (§3.7). For each drifted cycle: (1) confirm deliverable paths exist on disk; (2) confirm the PR
+merged (git log); (3) only then set `status: completed`/`archived` with timestamps. If any deliverable were
+absent or a PR unmerged, document the precise residue instead of marking done (R-5: no rubber-stamping).
+Here, all five targets verify clean. Optionally ship a lightweight `ledger-consistency-check.sh` that flags
+any `active`/`planned` cycle whose declared deliverable paths exist (SM-7 as a durable gate rather than a
+one-time review) — recommended but not required by the PRD.
+
+### 4.6 Freeside atomic-write test (FR-6)
+
+The invariant ("both layers update together; a failed write leaves the file unchanged") is **already
+enforced**: `emit_persona.py` computes the entire two-layer document in `emit()`, calls
+`validate_sync_contract` (`:465`) before returning, and writes nothing to disk itself — it prints the full
+result to **stdout** (`:507`), so its guarantee is *all-or-nothing emission* (the caller redirects stdout;
+the script never half-emits). The PRD's gap is that this invariant has **no enforcing test**. FR-6 adds the
+lock (no production-code change needed):
+
+```
+test-freeside-atomic-write.sh:
+  [1] positive: ingest→emit a persona; assert BOTH the body section AND the prompt-marker section
+      reflect a changed field (two-layer co-update).
+  [2] negative (the new lock): feed a state that violates the sync contract; assert emit exits non-zero
+      AND emits NO partial document to stdout (validate_sync_contract fires before any output).
+```
+
+If [2] ever fails (e.g., a future refactor emits before validating), the test reveals the regression and the
+fix is to restore validate-before-emit. Doc note: callers wanting on-disk crash-safety should
+`emit > tmp && mv tmp persona.md` (tmp+rename) — the script's stdout design is deliberately composable, so
+filesystem atomicity is the caller's contract, not the script's.
+
+### 4.7 Remaining FR-6 items
+
+- Delete `grimoires/loa/NOTES.md.tmp` (0-byte stray, confirmed present).
+- Document the snake_case `experiential_intent.schema.yaml` naming outlier as an **intentional exception**
+  (renaming is a breaking change per `consistency-report.md:C1`) — a note in the relevant
+  `domain.conventions.md` or a short `SCHEMA-NAMING.md`; **no rename** this cycle.
+
+### 4.8 Gygax-side handoff brief (FR-7)
+
+Arneson-owned markdown at `grimoires/loa/discovery/gygax-seam-requests-cycle007.md` (the established
+location for cross-construct briefs, e.g. `gygax-seam-reply-v1.1.md`, `gygax-trace-json-brief.md`).
+Required contents:
+
+- **Request A2** — `/cabal --from-session` (or `--from-digest`) ingest mode consuming Arneson's
+  digest/session output (emitted today, unconsumed).
+- **Request A4** — a Gygax `mechanical_intent` schema + reconciliation of the two-axis intent shape across
+  `attune` docs (single-axis), `homebrew/SKILL.md` (two-axis), and sample game-state files.
+- **Producer-side context Gygax needs:** the FR-2 binding-table offer, the **quarantine-and-tag**
+  ref-resolution-failure preference, and the signal-taxonomy vendoring direction.
+- Cross-references `seam-strawman.md` + this PRD. Commits **no** Gygax code (Arneson ships only the brief).
+- Must pass the no-private/upstream-game-reference gate (NFR-7).
 
 ---
 
-## 5. Interface Specifications (CLI + Skill)
+## 5. Interface Specifications (CLI + skill/doc)
 
-### 5.1 CLI
+### 5.1 CLI surfaces
+
+| Tool | Invocation | Exit codes |
+|------|------------|------------|
+| `emit_decision_trace.py` | `python3 emit_decision_trace.py --in <events.yaml> --out <corpus_dir>` | 0 ok · 1 input error (blank/degenerate) · 2 contract self-check fail |
+| `resolve_entity_refs.py` | `python3 resolve_entity_refs.py <sidecar.events.yaml>` | 0 all refs resolve · 1 unbound ref |
+| `load_experiential_vocab.py` | `python3 load_experiential_vocab.py --lore <tradition.yaml> --intent <block.yaml>` | 0 within effective vocab · 1 out-of-vocab |
+| `vendor-drift-guard.sh` | `bash scripts/ci/vendor-drift-guard.sh` (needs Gygax checkout) | 0 all 4 files match · 1 drift/missing |
+| `archetype-drift-guard.sh` | `bash scripts/ci/archetype-drift-guard.sh` | 0 in-sync **or Gygax absent (SKIP)** · 1 drift |
+| `test-emit-decision-trace.sh` etc. | auto-discovered by `scripts/test.sh` | 0 pass · 1 fail |
+
+All error messages use the construct's convention: `ERROR: [<tool>] <message>` on stderr.
+
+### 5.2 Closing proof (FR-1, SM-2 — informational gate)
 
 ```
-gap_report.py --sim <sim-playout.yaml> --real <real-playout.yaml>
+npx tsx ../construct-gygax/scripts/lib/trace/strategy.ts <corpus>/
+# expect: exit 0, Revealed Strategy report present, claim_strength: simulation-derived
 ```
 
-- **stdout (success):** the path to the written report.
-- **stderr:** `ERROR: [gap_report] …` on any failure.
-- **exit codes:** `0` success · `1` input/usage error · `2` pairing refusal (FR-2).
+Verified present at `../construct-gygax/scripts/lib/trace/strategy.ts`. This is the seam finding's
+adversarial run *inverted* — the rejection that fails today (`unknown schema "observed-trace/v1"
+(expected "decision-trace/v1")`) must be gone. Per NFR posture it is an informational gate (it depends on a
+sibling Node toolchain), not a hard CI leg.
 
-### 5.2 gap-report domain skill (FR-9)
+### 5.3 Doc notes
 
-`domains/agent-systems/skills/gap-report/SKILL.md` — a thin wrapper mirroring
-`skills/playout/`:
-
-```
-State G1: PAIR GATE
-  - Read both playout records; confirm sim.lane==simulated, real.lane==real.
-  - If scenario_sha256 differs → STOP, surface the script's refusal verbatim. Do not
-    improvise around a failed gate.
-State G2: GENERATE
-  - python3 domains/agent-systems/scripts/gap_report.py --sim <s> --real <r>
-  - Nonzero → STOP, surface stderr verbatim.
-State G3: REPORT
-  - Echo the report path. State the standing frame (simulated = exploration, real =
-    proof; divergence shown, not judged; interpretation is the analyst's). Never
-    summarize the divergence as a verdict.
-```
-
-Bright lines (inherited from `playout/SKILL.md` style): never author a grade, never
-edit the real batch, never soften a claim label, never paraphrase a simulation upward.
+- Short "emit a decision-trace corpus from a sim playout" note where the gap-report / sweep docs live
+  (`domains/agent-systems/docs/`), cross-linked to the seam finding (FR-1 acceptance).
+- FR-7 brief (§4.8). FR-6 naming-exception note (§4.7).
 
 ---
 
 ## 6. Error Handling Strategy
 
-| Condition | Detection | Behavior | Exit |
-|-----------|-----------|----------|------|
-| Missing/bad `--sim`/`--real` arg | `parse_args` | `ERROR: [gap_report] usage: …` | 1 |
-| Sim summary unreadable / wrong schema | `load_sim` | name the file + what's wrong | 1 |
-| Real record unreadable / `lane != real` | `load_real` | name the file + field | 1 |
-| `batch_path` missing on disk | `load_real` | name the path | 1 |
-| **`scenario_sha256` mismatch** | `assert_paired` | `… scenario_sha256 mismatch: sim=<a> real=<b>` | **2** |
-| Real batch records `validation: non-conformant` | `load_real` (NFR-5) | decline; name the status | 1 |
-| Real sidecar JSON parse error | per-file `try/except` | skip that sidecar (mirrors `sweep_report` tolerance); never crash the run | (continues) |
+Uniform exit-code taxonomy across all new tools, matching the existing emitters/validators:
 
-All messages follow the existing `ERROR: [<tool>] …` convention so they read like the
-sibling validators and are catchable by the wrapper skill.
+| Code | Meaning | Examples |
+|------|---------|----------|
+| 0 | success / clean / no-op-skip | corpus written; refs resolve; guard in-sync or Gygax absent |
+| 1 | input/usage error | blank/empty/degenerate input; unbound entity_ref; out-of-vocab intent; drift detected; missing upstream file |
+| 2 | contract violation (produced output would break a pinned contract) | emitted record fails the vendored `decision-trace.v1.schema.json` self-check; vendored-file sha drift detected by the emitter's pin check |
+
+- **Fail loud, fail early.** A degenerate input dies before writing anything (exit 1). A self-check failure
+  dies before the corpus is considered shippable (exit 2) — never ship a broken corpus.
+- **Drift is exit 1, not silent.** `vendor-drift-guard.sh` keeps its loud-fail posture for all four files;
+  `archetype-drift-guard.sh` reports the specific name/sha divergence.
+- **Standalone never errors on Gygax absence** for FR-4 (SKIP/0); only `vendor-drift-guard.sh` requires the
+  checkout (the vendored bytes must be verifiable).
 
 ---
 
 ## 7. Testing Strategy
 
-### 7.1 The gate vs. the smoke
+### 7.1 Discovery
 
-| Test | Type | Gate? | Maps to |
-|------|------|------|---------|
-| Synthetic deterministic sim+real fixture → golden-file byte match | unit / golden | **YES** | SM-1 |
-| Banned-copy grep over a freshly generated report | unit | **YES** | SM-3 |
-| `scenario_sha256` mismatch → exit 2 + message | negative | **YES** | SM-4 |
-| stdlib-only grep (no third-party import in `gap_report.py`) | unit | **YES** | NFR-1 |
-| Read-only assertion (batch bytes unchanged after run) | unit | **YES** | FR-8 |
-| Real pair from `awareness-ladder-demo` → exit 0 | smoke | **NO (informational)** | SM-2 |
-| `ruff` + `mypy` clean | lint | **YES** | SM-6 |
+`scripts/test.sh` glob-discovers `domains/*/scripts/test-*.sh` (`scripts/test.sh:16`) — new domain test
+scripts are picked up with zero wiring. Core-level tests (FR-2 resolver, FR-3 loader, both in core
+`scripts/`) are invoked by their own `test-*.sh` runners wired into the CI front door, and the drift guards
+(`scripts/ci/`) remain their own legs. The full suite (`scripts/test.sh`) must stay green with the new
+tests added (SM-8).
 
-> From prd.md (R3): "Synthetic golden-file pair is the deterministic gate (SM-1); the
-> real pair is an informational smoke only." (prd.md:L100) — because persona-host output
-> is non-deterministic, the real pair (SM-2) can only assert exit 0, never byte-equality.
+### 7.2 Per-FR tests
 
-### 7.2 Fixtures
+| FR | Test | What it locks |
+|----|------|---------------|
+| FR-1 | `test-emit-decision-trace.sh` | (a) sim episode → N `decision-trace/v1` records, each self-validates (SM-1); (b) **byte-identical golden corpus across runs** (SM-1 determinism); (c) blank/degenerate → exit 1; (d) broken self-output → exit 2; (e) **import-grep**: no `construct-gygax` import (NFR-1); (f) banned-phrase gate (NFR-7) |
+| FR-1 | `vendor-drift-guard.sh` + its existing test | all **four** vendored files byte-match upstream + sha-pin; source↔vendor convergence still green (SM-3) |
+| FR-1 | closing proof (§5.2) | Gygax lens consumes the corpus, exit 0 (SM-2, informational) |
+| FR-2 | `test-resolve-entity-refs.sh` | a session with `arn:` refs + binding table resolves every ref **with no Gygax checkout** (SM-4); an unbound ref → exit 1; additive-only (pre-existing sidecars without a table still validate) |
+| FR-3 | `test-load-experiential-vocab.sh` | extension present → extended values accepted; extension absent → base vocab only (graceful) (SM-5) |
+| FR-4 | `test-archetype-drift-guard.sh` (or guard self-test) | drift (sha or name-set) → exit 1; Gygax absent → SKIP/exit 0 (SM-6) |
+| FR-5 | `ledger-consistency-check.sh` (optional) / documented review | no `active`/`planned` cycle has deliverables on disk; cycle-006 present (SM-7) |
+| FR-6 | `test-freeside-atomic-write.sh` | two-layer co-update; sync-contract violation → exit 1 + no partial emission |
 
-- **Synthetic pair** (`resources/fixtures/gap-report/`): a hand-authored
-  `playout-summary.v1.json` (sim) + a minimal graded `observed-trace/v1` batch (real,
-  with `observation.classification` filled) + a `move-map.yaml` + the expected
-  `gap-report.golden.md`. Both pin the same `scenario_sha256`. Built to exercise all
-  three D2 sets (a shared move, a sim-only raw label, a real-only move) and ≥2 verdict
-  classes in D1. Fully deterministic — the test diffs the generated body against the
-  golden (timestamped filename excluded).
-- **Mismatch fixture**: the same sim summary + a real record with a *different*
-  `scenario_sha256` → asserts exit 2 (SM-4).
+### 7.3 Fixtures (deterministic, committed)
 
-### 7.3 `test-gap-report.sh` (the new test, sibling to `test-sweep-report.sh`)
+- FR-1: a synthetic sim-lane `session-events-agent` episode (reuse/extend the `native-sidecar.events.yaml`
+  shape) + its **golden** `decision-trace/v1` corpus (byte-stable). Lives under
+  `domains/agent-systems/resources/fixtures/decision-trace/`.
+- FR-2: a minimal session sidecar with `arn:`-namespaced refs + a binding table.
+- FR-3: reuse the existing `tradition-folk-horror-minimalist.yaml` (carries the extension) + a base-only
+  tradition for the absent path.
+- All fixtures are HEKATE-free / contain no private/upstream-game references (NFR-7).
 
-Bash, hermetic, `set -uo pipefail`, `PASS/FAIL` counters, nonzero on any failure — same
-shape as `test-sweep-report.sh`. It (a) runs the golden diff, (b) runs the banned grep
-(reusing the BANNED regex from `scripts/ci/banned-copy-check.sh` so there is one ban-list
-source of truth), (c) runs the mismatch negative, (d) greps the script source for
-forbidden imports, (e) snapshots batch bytes before/after to prove read-only.
+### 7.4 Gates
 
-### 7.4 `scripts/test.sh` (FR-10, the unified runner)
-
-```bash
-#!/usr/bin/env bash
-# Unified test runner (FR-10). Discovers + runs every domains/*/scripts/test-*.sh
-# plus the Python validator self-tests. Exits nonzero on any failure. stdlib tools
-# only — NOT pytest/npm.
-set -uo pipefail
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-fail=0
-for t in "$REPO_ROOT"/domains/*/scripts/test-*.sh; do
-  [ -f "$t" ] || continue
-  echo "== $t"
-  bash "$t" || fail=1
-done
-# … invoke the existing Python validator self-tests here (each validator's selftest) …
-exit "$fail"
-```
-
-> **Design note — relationship to `scripts/ci/`.** `scripts/ci/validate-agent-systems.sh`
-> already chains the domain `test-*.sh` scripts for the hermetic CI leg. `scripts/test.sh`
-> is the **single local+CI front door** the PRD asks for (FR-10) and discovers
-> `test-*.sh` by glob (so the new `test-gap-report.sh` is picked up with zero wiring).
-> It does NOT duplicate the `ci/` legs; the CI workflow may call `scripts/test.sh` as one
-> step. Whether `scripts/test.sh` *supersedes* or *complements* the per-leg `ci/` scripts
-> is OQ-4 — design default is complement (glob the domain tests; leave the specialized
-> `ci/` probes as their own CI steps).
+The new tests join the existing gate set: domain `test-*.sh` via `scripts/test.sh`, the banned-copy /
+banned-phrases check, and the drift guards. ruff/mypy run when present (dev/CI); `py_compile` must be clean
+in all environments.
 
 ---
 
 ## 8. Development Phases
 
-Single-cycle scope; suggested sprint decomposition for `/sprint-plan`:
+Mapped to the PRD priority matrix — P0 spine first, P1 trims first if pressed (R-6). Sprint boundaries are
+`/sprint-plan`'s to finalize; this is the logical sequencing.
 
-### Phase 1: Sim-lane diffability + contracts (R1/R2 foundation)
-- [ ] `schemas/playout-summary.v1.schema.json` (Arneson-owned, additive) — FR-1, R1
-- [ ] Sim lane emits `playout-summary.v1.json` at State S6 (additive step in
-      `playout/SKILL.md` + serializer) — R1
-- [ ] `move-map.yaml` + its documented schema — R2
-- [ ] Synthetic deterministic fixture pair + golden file — SM-1 scaffolding
+### Phase 1 — FR-1 the centerpiece (P0)
+1. Vendor `decision-trace.v1.schema.json` (95ccf21, sha `83d6a69f…`); bump `VENDOR.yaml` wholesale; extend
+   `vendor-drift-guard.sh` to four files; prove the guard green (R-2 closed).
+2. `emit_decision_trace.py` (chosen-only projection per §1.2, self-check, deterministic) + fixture + golden.
+3. `test-emit-decision-trace.sh` (SM-1) + import-grep + banned-phrase; closing proof (SM-2).
 
-### Phase 2: gap_report.py (core)
-- [ ] Triage reuse (`triage_lib.py` or pinned copy — OQ-2) — FR-3
-- [ ] D1 outcome divergence (verdict tally + sim tags) — FR-3
-- [ ] D2 action-set divergence (normalize via move-map) — FR-4
-- [ ] Provenance + framing render, quoted labels — FR-5, FR-6
-- [ ] Pairing refusal (exit 2) — FR-2
-- [ ] Output write to `gap-reports/` — FR-7
-- [ ] Read-only + arithmetic-only audit pass — FR-8, NFR-4
+### Phase 2 — FR-2 + FR-5 + FR-7 (rest of the P0 spine)
+4. FR-2: additive `binding_table` + entity_ref discipline on `session-events-base`; `resolve_entity_refs.py`
+   + test (SM-4).
+5. FR-5: reconcile `ledger.json` (verify-gated, §3.7); fix the counter inconsistency; (optional) consistency
+   check (SM-7).
+6. FR-7: write the Gygax-side handoff brief (A2 + A4 + producer context); NFR-7 gate.
 
-### Phase 3: Skill + enablers + tests (the gates)
-- [ ] `skills/gap-report/SKILL.md` — FR-9
-- [ ] `test-gap-report.sh` (golden + banned + negative + import-grep + read-only) — SM-1,3,4
-- [ ] `scripts/test.sh` — FR-10, SM-5
-- [ ] `pyproject.toml` (ruff+mypy, no runtime deps) + make gap_report.py clean — FR-11, SM-6
-- [ ] Real smoke from `awareness-ladder-demo` (informational) — SM-2
+### Phase 3 — FR-3 + FR-4 (P1 Should-Have)
+7. FR-3: `load_experiential_vocab.py` + present/absent test (SM-5).
+8. FR-4: `ARCHETYPE-PIN.yaml` + `archetype-drift-guard.sh` (skip-clean on Gygax absence) + test (SM-6).
 
-### Phase 4: Cycle hygiene
-- [ ] Open cycle-004, archive cycle-003 via the ledger flow — R4
+### Phase 4 — FR-6 cycle hygiene (P1)
+9. `bottleneck` reconciliation (decision recorded); `test-freeside-atomic-write.sh`; delete
+   `NOTES.md.tmp`; document the naming exception. Full `scripts/test.sh` green (SM-8).
 
 ---
 
 ## 9. Known Risks and Mitigation
 
-| ID | Risk | Prob | Impact | Mitigation (in this design) |
-|----|------|------|--------|-----------------------------|
-| R1 | Sim lane emits no diffable structure | **Confirmed** | High | **Resolved §1.2**: additive `playout-summary.v1.json` projection at State S6. Not a vendored-schema change; not a grade. |
-| R2 | Sim/real action vocabularies diverge | High | Med | **Resolved §1.3**: documented `move-map.yaml`; raw labels when unmapped; real labels recognized by declarative evidence (real lane has no native action labels). |
-| R3 | Persona-host output non-deterministic → real smoke can't gate | High | Low | Synthetic golden pair is the gate (SM-1); real pair is exit-0 smoke only (SM-2). |
-| R4 | Orphaned cycle-002 prd; cycle-003 still `active` | Med | Low | Open cycle-004 at sprint-plan; archive cycle-003 (Phase 4). |
-| R5 | "the grader's report" is Markdown-only, not parseable | Confirmed | Med | D1 reads `observation.classification` from graded sidecars directly (§3.2), using the contract's canonical triage order — same source `sweep_report.py` counts. |
-| R6 | `mypy`/`ruff` over the whole dir surfaces pre-existing findings | Med | Low | Cycle owns green for gap_report.py + imports; pre-existing sibling findings quarantined with scoped ignores (§2.2), not refactored. OQ-3. |
-| R7 | Triage logic drifts between sweep_report.py and gap_report.py | Low | Med | Shared `triage_lib.py` (or byte-pinned copy) — OQ-2; both must triage identically (the contract requires byte-equal). |
+| ID | Risk | Prob | Impact | Mitigation |
+|----|------|------|--------|------------|
+| RA-1 | **Chosen-only corpus is analytically empty** — the lens consumes it but reveals no preference (no alternatives) | High (by design) | Med | Flag explicitly (§1.2 honest tradeoff) in PR + docs; MVP closes the *contract* seam per PRD UC-1; analytic value deferred to offered-set capture. Do not let the seam read as "fully closed." |
+| RA-2 | `actor_id` derivation under-specified for single-agent vs multi-actor (dungeon party) episodes | Med | Low | §3.1 derivation rule: persona id when present, else stable `corpus.id`-derived token; never clock/uuid; the golden fixture pins the chosen rule. Revisit only when a multi-actor sim corpus is actually emitted. |
+| RA-3 | Future Gygax re-vendor finds the three existing files diverged at the target SHA (wholesale pin no longer safe) | Low | Low | The wholesale choice is justified *only* by today's verified byte-identity; the `VENDOR.yaml` comment records this. If divergence appears, switch to per-file `git_sha` then (documented exit). |
+| RA-4 | FR-2 ingest semantics are ultimately Gygax-owned; the consumer may want different binding semantics | Med | Med | Arneson ships the *producer offer* (binding table + quarantine-and-tag preference) with the contract documented in FR-7; standalone resolution works regardless (NFR-1). |
+| RA-5 | FR-3 "applied" side is prompt-driven and not mechanically testable | Med | Low | Scope FR-3's *verifiable* contract to the effective-vocab loader + validation; the test locks that; the prompt-level application is a doc convention. |
+| RA-6 | FR-4 name-set diff surfaces that the fallback names genuinely diverge from Gygax's keys (a real coordination gap) | Med | Low | That is the guard *working*; the divergence is reported (exit 1) for the Practitioner to reconcile or re-pin — it does not break standalone (Gygax-absent path skips). |
+| RA-7 | A+C is ~3–4 sprints; partial completion | Med | Low | P0 spine (FR-1/2/5/7) first; P1 (FR-3/4/6) trims first if pressed (PRD R-6). |
 
 ---
 
 ## 10. Open Questions
 
-| # | Question | Owner | For |
-|---|----------|-------|-----|
-| OQ-1 | Does the sim lane emit `playout-summary.v1.json` from the *host* (State S6) or as a post-pass over the native sidecar by a small new script? Host-emit keeps it in one place; a script keeps `gap_report.py`'s inputs producible without re-running a playout. | sprint-plan | Phase 1 |
-| OQ-2 | Shared `triage_lib.py` import vs. byte-pinned copy of `triage`/`INFRA_MARKER` into `gap_report.py`? Shared avoids drift (R7); copy keeps each script standalone. | sprint-plan | Phase 2 |
-| OQ-3 | Scope of the `mypy`/`ruff` gate: gap_report.py + imports only (scoped ignores for siblings) vs. clean the whole dir? PRD SM-6 says the dir; design recommends scoped to avoid out-of-cycle refactor. | sprint-plan | Phase 3 |
-| OQ-4 | Does `scripts/test.sh` *supersede* the per-leg `scripts/ci/*` scripts or *complement* them (CI calls `test.sh` as one step + keeps the specialized probes)? Design default: complement. | sprint-plan | Phase 3 |
-| OQ-5 | `move-map.yaml` granularity: one map per scenario (one-variable convention) vs. a shared map keyed by `scenario_id`? Design assumes scenario-scoped (`scenario_id` field present). | sprint-plan | Phase 1 |
+| ID | Question | Owner | When |
+|----|----------|-------|------|
+| OQ-A | Should `signal_flags` (FR-6) also *add* the missing canonical values (`safety, insight, concern, praise`) while removing `bottleneck`, or only remove `bottleneck`? | Practitioner | FR-6 implementation — recommend remove-only (surgical); adding values is a separate digest-completeness decision |
+| OQ-B | Is the optional `ledger-consistency-check.sh` (FR-5/SM-7) worth shipping as a durable gate, or is a one-time documented review sufficient? | Practitioner | FR-5 implementation — lean toward the script (cheap, durable) |
+| OQ-C | Location of FR-2's `resolve_entity_refs.py` and FR-3's loader — resolved here: core `scripts/` (both operate on base-preamble / core-schema concerns) | — | resolved |
+
+Resolved at design time (no longer open): **OQ-1** (chosen-only, §1.2) and **R-2** (wholesale bump, §1.3).
 
 ---
 
 ## 11. Appendix
 
-### A. Glossary
+### A. Design-decision evidence (verified 2026-06-25)
 
-| Term | Definition |
-|------|------------|
-| Sim lane / simulated | `/playout --scenario`, persona host, serialize-only, ungraded "behavioral exploration" (`SKILL.md:L173`). |
-| Real lane | `/playout --real`, Gygax ladder engine, graded `observed-trace/v1` batch (`SKILL.md:L21`). |
-| D1 | Outcome divergence: real verdict-class counts vs sim outcome-signal tags (FR-3). |
-| D2 | Action-set divergence: sim-only / real-only / shared move-label sets (FR-4). |
-| Pairing key | `scenario_sha256` — both lanes must pin the same committed scenario (FR-2). |
-| Verdict class | `observation.classification ∈ {fixed, hacked, failed}` + triage `{infra, ungraded}`. |
-| Outcome signal | sim-lane categorical outcome tag (`playout-summary/v1`, §3.5). |
-| Move map | `move-map.yaml` — documented sim↔real action-label normalization (R2). |
-| Vendored contract | Gygax-owned files under `schemas/vendor/`, byte-pinned in `VENDOR.yaml`, read-only (NFR-7). |
+- **OQ-1 chosen-only:** `session-events-agent.schema.yaml:79-100` (no `offered` field); `native-sidecar.events.yaml:48`
+  (live `action_label`, no offered); `fixtures/dungeon-crawl/task-template/moves.json` = `[]`;
+  `fixtures/batches/dungeon-sample/runs/rung-0/trial-1/moves.json` = chosen-move list;
+  `../construct-gygax/schemas/decision-trace.v1.schema.json` requires `offered` minItems 1, chosen ⊆ offered.
+- **R-2 wholesale-safe:** `git show 3fa6c91:<f> | sha256 == git show 95ccf21:<f> | sha256` for observed-trace,
+  observed-trace-batch, signal-taxonomy (all IDENTICAL); decision-trace absent at 3fa6c91, present at 95ccf21
+  with sha256 `83d6a69f6001a1fed2592932a24e501cd54db170fb4ababead0adb12745dab02` (matches the brief's pin).
+- **FR-5 all-merged:** PR #22 (cycle-005), PR #15/#16/#17 (bug cycles), PR #23 (cycle-006 brief) all merged to
+  main; deliverables present on disk.
+- **FR-6 invariant enforced-but-untested:** `emit_persona.py:465` calls `validate_sync_contract` before
+  `:507` stdout emission.
 
-### B. References (grounding)
+### B. File index
 
-- `grimoires/loa/prd.md` — this cycle's PRD.
-- `domains/agent-systems/domain.conventions.md` — G-4 claim-framing rules + banned-copy table.
-- `domains/agent-systems/skills/playout/SKILL.md` — dual-lane state machines (sim States S1–S6).
-- `domains/agent-systems/scripts/sweep_report.py` — structural sibling + reused `triage`.
-- `domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json` — sidecar record schema.
-- `domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md` — batch layout + canonical triage order.
-- `domains/agent-systems/schemas/vendor/signal-taxonomy.v1.schema.json` — session-signal vocabulary (NOT used; §3.5 note).
-- `domains/agent-systems/resources/fixtures/native-sidecar.events.yaml` — sim native-sidecar shape (R1 evidence).
-- `scripts/ci/banned-copy-check.sh` — the BANNED regex source of truth (reused by the new test).
-- `scripts/ci/validate-agent-systems.sh` — existing domain test leg (relationship to `scripts/test.sh`).
+| Concern | File |
+|---------|------|
+| FR-1 emitter | `domains/agent-systems/scripts/emit_decision_trace.py` (new) |
+| FR-1 vendored contract | `domains/agent-systems/schemas/vendor/{decision-trace.v1.schema.json,VENDOR.yaml}` |
+| FR-1 drift guard | `scripts/ci/vendor-drift-guard.sh` |
+| FR-2 schema + resolver | `schemas/core/session-events-base.schema.yaml`, `scripts/resolve_entity_refs.py` (new) |
+| FR-3 loader | `scripts/load_experiential_vocab.py` (new); `schemas/core/experiential_intent.schema.yaml:77-86` |
+| FR-4 pin + guard | `domains/ttrpg/resources/archetypes-fallback/ARCHETYPE-PIN.yaml` (new), `scripts/ci/archetype-drift-guard.sh` (new) |
+| FR-5 ledger | `grimoires/loa/ledger.json` |
+| FR-6 bottleneck | `domains/ttrpg/schemas/digest-ttrpg.schema.yaml:75-84` |
+| FR-6 freeside test | `domains/character-voice/scripts/test-freeside-atomic-write.sh` (new); `emit_persona.py:465,507` |
+| FR-7 brief | `grimoires/loa/discovery/gygax-seam-requests-cycle007.md` (new) |
+| Test runner | `scripts/test.sh` |
 
-### C. Change Log
+### C. Bibliography (internal)
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2026-06-15 | Initial SDD for the Simulation Fidelity Gap Report cycle. R1 + R2 resolved against the codebase. | Architecture Designer Agent |
+- `grimoires/loa/prd.md` — cycle-007 PRD (7 FRs)
+- `grimoires/loa/context/decision-trace-emitter-brief.md` — FR-1 spec (cycle-006)
+- `grimoires/loa/discovery/seam-strawman.md` — FR-2/FR-7 producer offer
+- `grimoires/loa/discovery/gygax-revealed-strategy-seam-verified.md` — empirical seam finding
+- `domains/agent-systems/scripts/project_trace.py` — the FR-1 sibling pattern
+- `scripts/ci/vendor-drift-guard.sh` — the FR-1/FR-4 drift-guard pattern
 
 ---
 
-*Generated by Architecture Designer Agent (/architect). Arithmetic only; the report shows
-where forecast and observation diverge — it never judges fidelity.*
+*Generated by designing-architecture (cycle-007). Both delegated design questions (OQ-1, R-2) resolved
+empirically against live code; every design decision traces to a cited source or a verified probe.*
