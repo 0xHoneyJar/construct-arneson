@@ -16,9 +16,9 @@
         {
           "global_id": 23,
           "local_label": "sprint-1",
-          "status": "planned",
+          "status": "completed",
           "created": "2026-06-25T00:00:00Z",
-          "completed": null
+          "completed": "2026-06-26T03:05:46Z"
         },
         {
           "global_id": 24,
@@ -200,7 +200,7 @@
     },
     {
       "id": "cycle-bug-20260610-c7bc67",
-      "label": "Bug Fix — Local-model agent path in agent-systems quickstart is unrunnable as documented",
+      "label": "Bug Fix \u2014 Local-model agent path in agent-systems quickstart is unrunnable as documented",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,
@@ -213,7 +213,7 @@
     },
     {
       "id": "cycle-bug-20260610-594345",
-      "label": "Bug Fix — Wrapper timeout undercuts engine trial budget; infrastructure non-runs grade as verdicts",
+      "label": "Bug Fix \u2014 Wrapper timeout undercuts engine trial budget; infrastructure non-runs grade as verdicts",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,
@@ -226,7 +226,7 @@
     },
     {
       "id": "cycle-bug-20260610-5ad67a",
-      "label": "Bug Fix — Infrastructure triage in validate_batch.py is wrapper-specific — misses second wrapper's marker",
+      "label": "Bug Fix \u2014 Infrastructure triage in validate_batch.py is wrapper-specific \u2014 misses second wrapper's marker",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,

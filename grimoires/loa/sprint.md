@@ -63,49 +63,49 @@ Make Arneson's simulated lane emit a `decision-trace/v1` corpus that Gygax's rev
 consumes with exit 0 — closing the *producer side* of the seam (G-1).
 
 ### Deliverables
-- [ ] `domains/agent-systems/schemas/vendor/decision-trace.v1.schema.json` vendored read-only (Gygax HEAD
+- [x] `domains/agent-systems/schemas/vendor/decision-trace.v1.schema.json` vendored read-only (Gygax HEAD
       `95ccf21`, `sha256: 83d6a69f…dab02`).
-- [ ] `VENDOR.yaml` bumped wholesale `git_sha: 3fa6c91 → 95ccf21` + decision-trace entry added, with the
+- [x] `VENDOR.yaml` bumped wholesale `git_sha: 3fa6c91 → 95ccf21` + decision-trace entry added, with the
       byte-identity comment for the three unchanged files (`sdd.md` §3.2).
-- [ ] `vendor-drift-guard.sh` extended to cover all **four** vendored files; guard exits 0.
-- [ ] `emit_decision_trace.py` — stdlib-only, deterministic, self-checking projection script.
-- [ ] Committed sim-lane fixture + **golden** corpus under `resources/fixtures/decision-trace/`.
-- [ ] `test-emit-decision-trace.sh` auto-discovered by `scripts/test.sh`; short doc note in
+- [x] `vendor-drift-guard.sh` extended to cover all **four** vendored files; guard exits 0.
+- [x] `emit_decision_trace.py` — stdlib-only, deterministic, self-checking projection script.
+- [x] Committed sim-lane fixture + **golden** corpus under `resources/fixtures/decision-trace/`.
+- [x] `test-emit-decision-trace.sh` auto-discovered by `scripts/test.sh`; short doc note in
       `domains/agent-systems/docs/`.
 
 ### Acceptance Criteria
-- [ ] One sim episode in → N `decision-trace/v1` records out, each carrying `schema`, `claim_strength`,
+- [x] One sim episode in → N `decision-trace/v1` records out, each carrying `schema`, `claim_strength`,
       `producer.{kind,id,detail,provenance}`, `corpus.{id,game}`, `actor_id`, `episode_id`, `t`,
       `context.segment`, `offered`, `chosen` (PRD FR-1; `sdd.md` §3.1).
-- [ ] Chosen-only honesty: `offered == chosen` with `producer.detail` = "offered-set-unrecorded: chosen-only
+- [x] Chosen-only honesty: `offered == chosen` with `producer.detail` = "offered-set-unrecorded: chosen-only
       projection …"; `claim_strength: simulation-derived`, `producer.kind: simulation` are **hardcoded
       literals** (NFR-2, NFR-5; `sdd.md` §1.2).
-- [ ] Self-check on write: every record validates against the vendored schema (required fields,
+- [x] Self-check on write: every record validates against the vendored schema (required fields,
       `additionalProperties:false`, enums); **exit 2** if any record fails (never ship a broken corpus).
-- [ ] Byte-identical corpus across runs (sorted keys, fixed separators, ordering stable by `t`/`seq`; no
+- [x] Byte-identical corpus across runs (sorted keys, fixed separators, ordering stable by `t`/`seq`; no
       clock/random) — SM-1 determinism.
-- [ ] `--blank`/degenerate input (no `agent_turn`/no `action_label`) → **exit 1** with
+- [x] `--blank`/degenerate input (no `agent_turn`/no `action_label`) → **exit 1** with
       `ERROR: [emit_decision_trace] …` (`sdd.md` §6).
-- [ ] Import-grep test proves **zero** `construct-gygax` imports (NFR-1); banned-phrase gate green (NFR-7).
-- [ ] **Closing proof (SM-2, informational gate):** `npx tsx ../construct-gygax/scripts/lib/trace/strategy.ts
+- [x] Import-grep test proves **zero** `construct-gygax` imports (NFR-1); banned-phrase gate green (NFR-7).
+- [x] **Closing proof (SM-2, informational gate):** `npx tsx ../construct-gygax/scripts/lib/trace/strategy.ts
       <corpus>/` exits 0 with `claim_strength: simulation-derived`; the today-failing rejection (`unknown
       schema "observed-trace/v1"`) is gone.
-- [ ] `vendor-drift-guard.sh` + source↔vendor convergence still green for all four files (SM-3).
+- [x] `vendor-drift-guard.sh` + source↔vendor convergence still green for all four files (SM-3).
 
 ### Technical Tasks
-- [ ] Task 1.1: Vendor `decision-trace.v1.schema.json` (95ccf21) into `schemas/vendor/`; bump `VENDOR.yaml`
+- [x] Task 1.1: Vendor `decision-trace.v1.schema.json` (95ccf21) into `schemas/vendor/`; bump `VENDOR.yaml`
       wholesale + add entry + byte-identity comment. → **[G-1]**
-- [ ] Task 1.2: Extend the `vendor-drift-guard.sh` byte-diff array (`:20`) to the 4th file; verify pin-loop
+- [x] Task 1.2: Extend the `vendor-drift-guard.sh` byte-diff array (`:20`) to the 4th file; verify pin-loop
       auto-discovers the new entry; prove guard exit 0 (R-2 closed). → **[G-1]**
-- [ ] Task 1.3: Write `emit_decision_trace.py` (sibling to `project_trace.py`): `load → build_records →
+- [x] Task 1.3: Write `emit_decision_trace.py` (sibling to `project_trace.py`): `load → build_records →
       validate_record → write_corpus`; chosen-only projection per §3.1; self-check exit 2; deterministic
       sorted-key JSON; stdlib + `restricted_yaml` only. → **[G-1]**
-- [ ] Task 1.4: Build the synthetic sim-lane `session-events-agent` fixture (extend the
+- [x] Task 1.4: Build the synthetic sim-lane `session-events-agent` fixture (extend the
       `native-sidecar.events.yaml` shape) + its byte-stable golden `decision-trace/v1` corpus. → **[G-1]**
-- [ ] Task 1.5: Write `test-emit-decision-trace.sh` — records+self-validate (SM-1a), golden byte-match
+- [x] Task 1.5: Write `test-emit-decision-trace.sh` — records+self-validate (SM-1a), golden byte-match
       (SM-1b determinism), exit 1 (degenerate), exit 2 (broken self-output), import-grep (NFR-1),
       banned-phrase (NFR-7). → **[G-1]**
-- [ ] Task 1.6: Run the closing proof (SM-2); add the short "emit a decision-trace corpus" doc note
+- [x] Task 1.6: Run the closing proof (SM-2); add the short "emit a decision-trace corpus" doc note
       cross-linked to the seam finding; add `decision-trace.v1` to `construct.yaml::agent-systems.vendored_contracts`
       (signal-taxonomy omission = optional hygiene, mention in PR — `sdd.md` §3.2). → **[G-1]**
 
