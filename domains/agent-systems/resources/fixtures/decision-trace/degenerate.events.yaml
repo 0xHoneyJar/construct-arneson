@@ -1,0 +1,20 @@
+# Negative fixture: a valid sim sidecar whose agent_turn records NO action_label.
+# Chosen-only ⇒ nothing was chosen ⇒ zero records ⇒ degenerate input ⇒ exit 1.
+preamble:
+  domain: agent-systems
+  scenario_id: synthetic-simulated-smoke
+  run_id: degenerate-run
+  visibility_rung: 0
+events:
+  - type: rung_start
+    seq: 1
+    rung: 0
+    rung_name: blind
+    trial: 1
+  - type: agent_turn
+    seq: 2
+    narrated_action: "Deliberated but recorded no action label."
+    why: "no action_label key present on this turn"
+  - type: trial_end
+    seq: 3
+    status: completed

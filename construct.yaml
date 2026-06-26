@@ -73,6 +73,8 @@ domains:
         pin: domains/agent-systems/schemas/vendor/VENDOR.yaml
       - path: domains/agent-systems/schemas/vendor/observed-trace-batch.v1.md
         pin: domains/agent-systems/schemas/vendor/VENDOR.yaml
+      - path: domains/agent-systems/schemas/vendor/decision-trace.v1.schema.json
+        pin: domains/agent-systems/schemas/vendor/VENDOR.yaml
     resources:
       personas: domains/agent-systems/resources/personas/
       synthetic_fixture: domains/agent-systems/resources/fixtures/synthetic-incentive/

@@ -11,10 +11,17 @@
 # and REVISIT validate_sidecar.py / validate_batch.py against the new bytes
 # before producing any batch.
 
+# Pin bumped wholesale 3fa6c91 (cycle-010) → 95ccf21 (cycle-012) for the
+# decision-trace addition (cycle-007 Sprint 1, FR-1). The three pre-existing
+# files are BYTE-IDENTICAL at both SHAs (verified 2026-06-26: their sha256 pins
+# below are unchanged), so the wholesale bump touches no bytes and requires no
+# validator revisit. decision-trace.v1.schema.json was ADDED at 95ccf21 (absent
+# at 3fa6c91). If a future re-vendor finds the three files diverged at the target
+# SHA, switch to per-file pins.
 upstream:
   repo: 0xHoneyJar/construct-gygax
-  git_sha: 3fa6c91745c0882b5ee72edc087c0151deb126ae
-  vendored_at: "2026-06-14"
+  git_sha: 95ccf2190ca6f61badeef71881f1f1c2dee7b1be
+  vendored_at: "2026-06-26"
 
 files:
   - vendored: domains/agent-systems/schemas/vendor/observed-trace.v1.schema.json
@@ -26,3 +33,6 @@ files:
   - vendored: domains/agent-systems/schemas/vendor/signal-taxonomy.v1.schema.json
     upstream_path: schemas/signal-taxonomy.v1.schema.json
     sha256: f6ba7182d8d41e53595a142316451377456a1899217a085fdbc9c4a22e542ce6
+  - vendored: domains/agent-systems/schemas/vendor/decision-trace.v1.schema.json
+    upstream_path: schemas/decision-trace.v1.schema.json
+    sha256: 83d6a69f6001a1fed2592932a24e501cd54db170fb4ababead0adb12745dab02

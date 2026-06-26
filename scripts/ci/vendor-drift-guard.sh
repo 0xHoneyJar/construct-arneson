@@ -17,7 +17,7 @@ if [ ! -d "$GYGAX_ROOT/schemas" ]; then
 fi
 
 FAIL=0
-for name in observed-trace.v1.schema.json observed-trace-batch.v1.md signal-taxonomy.v1.schema.json; do
+for name in observed-trace.v1.schema.json observed-trace-batch.v1.md signal-taxonomy.v1.schema.json decision-trace.v1.schema.json; do
   vendored="$VENDOR_DIR/$name"
   upstream="$GYGAX_ROOT/schemas/$name"
   if [ ! -f "$upstream" ]; then

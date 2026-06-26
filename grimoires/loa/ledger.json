@@ -1,10 +1,41 @@
 {
   "version": 1,
   "created": "2026-06-10T00:37:18Z",
-  "last_updated": "2026-06-16T00:00:00Z",
-  "next_sprint_number": 23,
-  "active_cycle": "cycle-005",
+  "last_updated": "2026-06-25T00:00:00Z",
+  "next_sprint_number": 26,
+  "active_cycle": "cycle-007",
   "cycles": [
+    {
+      "id": "cycle-007",
+      "label": "compounding-seam-closure",
+      "status": "active",
+      "created": "2026-06-25T00:00:00Z",
+      "prd": "grimoires/loa/prd.md",
+      "sdd": "grimoires/loa/sdd.md",
+      "sprints": [
+        {
+          "global_id": 23,
+          "local_label": "sprint-1",
+          "status": "completed",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": "2026-06-26T03:05:46Z"
+        },
+        {
+          "global_id": 24,
+          "local_label": "sprint-2",
+          "status": "planned",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": null
+        },
+        {
+          "global_id": 25,
+          "local_label": "sprint-3",
+          "status": "planned",
+          "created": "2026-06-25T00:00:00Z",
+          "completed": null
+        }
+      ]
+    },
     {
       "id": "cycle-005",
       "label": "voice-persona-bridge",
@@ -169,7 +200,7 @@
     },
     {
       "id": "cycle-bug-20260610-c7bc67",
-      "label": "Bug Fix — Local-model agent path in agent-systems quickstart is unrunnable as documented",
+      "label": "Bug Fix \u2014 Local-model agent path in agent-systems quickstart is unrunnable as documented",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,
@@ -182,7 +213,7 @@
     },
     {
       "id": "cycle-bug-20260610-594345",
-      "label": "Bug Fix — Wrapper timeout undercuts engine trial budget; infrastructure non-runs grade as verdicts",
+      "label": "Bug Fix \u2014 Wrapper timeout undercuts engine trial budget; infrastructure non-runs grade as verdicts",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,
@@ -195,7 +226,7 @@
     },
     {
       "id": "cycle-bug-20260610-5ad67a",
-      "label": "Bug Fix — Infrastructure triage in validate_batch.py is wrapper-specific — misses second wrapper's marker",
+      "label": "Bug Fix \u2014 Infrastructure triage in validate_batch.py is wrapper-specific \u2014 misses second wrapper's marker",
       "type": "bugfix",
       "status": "active",
       "source_issue": null,
